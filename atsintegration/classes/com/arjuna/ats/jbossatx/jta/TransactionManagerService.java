@@ -42,6 +42,7 @@ import com.arjuna.ats.jta.utils.JNDIManager;
 import com.arjuna.ats.jta.common.Environment;
 import com.arjuna.ats.jta.common.jtaPropertyManager;
 import com.arjuna.ats.arjuna.common.Uid;
+import com.arjuna.ats.arjuna.coordinator.TxControl;
 import com.arjuna.ats.arjuna.coordinator.TxStats;
 
 import com.arjuna.ats.internal.tsmx.mbeans.PropertyServiceJMXPlugin;
@@ -74,9 +75,7 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
     private static final JBossXATerminator TERMINATOR = new XATerminator() ;
 
     private RecoveryManagerImple _recoveryManager;
-    private boolean _initialised = false;
     private boolean _runRM = true;
-    private int _transactionTimeout = -1;
 
     /**
      * Use the short class name as the default for the service name.
@@ -158,19 +157,6 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
         jtaPropertyManager.propertyManager.setProperty(Environment.JTA_UT_IMPLEMENTATION, UserTransactionImple.class.getName());
 
         JNDIManager.bindJTATransactionManagerImplementation();
-
-        /** Signal that the transaction manager has been bound **/
-        _initialised = true;
-
-        /**
-         * If a call to set transaction has been called before the transaction
-         * manager is bound then set the transaction timeout now
-         */
-        if (_transactionTimeout != -1)
-        {
-            this.getLog().info("Transaction timeout set to " + _transactionTimeout);
-            setTransactionTimeout(_transactionTimeout);
-        }
     }
 
     private boolean isRecoveryManagerRunning() throws Exception
@@ -268,19 +254,10 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
      */
     public void setTransactionTimeout(int timeout) throws javax.transaction.SystemException
     {
-        if (_initialised)
-        {
-            javax.transaction.TransactionManager tm = com.arjuna.ats.jta.TransactionManager.transactionManager();
-
-            tm.setTransactionTimeout(timeout);
-        }
+        if (timeout > 0)
+            TxControl.setDefaultTimeout(timeout);
         else
-        {
-            if (timeout > 0)
-                _transactionTimeout = timeout;
-            else
-                throw new javax.transaction.SystemException("Transaction Timeout < 0");
-        }
+            throw new javax.transaction.SystemException("Transaction Timeout < 0");
     }
 
     /**
