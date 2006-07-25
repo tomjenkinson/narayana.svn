@@ -166,7 +166,7 @@ public class TxControl
     static TransactionStatusManager transactionStatusManager = null;
     static ClassName actionStoreType = null;
     static byte[]  xaNodeName = null;
-    static int _defaultTimeout = 60000; // 60 seconds
+    static int _defaultTimeout = 60; // 60 seconds
 
     static
     {
@@ -177,6 +177,7 @@ public class TxControl
             try
             {
                 Integer in = new Integer(env);
+
                 _defaultTimeout = in.intValue();
             }
             catch (Exception ex)
