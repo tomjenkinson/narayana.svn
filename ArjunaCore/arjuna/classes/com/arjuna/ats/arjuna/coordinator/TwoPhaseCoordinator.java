@@ -37,6 +37,8 @@ import com.arjuna.ats.arjuna.logging.tsLogger;
 
 import com.arjuna.ats.internal.arjuna.template.*;
 
+import java.util.Date;
+
 /**
  * Adds support for synchronizations to BasicAction. It does not change thread
  * associations either. It also allows any thread to terminate a transaction,
@@ -96,6 +98,7 @@ public class TwoPhaseCoordinator extends BasicAction implements Reapable
 
 	public int cancel ()
 	{
+		System.err.println("TS_DEBUG: Transaction cancel called at " + new Date()) ;
 		if (parent() != null)
 			parent().removeChildAction(this);
 

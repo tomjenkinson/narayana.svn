@@ -34,8 +34,6 @@ package com.arjuna.ats.internal.arjuna.coordinator;
 import com.arjuna.ats.arjuna.logging.tsLogger;
 import com.arjuna.ats.arjuna.logging.FacilityCode;
 
-import com.arjuna.ats.arjuna.coordinator.BasicAction;
-import com.arjuna.ats.arjuna.coordinator.ActionStatus;
 import com.arjuna.ats.arjuna.coordinator.TransactionReaper;
 
 import com.arjuna.common.util.logging.*;
@@ -86,54 +84,53 @@ public void run ()
 	    {
 		sleepPeriod = reaperObject.checkingPeriod();
 
-		long oldPeriod = sleepPeriod;
-		long beforeTime = System.currentTimeMillis();
-
-		try
+		if (sleepPeriod > 0)
 		{
-		    if (tsLogger.arjLoggerI18N.debugAllowed())
-		    {
-			tsLogger.arjLoggerI18N.debug(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PUBLIC,
-						     FacilityCode.FAC_ATOMIC_ACTION,
-						     "com.arjuna.ats.internal.arjuna.coordinator.ReaperThread_1", 
-						     new Object[]{Thread.currentThread(),
-								  Long.toString(sleepPeriod)});
-		    }
+			long beforeTime = System.currentTimeMillis();
 
-		    Thread.sleep(sleepPeriod);
-
-		    done = true;
-		}
-		catch (InterruptedException e1)
-		{
-		    /*
-		     * Has timeout been changed?
-		     */
-
-		    if (reaperObject.checkingPeriod() != oldPeriod)
-		    {
-			done = true;
-		    }
-		    else
-		    {
-			long afterTime = System.currentTimeMillis();
-
-			if (afterTime - beforeTime < reaperObject.checkingPeriod())
+			try
 			{
-			    done = true;
+		    	if (tsLogger.arjLoggerI18N.debugAllowed())
+		    	{
+				tsLogger.arjLoggerI18N.debug(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PUBLIC,
+						     	FacilityCode.FAC_ATOMIC_ACTION,
+						     	"com.arjuna.ats.internal.arjuna.coordinator.ReaperThread_1", 
+						     	new Object[]{Thread.currentThread(),
+								  	Long.toString(sleepPeriod)});
+		    	}
+
+                    	System.out.println("TS_DEBUG: Reaper thread will sleep for " + sleepPeriod) ;
+
+		    	Thread.sleep(sleepPeriod);
+
+		    	done = true;
 			}
-		    }
+			catch (InterruptedException e1)
+			{
+				long afterTime = System.currentTimeMillis();
+
+				if (afterTime - beforeTime > reaperObject.checkingPeriod())
+				{
+			    	done = true;
+				}
+		    	}
+			catch (Exception e2)
+			{
+		    	done = true;
+			}
 		}
-		catch (Exception e2)
+		else
 		{
-		    done = true;
+			done = true ;
 		}
 	    }
 
 	    if (_shutdown)
 		return;
 
-	    reaperObject.check(System.currentTimeMillis());
+            System.out.println("TS_DEBUG: ReaperThread checking state of transactions") ;
+
+	    reaperObject.check();
 
 	    if (reaperObject.numberOfTransactions() == 0)
 	    {
