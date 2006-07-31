@@ -37,8 +37,6 @@ import com.arjuna.ats.arjuna.coordinator.*;
 import com.arjuna.ats.internal.arjuna.thread.*;
 import com.arjuna.ats.arjuna.common.*;
 
-import java.util.Date;
-
 /**
  * This is a user-level transaction class, unlike BasicAction. AtomicAction
  * takes care of thread-to-action scoping. This is a "one-shot" object, i.e.,
@@ -200,7 +198,6 @@ public class AtomicAction extends TwoPhaseCoordinator
 
 	public int abort ()
 	{
-		System.out.println("TS_DEBUG: Transaction abort called at " + new Date()) ;
 		int status = super.cancel();
 
 		/*

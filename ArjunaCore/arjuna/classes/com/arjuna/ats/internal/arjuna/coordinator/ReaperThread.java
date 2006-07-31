@@ -78,66 +78,35 @@ public void run ()
 	     * ignore.
 	     */
 
-	    boolean done = false;
-	    
-	    while (!done)
-	    {
-		sleepPeriod = reaperObject.checkingPeriod();
+            synchronized(reaperObject)
+    	    {
+                sleepPeriod = reaperObject.checkingPeriod();
 
-		if (sleepPeriod > 0)
-		{
-			long beforeTime = System.currentTimeMillis();
+        		if (sleepPeriod > 0)
+        		{
+        			try
+        			{
+            		    if (tsLogger.arjLoggerI18N.isDebugEnabled())
+        		    	{
+            				tsLogger.arjLoggerI18N.debug(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PUBLIC,
+        						     	FacilityCode.FAC_ATOMIC_ACTION,
+        						     	"com.arjuna.ats.internal.arjuna.coordinator.ReaperThread_1", 
+        						     	new Object[]{Thread.currentThread(),
+        								  	Long.toString(sleepPeriod)});
+        		    	}
 
-			try
-			{
-		    	if (tsLogger.arjLoggerI18N.debugAllowed())
-		    	{
-				tsLogger.arjLoggerI18N.debug(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PUBLIC,
-						     	FacilityCode.FAC_ATOMIC_ACTION,
-						     	"com.arjuna.ats.internal.arjuna.coordinator.ReaperThread_1", 
-						     	new Object[]{Thread.currentThread(),
-								  	Long.toString(sleepPeriod)});
-		    	}
-
-                    	System.out.println("TS_DEBUG: Reaper thread will sleep for " + sleepPeriod) ;
-
-		    	Thread.sleep(sleepPeriod);
-
-		    	done = true;
-			}
-			catch (InterruptedException e1)
-			{
-				long afterTime = System.currentTimeMillis();
-
-				if (afterTime - beforeTime > reaperObject.checkingPeriod())
-				{
-			    	done = true;
+            		    reaperObject.wait(sleepPeriod);
+        			}
+            		catch (InterruptedException e1) {}
 				}
-		    	}
-			catch (Exception e2)
-			{
-		    	done = true;
-			}
-		}
-		else
-		{
-			done = true ;
-		}
-	    }
+	    	}
 
-	    if (_shutdown)
-		return;
+    	    if (_shutdown)
+        		return;
 
-            System.out.println("TS_DEBUG: ReaperThread checking state of transactions") ;
-
-	    reaperObject.check();
-
-	    if (reaperObject.numberOfTransactions() == 0)
-	    {
-		sleepPeriod = Long.MAX_VALUE;
+    	    reaperObject.check();
 	    }
 	}
-    }
 
     public void shutdown ()
     {

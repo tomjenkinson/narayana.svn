@@ -115,11 +115,14 @@ public class TransactionReaper
 
 	public final synchronized long checkingPeriod ()
 	{
-		if (_dynamic && (_list.size() > 0))
-		{
-			final ReaperElement head = (ReaperElement)_list.peak() ;
-			return head._absoluteTimeout - System.currentTimeMillis() ;
-		}
+        if (_dynamic)
+        {
+            final ReaperElement head = (ReaperElement)_list.peak() ;
+            if (head != null)
+            {
+                return head._absoluteTimeout - System.currentTimeMillis() ;
+            }
+        }
 		return _checkPeriod;
 	}
 
@@ -156,7 +159,6 @@ public class TransactionReaper
 			}
 
 			final long now = System.currentTimeMillis() ;
-			System.err.println("TS_DEBUG: Reaper comparing current time " + now + " with transaction lifetime of " + e._absoluteTimeout) ;
 
 			if (now >= e._absoluteTimeout)
 			{
@@ -286,7 +288,7 @@ public class TransactionReaper
 			if ((timeoutms < _checkPeriod) || (_checkPeriod == Long.MAX_VALUE))
 			{
 				_checkPeriod = timeoutms ; // convert to milliseconds!
-				TransactionReaper._reaperThread.interrupt();
+                notify();
 			}
 
 			if (_list.insert(e))
