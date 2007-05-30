@@ -60,6 +60,8 @@ import java.util.*;
 import javax.transaction.RollbackException;
 import java.lang.IllegalStateException;
 
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
+
 /*
  * Is given an AtomicAction, but uses the TwoPhaseCoordinator aspects of it
  * to ensure that the thread association continues.
@@ -1699,6 +1701,6 @@ public class TransactionImple implements javax.transaction.Transaction,
                 }
 	}
 
-	private static Hashtable _transactions = new Hashtable();
+    private static ConcurrentHashMap _transactions = new ConcurrentHashMap();
 
 }
