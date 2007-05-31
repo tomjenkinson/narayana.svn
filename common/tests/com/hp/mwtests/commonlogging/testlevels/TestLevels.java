@@ -94,7 +94,7 @@ public class TestLevels extends TestCase
 	}
 
 	public static void verifyResult(String result, boolean expectReleveling) {
-		String[] lines = result.split("[\r\n]+?");
+		String[] lines = result.split("\r?\n"); //result.split("[\r\n]+?");
 		assertNotNull(lines);
 		assertEquals(5, lines.length);
 		assertTrue("Got actual value: "+lines[0], lines[0].matches("\\s*DEBUG \\[main\\] \\(TestLevels.java.*"));
