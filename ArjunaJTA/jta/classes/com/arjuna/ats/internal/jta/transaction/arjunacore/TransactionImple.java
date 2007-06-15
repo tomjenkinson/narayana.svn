@@ -1239,41 +1239,45 @@ public class TransactionImple implements javax.transaction.Transaction,
 			jtaLogger.logger.debug(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PUBLIC, com.arjuna.ats.jta.logging.FacilityCode.FAC_JTA, "TransactionImple.commitAndDisassociate");
 		}
 
-        try
-        {
-    		if (_theTransaction != null)
-    		{
-    			switch (_theTransaction.status())
-    			{
-    			case ActionStatus.RUNNING:
-    			case ActionStatus.ABORT_ONLY:
-    				break;
-                case ActionStatus.ABORTED:
-                    _theTransaction.abort() ;
-    			default:
-    				throw new IllegalStateException(
-    						jtaLogger.logMesg.getString("com.arjuna.ats.internal.jta.transaction.arjunacore.inactive"));
-    			}
+		try
+		{
+			if (_theTransaction != null)
+			{
+				switch (_theTransaction.status())
+				{
+					case ActionStatus.ABORTED:
+					case ActionStatus.ABORTING:
+						_theTransaction.abort(); // assure thread disassociation
+						throw new IllegalStateException(
+								jtaLogger.logMesg.getString("com.arjuna.ats.internal.jta.transaction.arjunacore.inactive"));
+
+					case ActionStatus.COMMITTED:
+					case ActionStatus.COMMITTING: // in case of async commit
+						_theTransaction.commit(true); // assure thread disassociation
+						throw new IllegalStateException(
+								jtaLogger.logMesg.getString("com.arjuna.ats.internal.jta.transaction.arjunacore.inactive"));
+				}
 
 				switch (_theTransaction.commit(true))
 				{
-				case ActionStatus.COMMITTED:
-				case ActionStatus.COMMITTING: // in case of async commit
-					break;
-				case ActionStatus.H_MIXED:
-					throw new javax.transaction.HeuristicMixedException();
-				case ActionStatus.H_HAZARD:
-					throw new javax.transaction.HeuristicMixedException();
-				case ActionStatus.H_ROLLBACK:
-				case ActionStatus.ABORTED:
-					RollbackException rollbackException = new RollbackException(jtaLogger.logMesg.getString("com.arjuna.ats.internal.jta.transaction.arjunacore.commitwhenaborted"));
-					if(_theTransaction.getDeferredThrowable() != null) {
-						rollbackException.initCause(_theTransaction.getDeferredThrowable());
-					}
-					throw rollbackException;
-				default:
-					throw new IllegalStateException(
-							jtaLogger.logMesg.getString("com.arjuna.ats.internal.jta.transaction.arjunacore.invalidstate"));
+					case ActionStatus.COMMITTED:
+					case ActionStatus.COMMITTING: // in case of async commit
+						break;
+					case ActionStatus.H_MIXED:
+						throw new javax.transaction.HeuristicMixedException();
+					case ActionStatus.H_HAZARD:
+						throw new javax.transaction.HeuristicMixedException();
+					case ActionStatus.H_ROLLBACK:
+					case ActionStatus.ABORTED:
+					case ActionStatus.ABORTING:
+						RollbackException rollbackException = new RollbackException(jtaLogger.logMesg.getString("com.arjuna.ats.internal.jta.transaction.arjunacore.commitwhenaborted"));
+						if(_theTransaction.getDeferredThrowable() != null) {
+							rollbackException.initCause(_theTransaction.getDeferredThrowable());
+						}
+						throw rollbackException;
+					default:
+						throw new IllegalStateException(
+								jtaLogger.logMesg.getString("com.arjuna.ats.internal.jta.transaction.arjunacore.invalidstate"));
 				}
 			}
 			else
@@ -1312,43 +1316,35 @@ public class TransactionImple implements javax.transaction.Transaction,
 			jtaLogger.logger.debug(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PUBLIC, com.arjuna.ats.jta.logging.FacilityCode.FAC_JTA, "TransactionImple.rollbackAndDisassociate");
 		}
 
-		if (_theTransaction != null)
-		{
-			switch (_theTransaction.status())
-			{
-			case ActionStatus.RUNNING:
-			case ActionStatus.ABORT_ONLY:
-				break;
-			default:
-				throw new IllegalStateException(
-						jtaLogger.logMesg.getString("com.arjuna.ats.internal.jta.transaction.arjunacore.inactive"));
-			}
-		}
-
 		try
 		{
+			boolean statusIsValid = false;
+
 			if (_theTransaction != null)
 			{
-				int outcome = _theTransaction.abort();
+				if(_theTransaction.status() == ActionStatus.RUNNING || _theTransaction.status() == ActionStatus.ABORT_ONLY) {
+					// in these cases we may be able to finish without throwing an exception, if nothing else goes wrong...
+					statusIsValid = true;
+				}
+
+				int outcome = _theTransaction.abort(); // assure thread disassociation, even if tx is already done.
 
 				switch (outcome)
 				{
-				case ActionStatus.ABORTED:
-				case ActionStatus.ABORTING: // in case of async rollback
-					break;
-				default:
-					throw new IllegalStateException(
-							jtaLogger.logMesg.getString("com.arjuna.ats.internal.jta.transaction.arjunacore.rollbackstatus")
-									+ ActionStatus.stringForm(outcome));
+					case ActionStatus.ABORTED:
+					case ActionStatus.ABORTING: // in case of async rollback
+						break;
+					default:
+						throw new IllegalStateException(
+								jtaLogger.logMesg.getString("com.arjuna.ats.internal.jta.transaction.arjunacore.rollbackstatus")
+										+ ActionStatus.stringForm(outcome));
 				}
 			}
-			else
+
+			if(_theTransaction == null || !statusIsValid) {
 				throw new IllegalStateException(
 						jtaLogger.logMesg.getString("com.arjuna.ats.internal.jta.transaction.arjunacore.inactive"));
-		}
-		catch (IllegalStateException ex)
-		{
-			throw ex;
+			}
 		}
 		finally
 		{
