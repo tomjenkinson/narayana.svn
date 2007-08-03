@@ -350,7 +350,8 @@ public class TransactionReaper
 			 */
 
 			final long timeoutms = timeout * 1000;
-			if ((timeoutms < _checkPeriod) || (_checkPeriod == Long.MAX_VALUE))
+			
+			if (((timeoutms > 0) && (timeoutms < _checkPeriod)) || (_checkPeriod == Long.MAX_VALUE))
 			{
 				_checkPeriod = timeoutms; // convert to milliseconds!
 				notify();
