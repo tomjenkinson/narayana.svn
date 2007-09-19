@@ -197,14 +197,14 @@ public class TransactionManagerDelegate extends BaseTransactionManagerDelegate i
     private TransactionLocalLock findLock(final TransactionLocal local, final Transaction transaction) {
 
         TransactionImple transactionImple = (TransactionImple) transaction;
-        Map<TransactionLocal, TransactionLocalLock> locks;
+        Map locks; // <TransactionLocal, TransactionLocalLock>
         // ideally for performance we should sync on the tx instance itself but that may have nasty
         // side effects so we use something else as the lock object for the sync block
         synchronized (LOCKS_MAP) {
             // ensure there is a holder for lock storage on the given tx instance.
             locks = (Map) transactionImple.getTxLocalResource(LOCKS_MAP);
             if (locks == null) {
-                locks = new HashMap<TransactionLocal, TransactionLocalLock>();
+                locks = new HashMap(); // <TransactionLocal, TransactionLocalLock>
                 transactionImple.putTxLocalResource(LOCKS_MAP, locks);
             }
         }
@@ -212,7 +212,7 @@ public class TransactionManagerDelegate extends BaseTransactionManagerDelegate i
         TransactionLocalLock transactionLocalLock;
         synchronized (locks) {
             // ensure there is a lock for the specified local+tx tuple
-            transactionLocalLock = locks.get(local);
+            transactionLocalLock = (TransactionLocalLock)locks.get(local);
             if (transactionLocalLock == null) {
                 transactionLocalLock = new TransactionLocalLock();
                 locks.put(local, transactionLocalLock);
