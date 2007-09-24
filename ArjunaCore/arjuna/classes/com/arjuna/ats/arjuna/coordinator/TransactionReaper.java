@@ -61,7 +61,7 @@ import java.util.*;
  *          memory.
  * @message com.arjuna.ats.arjuna.coordinator.TransactionReaper_2
  *          [com.arjuna.ats.arjuna.coordinator.TransactionReaper_2] -
- *          TransactionReaper::check - comparing {0}
+ *          TransactionReaper::check - comparing expiry {0} to now {1}
  * @message com.arjuna.ats.arjuna.coordinator.TransactionReaper_3
  *          [com.arjuna.ats.arjuna.coordinator.TransactionReaper_3] -
  *          TransactionReaper::check - rollback for {0}
@@ -167,7 +167,9 @@ public class TransactionReaper
                             return true ;
                         }
 
-			if (tsLogger.arjLoggerI18N.debugAllowed())
+            final long now = System.currentTimeMillis();
+
+            if (tsLogger.arjLoggerI18N.debugAllowed())
 			{
 				tsLogger.arjLoggerI18N
 						.debug(
@@ -176,10 +178,9 @@ public class TransactionReaper
 								FacilityCode.FAC_ATOMIC_ACTION,
 								"com.arjuna.ats.arjuna.coordinator.TransactionReaper_2",
 								new Object[]
-								{ Long.toString(e._absoluteTimeout) });
+								{ Long.toString(e._absoluteTimeout), Long.toString(now) });
 			}
 
-			final long now = System.currentTimeMillis();
 			if (now >= e._absoluteTimeout)
 			{
 				if (e._control.running())
