@@ -1543,6 +1543,51 @@ public class TransactionImple implements javax.transaction.Transaction,
 				}
 			}
 
+			/*
+			 * need to do the same for all duplicated resources
+			 */
+
+			el = _duplicateResources.keys();
+
+			if (el != null)
+			{
+				try
+				{
+					/*
+					 * Would it gain us much to just loop for _suspendCount?
+					 */
+
+					while (el.hasMoreElements())
+					{
+						/*
+						 * Get the XAResource in case we have to call end on it.
+						 */
+
+						XAResource xaRes = (XAResource) el.nextElement();
+						TxInfo info = (TxInfo) _duplicateResources.get(xaRes);
+
+						if (info.getState() == TxInfo.ASSOCIATION_SUSPENDED)
+						{
+							if (XAUtils.mustEndSuspendedRMs(xaRes))
+								xaRes.start(info.xid(), XAResource.TMRESUME);
+
+							xaRes.end(info.xid(), XAResource.TMSUCCESS);
+							info.setState(TxInfo.NOT_ASSOCIATED);
+						}
+					}
+				}
+				catch (XAException ex)
+				{
+					if (jtaLogger.loggerI18N.isWarnEnabled())
+					{
+						jtaLogger.loggerI18N
+								.warn("com.arjuna.ats.internal.jta.transaction.arjunacore.xaenderror");
+					}
+
+					result = false;
+				}
+			}
+
 			_suspendCount = 0;
 		}
 

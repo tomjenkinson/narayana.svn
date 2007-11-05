@@ -1480,7 +1480,47 @@ public class TransactionImple implements javax.transaction.Transaction,
 				}
 			}
 
-			_suspendCount = 0;
+			/*
+			 * do the same again for duplicate resources
+			 */
+
+			el = _duplicateResources.keys();
+
+			if (el != null)
+			{
+				try
+				{
+					while (el.hasMoreElements())
+					{
+						/*
+						 * Get the XAResource in case we have to call end on it.
+						 */
+
+						XAResource xaRes = (XAResource) el.nextElement();
+						TxInfo info = (TxInfo) _duplicateResources.get(xaRes);
+
+						if (info.getState() == TxInfo.ASSOCIATION_SUSPENDED)
+						{
+							if (XAUtils.mustEndSuspendedRMs(xaRes))
+								xaRes.start(info.xid(), XAResource.TMRESUME);
+
+							xaRes.end(info.xid(), XAResource.TMSUCCESS);
+							info.setState(TxInfo.NOT_ASSOCIATED);
+						}
+					}
+				}
+				catch (XAException ex)
+				{
+					if (jtaLogger.loggerI18N.isWarnEnabled())
+					{
+						jtaLogger.loggerI18N.warn("com.arjuna.ats.internal.jta.transaction.jts.xaenderror");
+					}
+
+					result = false;
+				}
+			}
+
+            _suspendCount = 0;
 		}
 
 		return result;
