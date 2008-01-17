@@ -36,14 +36,14 @@ import com.arjuna.ats.arjuna.common.arjPropertyManager;
 import com.arjuna.ats.arjuna.coordinator.Reapable;
 import com.arjuna.ats.arjuna.coordinator.ActionStatus;
 
-import com.arjuna.ats.internal.arjuna.template.OrderedList;
-import com.arjuna.ats.internal.arjuna.template.OrderedListIterator;
 import com.arjuna.ats.internal.arjuna.coordinator.*;
 
 import com.arjuna.ats.arjuna.logging.tsLogger;
 import com.arjuna.ats.arjuna.logging.FacilityCode;
 
 import com.arjuna.common.util.logging.*;
+
+import java.util.*;
 
 /**
  * Class to record transactions with non-zero timeout values, and class to
@@ -95,7 +95,7 @@ public class TransactionReaper
 
 		_checkPeriod = checkPeriod;
 
-		if (_list == null)
+		if (_transactions == null)
 		{
 			if (tsLogger.arjLoggerI18N.isFatalEnabled())
 			{
@@ -116,18 +116,19 @@ public class TransactionReaper
 					"TransactionReaper.finalize ()");
 		}
 
-		_list = null;
+		_transactions = null;
 	}
 
-	public final synchronized long checkingPeriod()
+	public final long checkingPeriod()
 	{
 		if (_dynamic)
 		{
-			final ReaperElement head = (ReaperElement) _list.peak();
-			if (head != null)
-			{
-				return head._absoluteTimeout - System.currentTimeMillis();
-			}
+                    try
+                    {
+			final ReaperElement head = (ReaperElement) _transactions.first();  //_list.peak();
+			return head._absoluteTimeout - System.currentTimeMillis();
+                    }
+                    catch (final NoSuchElementException nsee) {} // fall through
 		}
 		return _checkPeriod;
 	}
@@ -152,14 +153,17 @@ public class TransactionReaper
 					"TransactionReaper::check ()");
 		}
 
-		if (_list.size() == 0)
-			return true;
+		do {
+			final ReaperElement e ;
+                        try
+                        {
+                            e = (ReaperElement)_transactions.first();
+                        }
+                        catch (final NoSuchElementException nsee)
+                        {
+                            return true ;
+                        }
 
-		OrderedListIterator iter = new OrderedListIterator(_list);
-		ReaperElement e = null;
-
-		while ((e = (ReaperElement) iter.iterate()) != null)
-		{
 			if (tsLogger.arjLoggerI18N.debugAllowed())
 			{
 				tsLogger.arjLoggerI18N
@@ -268,13 +272,17 @@ public class TransactionReaper
 					}
 				}
 
-				_list.remove(e);
+                                synchronized(this)
+                                {
+                                    _timeouts.remove(e._control) ;
+                                    _transactions.remove(e) ;
+                                }
 			}
 			else
 			{
 				break;
 			}
-		}
+		} while(true) ;
 
 		return true;
 	}
@@ -286,8 +294,17 @@ public class TransactionReaper
 
 	public final long numberOfTransactions()
 	{
-		return _list.size();
+		return _transactions.size();
 	}
+
+        /**
+         * Return the number of timeouts registered.
+         * @return The number of timeouts registered.
+         */
+        public final long numberOfTimeouts()
+        {
+                return _timeouts.size();
+        }
 
 	/**
 	 * timeout is given in seconds, but we work in milliseconds.
@@ -311,7 +328,15 @@ public class TransactionReaper
 		if (timeout == 0)
 			return true;
 
-		ReaperElement e = new ReaperElement(control, timeout);
+		/**
+		 * Ignore if it's already in the list with a different timeout.
+		 * (This should never happen)
+		 */
+                if (_timeouts.containsKey(control)) {
+			return false;
+		}
+
+                ReaperElement e = new ReaperElement(control, timeout);
 
 		synchronized (this)
 		{
@@ -333,16 +358,14 @@ public class TransactionReaper
 		}
 
 		/*
-		 * Can release the lock because the list is internally synchronized.
+		 * Can release the lock because the collection is internally synchronized.
 		 */
 
-		if (_list.insert(e))
-			return true;
-		else
-		{
-			e = null;
-			return false;
-		}
+                synchronized (this)
+                {
+                    _timeouts.put(control, e);
+                    return _transactions.add(e);
+                }
 	}
 
 	public final boolean remove(java.lang.Object control)
@@ -357,43 +380,14 @@ public class TransactionReaper
 		if (control == null)
 			return false;
 
-		boolean result = false;
-		boolean found = false;
-		ReaperElement e = null;
-		OrderedListIterator iter = new OrderedListIterator(_list);
-
-		synchronized (this)
-		{
-			while (!found && ((e = (ReaperElement) iter.iterate()) != null))
-			{
-				try
-				{
-					found = e._control.equals(control);
-
-					break;
-				}
-				catch (Exception e2)
-				{
-					break;
-				}
-			}
-
-			iter = null;
-		}
-
-		/*
-		 * Can do this after the lock is released because the list is
-		 * internally synchronized.
-		 */
-
-		if (found)
-		{
-			result = _list.remove(e);
-
-			e = null;
-		}
-
-		return result;
+                synchronized(this)
+                {
+                    ReaperElement key = (ReaperElement)_timeouts.remove(control);
+                    if(key == null) {
+                            return false;
+                    }
+                    return _transactions.remove(key);
+                }
 	}
 
 	/**
@@ -405,7 +399,7 @@ public class TransactionReaper
 
 	public final int getTimeout(Object control)
 	{
-		if ((_list.size() == 0) || (control == null))
+		if ((_transactions.size() == 0) || (control == null))
 		{
 			if (tsLogger.arjLogger.debugAllowed())
 			{
@@ -419,48 +413,25 @@ public class TransactionReaper
 			return 0;
 		}
 
-		ReaperElement e = null;
-		OrderedListIterator iter = new OrderedListIterator(_list);
+		final ReaperElement reaperElement = (ReaperElement)_timeouts.get(control);
 
-		while ((e = (ReaperElement) iter.iterate()) != null)
-		{
-			try
-			{
-				if (e._control.equals(control))
-				{
-					iter = null;
+                final Integer timeout ;
+		if(reaperElement == null) {
+			timeout = new Integer(0);
+		} else {
+		        timeout = new Integer(reaperElement._timeout) ;
+                }
 
-					if (tsLogger.arjLoggerI18N.debugAllowed())
-					{
-						tsLogger.arjLoggerI18N
-								.debug(
-										DebugLevel.FUNCTIONS,
-										VisibilityLevel.VIS_PUBLIC,
-										FacilityCode.FAC_ATOMIC_ACTION,
-										"com.arjuna.ats.arjuna.coordinator.TransactionReaper_6",
-										new Object[]
-										{ control, Integer.toString(e._timeout) });
-					}
+		tsLogger.arjLoggerI18N
+				.debug(
+						DebugLevel.FUNCTIONS,
+						VisibilityLevel.VIS_PUBLIC,
+						FacilityCode.FAC_ATOMIC_ACTION,
+						"com.arjuna.ats.arjuna.coordinator.TransactionReaper_6",
+						new Object[]
+								{ control, timeout });
 
-					return e._timeout;
-				}
-			}
-			catch (Exception e2)
-			{
-				break;
-			}
-		}
-
-		if (tsLogger.arjLoggerI18N.debugAllowed())
-		{
-			tsLogger.arjLoggerI18N.debug(DebugLevel.FUNCTIONS,
-					VisibilityLevel.VIS_PUBLIC, FacilityCode.FAC_ATOMIC_ACTION,
-					"com.arjuna.ats.arjuna.coordinator.TransactionReaper_6",
-					new Object[]
-					{ control, "0" });
-		}
-
-		return 0;
+		return timeout.intValue();
 	}
 
 	/**
@@ -566,7 +537,8 @@ public class TransactionReaper
 		_theReaper = null;
 	}
 
-	private OrderedList _list = new OrderedList();
+	private SortedSet _transactions = Collections.synchronizedSortedSet(new TreeSet()); // C of ReaperElement
+	private Map _timeouts = Collections.synchronizedMap(new HashMap()); // key = Reapable, value = ReaperElement
 
 	private long _checkPeriod = 0;
 
