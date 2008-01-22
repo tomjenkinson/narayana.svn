@@ -133,7 +133,7 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
         System.setProperty(com.arjuna.ats.tsmx.TransactionServiceMX.AGENT_IMPLEMENTATION_PROPERTY,
                 com.arjuna.ats.internal.jbossatx.agent.LocalJBossAgentImpl.class.getName());
         System.setProperty(Environment.LAST_RESOURCE_OPTIMISATION_INTERFACE, LastResource.class.getName()) ;
-        
+
         if (timeout != 0)
         {
             TxControl.setDefaultTimeout(timeout);
@@ -144,7 +144,7 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
 
         // Associate transaction reaper with our context classloader.
         TransactionReaper.create() ;
-        
+
         /** Register propagation context manager **/
         try
         {
@@ -203,7 +203,8 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
 		jtaPropertyManager.propertyManager.setProperty(Environment.TSR_JNDI_CONTEXT, "TransactionSynchronizationRegistry");
 
 		JNDIManager.bindJTATransactionManagerImplementation();
-		JNDIManager.bindJTATransactionSynchronizationRegistryImplementation();
+		// Don't bind TSR in 4.2.3 (JTA 1.0), it's a JTA 1.1 thing.
+        //   JNDIManager.bindJTATransactionSynchronizationRegistryImplementation();
 	}
 
     /**
@@ -308,7 +309,7 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
      *
      * @param timeout The default timeout in seconds for all transactions created
      * using this transaction manager.
-     * 
+     *
      * @throws IllegalStateException if the MBean has already started.
      */
     public void setTransactionTimeout(int timeout) throws IllegalStateException
@@ -463,7 +464,7 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
      * JBoss.  If this is false the Recovery Manager is already expected to
      * be running when JBoss starts.
      * @param runRM
-     * 
+     *
      * @throws IllegalStateException If the MBean has already started.
      */
     public void setRunInVMRecoveryManager(boolean runRM)
@@ -489,7 +490,7 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
      * Get whether the recovery manager should be ran in the same VM as
      * JBoss.  If this is false the Recovery Manager is already expected to
      * be running when JBoss starts.
-     * 
+     *
      * @return true if the recover manager is running in the same VM, false otherwise.
      */
     public boolean getRunInVMRecoveryManager()
@@ -499,11 +500,11 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
 	    return _runRM ;
 	}
     }
-    
+
     /**
      * Set the object store directory.
      * @param objectStoreDir The object store directory.
-     * 
+     *
      * @throws IllegalStateException if the MBean has already started.
      */
     public void setObjectStoreDir(final String objectStoreDir)
@@ -526,7 +527,7 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
             }
         }
     }
-    
+
     /**
      * Get the object store directory.
      * @return objectStoreDir The object store directory.
