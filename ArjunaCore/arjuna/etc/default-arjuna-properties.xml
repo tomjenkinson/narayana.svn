@@ -38,11 +38,13 @@
         name="com.arjuna.ats.arjuna.coordinator.txReaperTimeout"
         value="120000"/>
       <!--
-        Transaction Reaper Mode, can be: NORMAL or DYNAMIC (default is NORMAL).
+        Transaction Reaper Mode, can be: NORMAL or DYNAMIC
+        (default is NORMAL if the property is not specified in this file,
+        but DYNAMIC is now recommended, particularly for use in JBossAS/EAP).
       -->
       <property
         name="com.arjuna.ats.arjuna.coordinator.txReaperMode"
-        value="NORMAL"/>
+        value="DYNAMIC"/>
       <!--
         (default is NO)
       -->
