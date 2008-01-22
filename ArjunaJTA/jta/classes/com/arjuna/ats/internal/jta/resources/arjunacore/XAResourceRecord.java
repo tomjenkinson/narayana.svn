@@ -1,20 +1,20 @@
 /*
  * JBoss, Home of Professional Open Source
- * Copyright 2006, Red Hat Middleware LLC, and individual contributors 
- * as indicated by the @author tags. 
+ * Copyright 2006, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags.
  * See the copyright.txt in the distribution for a
- * full listing of individual contributors. 
+ * full listing of individual contributors.
  * This copyrighted material is made available to anyone wishing to use,
  * modify, copy, or redistribute it subject to the terms and conditions
  * of the GNU Lesser General Public License, v. 2.1.
- * This program is distributed in the hope that it will be useful, but WITHOUT A 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+ * This program is distributed in the hope that it will be useful, but WITHOUT A
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
  * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details.
  * You should have received a copy of the GNU Lesser General Public License,
  * v.2.1 along with this distribution; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301, USA.
- * 
+ *
  * (C) 2005-2006,
  * @author JBoss Inc.
  */
@@ -89,7 +89,7 @@ public class XAResourceRecord extends AbstractRecord
 	 * The params represent specific parameters we need to recreate the
 	 * connection to the database in the event of a failure. If they're not set
 	 * then recovery is out of our control.
-	 * 
+	 *
 	 * Could also use it to pass other information, such as the readonly flag.
 	 */
 
@@ -279,7 +279,7 @@ public class XAResourceRecord extends AbstractRecord
 								{ "XAResourceRecord.prepare", XAHelper
 										.printXAErrorCode(e1) });
 			}
-			
+
 			/*
 			 * XA_RB*, XAER_RMERR, XAER_RMFAIL, XAER_NOTA, XAER_INVAL, or
 			 * XAER_PROTO.
@@ -288,10 +288,25 @@ public class XAResourceRecord extends AbstractRecord
 			if (_rollbackOptimization) // won't have rollback called on it
 				removeConnection();
 
-			if ((e1.errorCode == XAException.XAER_RMERR) || (e1.errorCode == XAException.XAER_RMFAIL))
-				return TwoPhaseOutcome.HEURISTIC_HAZARD;
-			
-			return TwoPhaseOutcome.PREPARE_NOTOK;
+			switch (e1.errorCode)
+			{
+			case XAException.XAER_RMERR:
+			case XAException.XAER_RMFAIL:
+			case XAException.XA_RBROLLBACK:
+			case XAException.XA_RBEND:
+			case XAException.XA_RBCOMMFAIL:
+			case XAException.XA_RBDEADLOCK:
+			case XAException.XA_RBINTEGRITY:
+			case XAException.XA_RBOTHER:
+			case XAException.XA_RBPROTO:
+			case XAException.XA_RBTIMEOUT:
+			case XAException.XAER_INVAL:
+			case XAException.XAER_PROTO:
+			case XAException.XAER_NOTA: // resource may have arbitrarily rolled back (shouldn't, but ...)
+				return TwoPhaseOutcome.PREPARE_NOTOK;
+			default:
+				return TwoPhaseOutcome.HEURISTIC_HAZARD; // we're not really sure (shouldn't get here though).
+			}
 		}
 		catch (Exception e2)
 		{
@@ -511,7 +526,7 @@ public class XAResourceRecord extends AbstractRecord
 						 * XAER_RMERR, XAER_RMFAIL, XAER_NOTA, XAER_INVAL, or
 						 * XAER_PROTO.
 						 */
-					
+
 						switch (e1.errorCode)
 						{
 						case XAException.XA_HEURHAZ:
@@ -582,7 +597,7 @@ public class XAResourceRecord extends AbstractRecord
 	 * outcome is whatever we want. Therefore, we do not need to save any
 	 * additional recoverable state, such as a reference to the transaction
 	 * coordinator, since it will not have an intentions list anyway.
-	 * 
+	 *
 	 * @message com.arjuna.ats.internal.jta.resources.arjunacore.opcnulltx
 	 *          [com.arjuna.ats.internal.jta.resources.arjunacore.opcnulltx] {0} -
 	 *          null transaction!
@@ -627,7 +642,7 @@ public class XAResourceRecord extends AbstractRecord
 					 * TODO in Oracle the end is not needed. Is this common
 					 * across other RMs?
 					 */
-					
+
 					if (endAssociation())
 					{
 						_theXAResource.end(_tranID, XAResource.TMSUCCESS);
@@ -724,7 +739,7 @@ public class XAResourceRecord extends AbstractRecord
 
 		return true;
 	}
-	
+
 	private void forget()
 	{
 		if ((_theXAResource != null) && (_tranID != null))
@@ -914,7 +929,7 @@ public class XAResourceRecord extends AbstractRecord
 							jtaLogger.loggerI18N.warn("com.arjuna.ats.internal.jta.resources.arjunacore.restorestate",
 											ex);
 						}
-						
+
 						return false;
 					}
 				}
@@ -925,11 +940,13 @@ public class XAResourceRecord extends AbstractRecord
 					 */
 
 					_theXAResource = getNewXAResource();
-					
+
 					if (_theXAResource == null)
 					{
 						jtaLogger.loggerI18N.warn("com.arjuna.ats.internal.jta.resources.arjunacore.norecoveryxa",
 								new Object[]{_tranID});
+
+						//return false;
 					}
 				}
 			}
@@ -1062,6 +1079,8 @@ public class XAResourceRecord extends AbstractRecord
 		RecoveryManager recMan = RecoveryManager.manager();
 		Vector recoveryModules = recMan.getModules();
 
+		System.err.println("**recoveryModules "+recoveryModules);
+
 		if (recoveryModules != null)
 		{
 			Enumeration modules = recoveryModules.elements();
@@ -1112,7 +1131,7 @@ public class XAResourceRecord extends AbstractRecord
 			if (_theTransaction.getXAResourceState(_theXAResource) == TxInfo.NOT_ASSOCIATED)
 			{
 				// end has been called so we don't need to do it again!
-				
+
 				doEnd = false;
 			}
 		}
