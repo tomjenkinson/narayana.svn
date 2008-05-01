@@ -121,7 +121,7 @@ The JBoss server '${jboss.server}' does not appear to exist in the installation 
         <!-- libs from JBoss App Server installation. Note: these jars were refactored between
           AS 4.x and AS 5.0. The list below is a hybrid to allow building against either version. -->
         <property name="jboss.libs" value="jboss-common.jar jboss-system.jar jboss-jmx.jar jboss-logging-spi.jar jboss-common-core.jar jboss-j2se.jar jboss-system-jmx.jar"/>
-        <property name="jboss.server.jta.libs" value="jmx-adaptor-plugin.jar jboss-transaction.jar"/>
+        <property name="jboss.server.jta.libs" value="jmx-adaptor-plugin.jar jboss-transaction.jar jboss.jar"/>
         <property name="jboss.server.jts.libs" value="jboss-iiop.jar jacorb.jar"/>
         <condition property="jboss.server.libs" value="${jboss.server.jta.libs} ${jboss.server.jts.libs}">
             <isset property="com.hp.mwlabs.ts.build.jts"/>
