@@ -1079,8 +1079,6 @@ public class XAResourceRecord extends AbstractRecord
 		RecoveryManager recMan = RecoveryManager.manager();
 		Vector recoveryModules = recMan.getModules();
 
-		System.err.println("**recoveryModules "+recoveryModules);
-
 		if (recoveryModules != null)
 		{
 			Enumeration modules = recoveryModules.elements();
