@@ -1777,6 +1777,8 @@ public class BasicAction extends StateManager
 			if (doOnePhase())
 			{
 				onePhaseCommit(reportHeuristics);
+				
+				ActionManager.manager().remove(get_uid());
 			}
 			else
 			{			
@@ -1821,10 +1823,11 @@ public class BasicAction extends StateManager
 			}
 		}
 		else
+		{
+			ActionManager.manager().remove(get_uid());
+		
 			actionStatus = ActionStatus.COMMITTED;
-
-		//BasicAction.allActions.remove(get_uid());
-		ActionManager.manager().remove(get_uid());
+		}
 
 		boolean returnCurrentStatus = false;
 
@@ -2168,6 +2171,8 @@ public class BasicAction extends StateManager
 
 			updateState();
 
+			ActionManager.manager().remove(get_uid());
+			
 			criticalEnd();
 		}
 	}
@@ -2227,6 +2232,8 @@ public class BasicAction extends StateManager
 		updateState(); // we may end up saving more than the heuristic list
 					   // here!
 
+		ActionManager.manager().remove(get_uid());
+		
 		criticalEnd();
 	}
 
@@ -2722,6 +2729,8 @@ public class BasicAction extends StateManager
 
 		forgetHeuristics();
 
+		ActionManager.manager().remove(get_uid());
+		
 		criticalEnd();
 	}
 
