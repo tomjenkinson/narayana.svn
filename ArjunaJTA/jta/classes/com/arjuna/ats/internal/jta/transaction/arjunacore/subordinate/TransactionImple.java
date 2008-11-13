@@ -1,20 +1,20 @@
 /*
  * JBoss, Home of Professional Open Source
- * Copyright 2006, Red Hat Middleware LLC, and individual contributors 
- * as indicated by the @author tags. 
+ * Copyright 2006, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags.
  * See the copyright.txt in the distribution for a
- * full listing of individual contributors. 
+ * full listing of individual contributors.
  * This copyrighted material is made available to anyone wishing to use,
  * modify, copy, or redistribute it subject to the terms and conditions
  * of the GNU Lesser General Public License, v. 2.1.
- * This program is distributed in the hope that it will be useful, but WITHOUT A 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+ * This program is distributed in the hope that it will be useful, but WITHOUT A
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
  * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details.
  * You should have received a copy of the GNU Lesser General Public License,
  * v.2.1 along with this distribution; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301, USA.
- * 
+ *
  * (C) 2005-2006,
  * @author JBoss Inc.
  */
@@ -41,10 +41,7 @@ import com.arjuna.ats.jta.logging.*;
 
 import java.lang.IllegalStateException;
 
-import javax.transaction.HeuristicCommitException;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.SystemException;
+import javax.transaction.*;
 
 /**
  * @message com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.invalidstate
@@ -64,9 +61,9 @@ public class TransactionImple extends
 	{
 		this(new SubordinateAtomicAction(timeout));
 	}
-	
+
 	// TODO use the timeout!
-	
+
 	public TransactionImple (AtomicAction act)
 	{
 		super(act);
@@ -127,7 +124,7 @@ public class TransactionImple extends
 	}
 
 	// Should probably return XA status codes, c.f., XAResource.prepare
-	
+
 	public int doPrepare ()
 	{
 		try
@@ -136,7 +133,7 @@ public class TransactionImple extends
 
 			if (!endSuspendedRMs())
 				_theTransaction.preventCommit();
-			
+
 			int res = subAct.doPrepare();
 
 			switch (res)
@@ -171,7 +168,7 @@ public class TransactionImple extends
 			{
 			case ActionStatus.COMMITTED:
 			case ActionStatus.COMMITTING:
-			case ActionStatus.H_COMMIT:				
+			case ActionStatus.H_COMMIT:
 				TransactionImple.removeTransaction(this);
 				break;
 			case ActionStatus.ABORTED:
@@ -184,7 +181,7 @@ public class TransactionImple extends
 				throw new HeuristicMixedException();
 			case ActionStatus.INVALID:
 				TransactionImple.removeTransaction(this);
-				
+
 				throw new IllegalStateException();
 			default:
 				throw new HeuristicMixedException(); // not sure what
@@ -214,7 +211,7 @@ public class TransactionImple extends
 					jtaLogger.loggerI18N.warn("com.arjuna.ats.internal.jta.transaction.arjunacore.endsuspendfailed1");
 				}
 			}
-			
+
 			int res = subAct.doRollback();
 
 			switch (res)
@@ -223,7 +220,7 @@ public class TransactionImple extends
 			case ActionStatus.ABORTING:
 			case ActionStatus.H_ROLLBACK:
 				TransactionImple.removeTransaction(this);
-				
+
 				break;
 			case ActionStatus.H_COMMIT:
 				throw new HeuristicCommitException();
@@ -259,9 +256,9 @@ public class TransactionImple extends
 			TransactionImple.removeTransaction(this);
 		}
 	}
-	
+
 	public void doOnePhaseCommit () throws IllegalStateException,
-			javax.transaction.HeuristicRollbackException
+			javax.transaction.HeuristicRollbackException, javax.transaction.SystemException, RollbackException
 	{
 		try
 		{
@@ -269,17 +266,20 @@ public class TransactionImple extends
 
 			if (!endSuspendedRMs())
 				_theTransaction.preventCommit();
-			
-			int status = subAct.doOnePhaseCommit();		
+
+			int status = subAct.doOnePhaseCommit();
 
 			switch (status)
 			{
 			case ActionStatus.COMMITTED:
 			case ActionStatus.H_COMMIT:
 				TransactionImple.removeTransaction(this);
-				
 				break;
 			case ActionStatus.ABORTED:
+                TransactionImple.removeTransaction(this);
+                // JBTM-428. Note also this may be because the tx was set rollback only,
+                // in which case IllegalState may be a better option?
+                throw new RollbackException();
 			case ActionStatus.ABORTING:
 			case ActionStatus.H_HAZARD:
 			case ActionStatus.H_MIXED:
@@ -307,7 +307,7 @@ public class TransactionImple extends
 					+ super._theTransaction + " >";
 		}
 	}
-	
+
 	protected void commitAndDisassociate ()
 			throws javax.transaction.RollbackException,
 			javax.transaction.HeuristicMixedException,
@@ -334,5 +334,17 @@ public class TransactionImple extends
 
 		throw new IllegalStateException();
 	}
-	
+
+    /**
+	 * Because of recovery, it is possible that a transaction may not be able to
+	 * activate itself from the log initially, forcing us to retry later.
+	 *
+	 * @return <code>true</code> if the transaction was activated, <code>false</code>
+	 * otherwise.
+	 */
+
+    public boolean activated ()
+    {
+    	return true;
+    }
 }
