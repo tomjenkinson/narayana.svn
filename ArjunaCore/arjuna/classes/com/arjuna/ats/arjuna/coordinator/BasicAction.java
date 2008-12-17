@@ -1,20 +1,20 @@
 /*
  * JBoss, Home of Professional Open Source
- * Copyright 2006, Red Hat Middleware LLC, and individual contributors 
- * as indicated by the @author tags. 
+ * Copyright 2006, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags.
  * See the copyright.txt in the distribution for a
- * full listing of individual contributors. 
+ * full listing of individual contributors.
  * This copyrighted material is made available to anyone wishing to use,
  * modify, copy, or redistribute it subject to the terms and conditions
  * of the GNU Lesser General Public License, v. 2.1.
- * This program is distributed in the hope that it will be useful, but WITHOUT A 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+ * This program is distributed in the hope that it will be useful, but WITHOUT A
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
  * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details.
  * You should have received a copy of the GNU Lesser General Public License,
  * v.2.1 along with this distribution; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301, USA.
- * 
+ *
  * (C) 2005-2006,
  * @author JBoss Inc.
  */
@@ -24,7 +24,7 @@
  * Arjuna Solutions Limited,
  * Newcastle upon Tyne,
  * Tyne and Wear,
- * UK.  
+ * UK.
  *
  * $Id: BasicAction.java 2342 2006-03-30 13:06:17Z  $
  */
@@ -53,13 +53,13 @@ import com.arjuna.ats.arjuna.exceptions.ObjectStoreException;
 /**
  * BasicAction does most of the work of an atomic action, but does not manage
  * thread scoping. This is the responsibility of any derived classes.
- * 
+ *
  * @author Mark Little (mark@arjuna.com)
  * @version $Id: BasicAction.java 2342 2006-03-30 13:06:17Z  $
  * @since JTS 1.0.
- * 
- * 
- * 
+ *
+ *
+ *
  * @message com.arjuna.ats.arjuna.coordinator.BasicAction_1
  *          [com.arjuna.ats.arjuna.coordinator.BasicAction_1] - Action nesting
  *          error - deletion of action id {0} invoked while child actions active
@@ -472,7 +472,7 @@ public class BasicAction extends StateManager
 	/**
 	 * Force the only outcome for the transaction to be to rollback. Only
 	 * possible if this transaction has not (or is not) terminated.
-	 * 
+	 *
 	 * @return <code>true</code> if successful, <code>false</code>
 	 *         otherwise.
 	 */
@@ -510,7 +510,7 @@ public class BasicAction extends StateManager
 	 * Add a record to the atomic action. This function returns AR_ADDED if the
 	 * record is added. AR_REJECTED if the record cannot be added because the
 	 * action is past the prepare phase, and IGNORED otherwise.
-	 * 
+	 *
 	 * @return <code>AddOutcome</code> indicating outcome.
 	 */
 
@@ -550,7 +550,7 @@ public class BasicAction extends StateManager
 	/**
 	 * boolean function that checks whether the Uid passed as an argument is the
 	 * Uid for an ancestor of the current atomic action.
-	 * 
+	 *
 	 * @return <code>true</code> if the parameter represents an ancestor,
 	 *         <code>false</code> otherwise.
 	 */
@@ -607,7 +607,7 @@ public class BasicAction extends StateManager
 
 	/**
 	 * Set up an object store and assign it to the currentStore variable.
-	 * 
+	 *
 	 * @return the object store implementation to use.
 	 * @see com.arjuna.ats.arjuna.objectstore.ObjectStore
 	 */
@@ -631,7 +631,7 @@ public class BasicAction extends StateManager
 	 * The following function returns the Uid of the top-level atomic action. If
 	 * this is the top-level transaction then it is equivalent to calling
 	 * get_uid().
-	 * 
+	 *
 	 * @return the top-level transaction's <code>Uid</code>.
 	 */
 
@@ -664,7 +664,7 @@ public class BasicAction extends StateManager
 	/**
 	 * Overloaded version of activate -- sets up the store, performs read_state
 	 * followed by restore_state. The store root is <code>null</code>.
-	 * 
+	 *
 	 * @return <code>true</code> if successful, <code>false</code>
 	 *         otherwise.
 	 */
@@ -678,7 +678,7 @@ public class BasicAction extends StateManager
 	 * Overloaded version of activate -- sets up the store, performs read_state
 	 * followed by restore_state. The root of the object store to use is
 	 * specified in the <code>root</code> parameter.
-	 * 
+	 *
 	 * @return <code>true</code> if successful, <code>false</code>
 	 *         otherwise.
 	 */
@@ -740,10 +740,10 @@ public class BasicAction extends StateManager
 	 * This operation deactivates a persistent object. It behaves in a similar
 	 * manner to the activate operation, but has an extra argument which defines
 	 * whether the object's state should be committed or written as a shadow.
-	 * 
+	 *
 	 * The root of the object store is <code>null</code>. It is assumed that
 	 * this is being called during a transaction commit.
-	 * 
+	 *
 	 * @return <code>true</code> on success, <code>false</code> otherwise.
 	 */
 
@@ -810,7 +810,7 @@ public class BasicAction extends StateManager
 	/**
 	 * Add the current thread to the list of threads associated with this
 	 * transaction.
-	 * 
+	 *
 	 * @return <code>true</code> if successful, <code>false</code>
 	 *         otherwise.
 	 */
@@ -823,7 +823,7 @@ public class BasicAction extends StateManager
 	/**
 	 * Add the specified thread to the list of threads associated with this
 	 * transaction.
-	 * 
+	 *
 	 * @return <code>true</code> if successful, <code>false</code>
 	 *         otherwise.
 	 */
@@ -874,7 +874,7 @@ public class BasicAction extends StateManager
 
 	/**
 	 * Remove a child thread. The current thread is removed.
-	 * 
+	 *
 	 * @return <code>true</code> if successful, <code>false</code>
 	 *         otherwise.
 	 */
@@ -886,7 +886,7 @@ public class BasicAction extends StateManager
 
 	/**
 	 * Remove the specified thread from the transaction.
-	 * 
+	 *
 	 * @return <code>true</code> if successful, <code>false</code>
 	 *         otherwise.
 	 */
@@ -932,7 +932,7 @@ public class BasicAction extends StateManager
 
 	/**
 	 * Add a new child action to the atomic action.
-	 * 
+	 *
 	 * @return <code>true</code> if successful, <code>false</code>
 	 *         otherwise.
 	 */
@@ -990,7 +990,7 @@ public class BasicAction extends StateManager
 
 	/**
 	 * Remove a child action.
-	 * 
+	 *
 	 * @return <code>true</code> if successful, <code>false</code>
 	 *         otherwise.
 	 */
@@ -1036,7 +1036,7 @@ public class BasicAction extends StateManager
 
 	/**
 	 * Add the specified CheckedAction object to this transaction.
-	 * 
+	 *
 	 * @return the previous <code>CheckedAction</code>.
 	 * @see com.arjuna.ats.arjuna.coordinator.CheckedAction
 	 */
@@ -1076,17 +1076,17 @@ public class BasicAction extends StateManager
 
 	/**
 	 * Redefined version of save_state and restore_state from StateManager.
-	 * 
+	 *
 	 * Normal operation (no crashes):
-	 * 
+	 *
 	 * BasicAction.save_state is called after a successful prepare. This causes
 	 * and BasicAction object to be saved in the object store. This object
 	 * contains primarily the "intentions list" of the BasicAction. After
 	 * successfully completing phase 2 of the commit protocol, the BasicAction
 	 * object is deleted from the store.
-	 * 
+	 *
 	 * Failure cases:
-	 * 
+	 *
 	 * If a server crashes after successfully preparing, then upon recovery the
 	 * action must be resolved (either committed or aborted) depending upon
 	 * whether the co-ordinating atomic action committed or aborted. Upon server
@@ -1094,20 +1094,20 @@ public class BasicAction extends StateManager
 	 * in the object store and attempts to activate the BasicAction object of
 	 * the co-ordinating action. If this is successful then the SAA is committed
 	 * else aborted.
-	 * 
+	 *
 	 * If, when processing phase 2 of the commit protocol, the co-ordinator
 	 * experiences a failure to commit from one of the records then the
 	 * BasicAction object is NOT deleted. It is rewritten when a new state which
 	 * contains a list of the records that failed during phase 2 commit. This
 	 * list is called the "failedList".
-	 * 
+	 *
 	 * The crash recovery manager will detect local BasicAction objects in
 	 * addition to SAA objects in the objectstore. An attempt will be made to
 	 * commit these actions. If the action contained a call to a now dead
 	 * server, this action can never be resolved and the AA object can never be
 	 * removed. However, if the action is purely local then after the processing
 	 * is complete the removed by crash recovery.
-	 * 
+	 *
 	 * @return <code>true</code> if successful, <code>false</code>
 	 *         otherwise.
 	 */
@@ -1133,7 +1133,7 @@ public class BasicAction extends StateManager
 		 * successful prepare - to save the intentions list. b) After a failure
 		 * during phase 2 of commit - to overwrite the intentions list by the
 		 * failedList.
-		 * 
+		 *
 		 * If we're using presumed nothing, then it could be called: a) Whenever
 		 * a participant is registered.
 		 */
@@ -1338,7 +1338,7 @@ public class BasicAction extends StateManager
 
 	/**
 	 * This assumes the various lists are zero length when it is called.
-	 * 
+	 *
 	 * @return <code>true</code> if successful, <code>false</code>
 	 *         otherwise.
 	 */
@@ -1558,7 +1558,7 @@ public class BasicAction extends StateManager
 	 * we have received all outcomes from registered resources). By specifying
 	 * otherwise, we will always maintain the heuristic information, which may
 	 * prove useful for logging and off-line resolution.
-	 * 
+	 *
 	 * @return <code>true</code> if the transaction should save its heuristic
 	 *         information, <code>false</code> otherwise.
 	 */
@@ -1571,7 +1571,7 @@ public class BasicAction extends StateManager
 	/**
 	 * Overloads <code>StateManager.destroy</code> to prevent destroy being
 	 * called on a BasicAction. Could be a *very* bad idea!!
-	 * 
+	 *
 	 * @return <code>false</code>.
 	 * @see com.arjuna.ats.arjuna.StateManager
 	 */
@@ -1615,7 +1615,7 @@ public class BasicAction extends StateManager
 	/**
 	 * Forget any heuristics we may have received, and tell the resources which
 	 * generated them to forget too.
-	 * 
+	 *
 	 * @return <code>true</code> if heuristic information (if any) was
 	 *         successfully forgotten, <code>false</code> otherwise.
 	 */
@@ -1639,7 +1639,7 @@ public class BasicAction extends StateManager
 	/**
 	 * Atomic action Begin operation. Does not change the calling thread's
 	 * notion of the current transaction.
-	 * 
+	 *
 	 * @return <code>ActionStatus</code> indicating outcome.
 	 */
 
@@ -1650,7 +1650,7 @@ public class BasicAction extends StateManager
 			tsLogger.arjLogger.debug(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PROTECTED, FacilityCode.FAC_ATOMIC_ACTION, "BasicAction::Begin() for action-id "
 					+ get_uid());
 		}
-		
+
 		if (actionStatus != ActionStatus.CREATED)
 		{
 			if (tsLogger.arjLoggerI18N.isWarnEnabled())
@@ -1708,16 +1708,16 @@ public class BasicAction extends StateManager
 	 * preparedList and the readonlyList, also if the action is topLevel then
 	 * the intention list will have been written to the object store. Then
 	 * invoke phase2Commit and clean up the object store if necessary
-	 * 
+	 *
 	 * If prepare() fails invoke phase2Abort. In this case the pendingList may
 	 * still contain records but phase2Abort takes care of these. Also in this
 	 * case no intention list has been written.
-	 * 
+	 *
 	 * Does not change the calling thread's notion of the current transaction.
-	 * 
+	 *
 	 * Any heuristic outcomes will only be reported if the parameter is
 	 * <code>true</code>.
-	 * 
+	 *
 	 * @return <code>ActionStatus</code> indicating outcome.
 	 */
 
@@ -1766,7 +1766,7 @@ public class BasicAction extends StateManager
 		{
 			return Abort();
 		}
-	
+
 		if (pendingList != null)
 		{
 			/*
@@ -1777,9 +1777,11 @@ public class BasicAction extends StateManager
 			if (doOnePhase())
 			{
 				onePhaseCommit(reportHeuristics);
+
+				ActionManager.manager().remove(get_uid());
 			}
 			else
-			{			
+			{
 				if (prepare(reportHeuristics) == TwoPhaseOutcome.PREPARE_NOTOK)
 				{
 					if (tsLogger.arjLoggerI18N.isWarnEnabled())
@@ -1821,10 +1823,11 @@ public class BasicAction extends StateManager
 			}
 		}
 		else
-			actionStatus = ActionStatus.COMMITTED;
+		{
+			ActionManager.manager().remove(get_uid());
 
-		//BasicAction.allActions.remove(get_uid());
-		ActionManager.manager().remove(get_uid());
+			actionStatus = ActionStatus.COMMITTED;
+		}
 
 		boolean returnCurrentStatus = false;
 
@@ -1865,9 +1868,9 @@ public class BasicAction extends StateManager
 	 * This is the user callable abort operation. It is invoked prior to the
 	 * start of two-phase commit and hence only processes records in the
 	 * pendingList (the other lists should be empty).
-	 * 
+	 *
 	 * Does not change the calling thread's notion of the current transaction.
-	 * 
+	 *
 	 * @return <code>ActionStatus</code> indicating outcome.
 	 */
 
@@ -2040,10 +2043,10 @@ public class BasicAction extends StateManager
 	 * we need to cleanup. This is essentially the same as phase2Abort but we
 	 * call cleanup ops rather than abort ops and let the records take care of
 	 * appropriate cleanup.
-	 * 
+	 *
 	 * The pendingList is processed because it may not be empty - since
 	 * prepare() stops processing the list at the first PREPARE_NOTOK result.
-	 * 
+	 *
 	 * The read_only list is processed to ensure that actions are aborted
 	 * immediately and any servers killed at that point since they need not hang
 	 * around. This contrasts with commit where readonlyList entries are simply
@@ -2080,12 +2083,12 @@ public class BasicAction extends StateManager
 	 * This ensures that the appropriate commit operation is performed on each
 	 * entry which is then either deleted (top_level) or merged into the
 	 * parent's pendingList.
-	 * 
+	 *
 	 * Processing of the readonlyList is different in that if the action is
 	 * top_level then all records in the readonlyList are deleted without
 	 * further processing. If nested the records must be merged. This is an
 	 * optimisation to avoid unnecessary processing.
-	 * 
+	 *
 	 * Note that at this point the pendingList SHOULD be empty due to the prior
 	 * invocation of prepare().
 	 */
@@ -2168,6 +2171,8 @@ public class BasicAction extends StateManager
 
 			updateState();
 
+			ActionManager.manager().remove(get_uid());
+
 			criticalEnd();
 		}
 	}
@@ -2176,10 +2181,10 @@ public class BasicAction extends StateManager
 	 * Second phase of the two phase commit protocol for aborting actions.
 	 * Actions are aborted by invoking the doAbort operation on the
 	 * preparedList, the readonlyList, and the pendingList.
-	 * 
+	 *
 	 * The pendingList is processed because it may not be empty - since
 	 * prepare() stops processing the list at the first PREPARE_NOTOK result.
-	 * 
+	 *
 	 * By default, records that responsed PREPARE_READONLY will not be contacted
 	 * during second-phase abort, just as they are not during second-phase
 	 * commit. This can be overridden at runtime using the READONLY_OPTIMISATION
@@ -2227,6 +2232,8 @@ public class BasicAction extends StateManager
 		updateState(); // we may end up saving more than the heuristic list
 					   // here!
 
+		ActionManager.manager().remove(get_uid());
+
 		criticalEnd();
 	}
 
@@ -2236,7 +2243,7 @@ public class BasicAction extends StateManager
 	 * if not PREPARE_NOTOK. The value PREPARE_READONLY may also be returned if
 	 * all the records indicate that they are readonly records. Such records do
 	 * not take part in the second phase commit processing.
-	 * 
+	 *
 	 * @return <code>TwoPhaseOutcome</code> indicating outcome.
 	 */
 
@@ -2290,7 +2297,7 @@ public class BasicAction extends StateManager
 		 * invoking the appropriate prepare operation. If it succeeds put the
 		 * record on either the preparedList or the read_only list and continue
 		 * until the pendingList is exhausted.
-		 * 
+		 *
 		 * If prepare fails on any record stop processing immediately and put
 		 * the offending record back on the pendingList
 		 */
@@ -2488,16 +2495,16 @@ public class BasicAction extends StateManager
 		/*
 		 * The actual state we want to write depends upon whether or not we are
 		 * in charge of the transaction outcome:
-		 * 
+		 *
 		 * (i) if we are a root transaction, or an interposed transaction which
 		 * received a commit_one_phase call, then we have complete control over
 		 * what the transaction outcome will be. So, we will always try to
 		 * commit, and can set the state to committing.
-		 * 
+		 *
 		 * (ii) if we are an interposed transaction and it receives a complete
 		 * two-phase protocol, then the root is in control. So, we set the state
 		 * to prepared.
-		 * 
+		 *
 		 * (iii) nested transactions never write state, so the state is set to
 		 * prepared anyway.
 		 */
@@ -2538,7 +2545,7 @@ public class BasicAction extends StateManager
 			if (state.notempty())
 			{
 				try
-				{				
+				{
 					if (!currentStore.write_committed(u, tn, state))
 					{
 						if (tsLogger.arjLoggerI18N.isWarnEnabled())
@@ -2615,10 +2622,10 @@ public class BasicAction extends StateManager
 		boolean stateToSave = false;
 
 		recordBeingHandled = pendingList.getFront();
-	
+
 		int p = ((actionType == ActionType.TOP_LEVEL) ? recordBeingHandled.topLevelOnePhaseCommit()
 				: recordBeingHandled.nestedOnePhaseCommit());
-	
+
 		if ((p == TwoPhaseOutcome.FINISH_OK)
 				|| (p == TwoPhaseOutcome.PREPARE_READONLY))
 		{
@@ -2701,7 +2708,7 @@ public class BasicAction extends StateManager
 		}
 
 		if (actionType == ActionType.TOP_LEVEL)
-		{			
+		{
 			if (stateToSave && (heuristicList.size() > 0))
 			{
 				if (store() == null)
@@ -2721,6 +2728,8 @@ public class BasicAction extends StateManager
 		}
 
 		forgetHeuristics();
+
+		ActionManager.manager().remove(get_uid());
 
 		criticalEnd();
 	}
@@ -2751,7 +2760,7 @@ public class BasicAction extends StateManager
 
 	/**
 	 * @return the transaction's prepared status.
-	 * 
+	 *
 	 * @since JTS 2.0.
 	 */
 
@@ -2799,7 +2808,7 @@ public class BasicAction extends StateManager
 		 * invoking the appropriate prepare operation. If it succeeds put the
 		 * record on either the preparedList or the read_only list and continue
 		 * until the pendingList is exhausted.
-		 * 
+		 *
 		 * If prepare fails on any record stop processing immediately and put
 		 * the offending record back on the pendingList.
 		 */
@@ -2830,7 +2839,7 @@ public class BasicAction extends StateManager
 				/*
 				 * If failure then it's back on the pending list by now. Move on
 				 * or terminate?
-				 * 
+				 *
 				 * Move on if a cohesion, but terminate if an atom!!
 				 */
 			}
@@ -2858,7 +2867,7 @@ public class BasicAction extends StateManager
 		 * invoking the appropriate prepare operation. If it succeeds put the
 		 * record on either the preparedList or the read_only list and continue
 		 * until the pendingList is exhausted.
-		 * 
+		 *
 		 * If prepare fails on any record stop processing immediately and put
 		 * the offending record back on the pendingList.
 		 */
@@ -2919,12 +2928,12 @@ public class BasicAction extends StateManager
 								 * invocation must come from that since they
 								 * have already been told this transaction has
 								 * committed!
-								 * 
+								 *
 								 * However, since we may be multi-threaded
 								 * (asynchronous prepare) we don't do the
 								 * merging yet. Wait until all threads have
 								 * terminated and then do it.
-								 * 
+								 *
 								 * Therefore, can't force parent to rollback
 								 * state at present, or merge will fail.
 								 */
@@ -3120,7 +3129,7 @@ public class BasicAction extends StateManager
 																	  // committed
 				}
 				else
-				{				
+				{
 					if (tsLogger.arjLoggerI18N.debugAllowed(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PRIVATE, FacilityCode.FAC_ATOMIC_ACTION))
 					{
 						tsLogger.arjLoggerI18N.debug(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PRIVATE, FacilityCode.FAC_ATOMIC_ACTION, "com.arjuna.ats.arjuna.coordinator.BasicAction_51", new Object[]
@@ -3313,7 +3322,7 @@ public class BasicAction extends StateManager
 	 * that has it as its current transaction? The base class has this check
 	 * enabled (i.e., we check), but some implementations may wish to override
 	 * this.
-	 * 
+	 *
 	 * @return <code>false</code> to disable checking.
 	 */
 
@@ -3324,7 +3333,7 @@ public class BasicAction extends StateManager
 
 	/*
 	 * If we get a single heuristic then we will always rollback during prepare.
-	 * 
+	 *
 	 * Getting a heuristic during commit is slightly different, since some
 	 * resources may have already committed, changing the type of heuristic we
 	 * may need to throw. However, once we get to commit we know that it will be
@@ -3485,7 +3494,7 @@ public class BasicAction extends StateManager
 				try
 				{
 					if (savedIntentionList)
-					{						
+					{
 						if (currentStore.remove_committed(getSavingUid(), type()))
 						{
 							savedIntentionList = false;
@@ -3527,7 +3536,7 @@ public class BasicAction extends StateManager
 	/**
 	 * Check to see if this transaction is the one that is current for this
 	 * thread. If it isn't, then we mark this transaction as rollback only.
-	 * 
+	 *
 	 * @return <code>true</code> if the transaction is current,
 	 *         <code>false</code> otherwise.
 	 */
@@ -3628,7 +3637,7 @@ public class BasicAction extends StateManager
 			 * We may have already aborted our children, e.g., because of an
 			 * out-of-sequence commit, so we check here to reduce the number of
 			 * error messages!
-			 * 
+			 *
 			 * We can't just remove the children when we are finished with them
 			 * because BasicAction is not responsible for action tracking.
 			 */
@@ -3688,7 +3697,7 @@ public class BasicAction extends StateManager
 	 * Just in case we are deleted/terminated with threads still registered. We
 	 * must make sure those threads don't try to remove themselves from this
 	 * action later. So we unregister them ourselves now.
-	 * 
+	 *
 	 * This is only called by End/Abort and so all child actions will have been
 	 * previously terminated as well.
 	 */
@@ -3811,7 +3820,7 @@ public class BasicAction extends StateManager
 		 * we never explicitly tell resources to forget. We assume that the user
 		 * (or some management tool) will do this, and simply save as much
 		 * information as we can into the action state to allow them to do so.
-		 * 
+		 *
 		 * However, if we had a resource that returned a heuristic outcome and
 		 * we managed to make the outcome of this transaction the same as that
 		 * outcome, we removed the heuristic. So, we need to tell the resource
@@ -3857,9 +3866,9 @@ public class BasicAction extends StateManager
 	 * cleanup function. Discard records when done. NOTE: We only need to do
 	 * cleanup at top level since cleanup at nested level would be subsumed when
 	 * the parent action is forced to abort
-	 * 
+	 *
 	 * Ignore heuristics. Who can we report them to?
-	 * 
+	 *
 	 * This routine is called by phase2Cleanup, which gets called only in
 	 * exceptional circumstances. By default we leave cleaning up the various
 	 * lists until the action instance goes out of scope.
@@ -3941,7 +3950,7 @@ public class BasicAction extends StateManager
 	protected RecordList failedList;
 	protected RecordList heuristicList;
 	protected boolean savedIntentionList;
-	
+
 	private ActionHierarchy currentHierarchy;
 	private ObjectStore currentStore;
 
