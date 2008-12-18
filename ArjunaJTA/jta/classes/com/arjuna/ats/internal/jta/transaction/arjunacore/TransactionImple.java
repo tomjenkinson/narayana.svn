@@ -513,7 +513,7 @@ public class TransactionImple implements javax.transaction.Transaction,
 	 *          [com.arjuna.ats.internal.jta.transaction.arjunacore.xastart] {0} -
 	 *          caught: {1} for {2}
 	 * @message com.arjuna.ats.internal.jta.transaction.arjunacore.elistwhenmarkedrollback
-	 *          [com.arjuna.ats.internal.jta.transaction.arjunacore.elistwhenmarkedrollback]
+	 *          [com.arjuna.ats.internal.jtamultiple.transaction.arjunacore.elistwhenmarkedrollback]
 	 *          Can't enlist the resource because the transaction is marked for
 	 *          rollback
 	 */
