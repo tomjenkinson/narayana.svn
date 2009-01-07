@@ -30,7 +30,10 @@ import javax.sql.ConnectionEvent;
 import javax.sql.XAConnection;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
+import javax.management.MBeanException;
+import javax.management.InstanceNotFoundException;
 import java.sql.SQLException;
+import java.sql.Connection;
 import java.util.Properties;
 import java.util.Iterator;
 import java.io.InputStream;
@@ -111,6 +114,10 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
     {
         createConnection();
 
+        if (_connection == null) {
+            throw new SQLException("The data source named [" + _dataSourceId + "] is not deployed.");
+        }
+
         return _connection.getXAResource();
     }
 
@@ -165,12 +172,28 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
 
                 try {
                     _dataSource = getXADataSource(className, properties);
+                    _supportsIsValidMethod = true; // assume it does; we'll lazily check the first time we try to connect
                 } catch(Exception e) {
                     _dataSource = null;
                     log.error("AppServerJDBCXARecovery.createDataSource got exception during getXADataSource call: "+e.toString(), e);
                     throw new SQLException(e.toString());
                 }
             }
+        }
+        catch (MBeanException mbe)
+        {
+            if (mbe.getTargetException() instanceof InstanceNotFoundException)
+            {
+                log.warn("AppServerJDBCXARecovery.createDataSource(name="+_dataSourceId+"): InstanceNotFound. Datasource not deployed, or wrong name?");
+
+                // this is an expected condition when the data source is not yet deployed
+                // just ignore this for now, the next time around, we try again to see if its deployed yet
+                return;
+            } else {
+                log.error("AppServerJDBCXARecovery.createDataSource(name="+_dataSourceId+") got exception " + mbe.toString(), mbe);
+            }
+
+            throw new SQLException(mbe.toString());
         }
         catch (SQLException ex)
         {
@@ -196,12 +219,45 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
         try
         {
             if (_dataSource == null)
-                createDataSource();
-
-            if (_connection == null)
             {
+                createDataSource();
+                // if we still don't have it, its because the data source isn't deployed yet
+                if (_dataSource == null) {
+                    return;
+                }
+            }
+
+            Boolean isConnectionValid;
+            try {
+                if (_connection != null && _supportsIsValidMethod) {
+                    Connection connection = _connection.getConnection();
+                    Method method = connection.getClass().getMethod("isValid", Integer.class);
+                    isConnectionValid = (Boolean) method.invoke(connection, Integer.valueOf(5));
+                } else {
+                    isConnectionValid = Boolean.FALSE;
+                }
+            } catch (NoSuchMethodException nsme) {
+                isConnectionValid = Boolean.FALSE;
+                _supportsIsValidMethod = false;
+                log.debug("XA datasource does not support isValid method - connection will always be recreated");
+            } catch (Throwable t) {
+                isConnectionValid = Boolean.FALSE;
+                log.debug("XA connection is invalid - will recreate a new one. Cause: " + t);
+            }
+
+            if (!isConnectionValid.booleanValue()) {
+                if (_connection != null) {
+                    try {
+                        _connection.close(); // just attempt to clean up anything that we can
+                    } catch (Throwable t) {
+                    } finally {
+                        _connection = null;
+                    }
+                }
+
                 _connection = _dataSource.getXAConnection();
                 _connection.addConnectionEventListener(_connectionEventListener);
+                log.debug("Created new XAConnection");
             }
         }
         catch (SQLException ex)
@@ -288,6 +344,7 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
         return xads;
     }
 
+    private boolean _supportsIsValidMethod;
     private XAConnection _connection;
     private XADataSource                 _dataSource;
     private LocalConnectionEventListener _connectionEventListener;
