@@ -231,8 +231,8 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
             try {
                 if (_connection != null && _supportsIsValidMethod) {
                     Connection connection = _connection.getConnection();
-                    Method method = connection.getClass().getMethod("isValid", Integer.class);
-                    isConnectionValid = (Boolean) method.invoke(connection, Integer.valueOf(5));
+                    Method method = connection.getClass().getMethod("isValid",  new Class[] {Integer.class});
+                    isConnectionValid = (Boolean) method.invoke(connection, new Object[] {new Integer(5)});
                 } else {
                     isConnectionValid = Boolean.FALSE;
                 }
