@@ -84,8 +84,7 @@ public class BaseTransaction
 			}
 		}
 
-
-		Integer value = (Integer) _timeouts.get(ThreadUtil.getThreadId());
+		Integer value = (Integer)_timeouts.get();
 		int v = 0; // if not set then assume 0. What else can we do?
 
 		if (value != null)
@@ -216,13 +215,13 @@ public class BaseTransaction
 	{
 		if (seconds >= 0)
 		{
-			_timeouts.put(ThreadUtil.getThreadId(), new Integer(seconds));
+		    _timeouts.set(new Integer(seconds));
 		}
 	}
 
 	public int getTimeout() throws javax.transaction.SystemException
 	{
-		Integer value = (Integer) _timeouts.get(ThreadUtil.getThreadId());
+		Integer value = (Integer)_timeouts.get();
 
 		if (value != null)
 		{
@@ -265,7 +264,7 @@ public class BaseTransaction
 			throw new javax.transaction.SystemException(e2.toString());
 		}
 		
-		Integer value = (Integer) _timeouts.get(ThreadUtil.getThreadId());
+		Integer value = (Integer)_timeouts.get();
 		int v = 0; // if not set then assume 0. What else can we do?
 		
 		if (value != null)
@@ -300,7 +299,7 @@ public class BaseTransaction
 
 		if (theTransaction == null)
 			return;
-		else
+		else 
 		{
 			if ((theTransaction.getStatus() != javax.transaction.Status.STATUS_NO_TRANSACTION)
 					&& !_supportSubtransactions)
@@ -314,7 +313,7 @@ public class BaseTransaction
 
 	private static boolean _supportSubtransactions = false;
 
-	private static Hashtable _timeouts = new Hashtable();
+	private static ThreadLocal _timeouts = new ThreadLocal(); // Integers
 
 	static
 	{
