@@ -10,11 +10,10 @@ import java.io.FileWriter;
 import java.io.BufferedWriter;
 
 /**
- * Created by IntelliJ IDEA.
- * User: studensky
- * Date: 30.1.2009
- * Time: 14:09:23
- * To change this template use File | Settings | File Templates.
+ * Runs XTS Testsuite at a serveruURL, waits until it finishes
+ * and writes the test result into an outfile.
+ * @author <a href="mailto:istudens@redhat.com">Ivo Studensky</a>
+ * @version <tt>$Revision$</tt>
  */
 public class LocalJUnitRunner extends TestCase
 {
