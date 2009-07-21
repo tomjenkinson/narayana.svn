@@ -48,7 +48,7 @@ import org.jboss.security.SimplePrincipal;
 import org.jboss.logging.Logger;
 
 /**
- * This provides recovery for compliant JDBC drivers accessed via datasources deployed in JBossAS 5
+ * This provides recovery for compliant JDBC drivers accessed via datasources deployed in JBossAS 4.2
  * It is not meant to be db driver specific.
  *
  * This code is based on JDBCXARecovery, which expects JNDI to contain an XADataSource implementation.
