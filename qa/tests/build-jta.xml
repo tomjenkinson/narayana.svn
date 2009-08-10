@@ -94,6 +94,16 @@
             <exclude name="**/astests/**"/>
             <exclude name="**/JNDIManager.java"/>
 
+            <exclude name="**/Hammer*/**"/>
+            <exclude name="**/JDBC*/**"/>
+            <exclude name="**/CrashRecovery09*/**"/>
+            <exclude name="**/CrashRecovery10*/**"/>
+            <exclude name="**/CrashRecovery11*/**"/>
+            <exclude name="**/CrashRecovery13*/**"/>
+            <exclude name="**/EnlistDelistEnlist01*/**"/>
+            <exclude name="**/Issues0001*/**"/>
+            <exclude name="**/report.java"/>
+
             <classpath>
 				<path refid="jta.classpath"/>
 				<pathelement location="${org.jboss.jbossts.qa.build.classes}"/>
@@ -102,10 +112,13 @@
 		</javac>
     </target>
 
-    <target name="jdbc-compile" depends="org.jboss.jbossts.qa.clean, org.jboss.jbossts.qa.init" if="have.dbdrivers">
+    <target name="jdbc-compile" depends="org.jboss.jbossts.qa.clean, org.jboss.jbossts.qa.init" if="have.jdbc">
         <javac srcdir="${org.jboss.jbossts.qa.src}"
                destdir="${org.jboss.jbossts.qa.build.classes}"
-               debug="on" includes="**/JNDIManager.java">
+               debug="on">
+
+            <include name="**/JNDIManager.java"/>
+            <include name="**/org/jboss/jbossts/qa/JDBCLocals*/*.java"/>
 
             <classpath>
                 <path refid="jta.classpath"/>

@@ -130,7 +130,16 @@
 
         <fail unless="env.JBOSS_HOME" message="Please set the JBOSS_HOME environment variable" if="integration.build" />
 
-        <available file="${driver.home}" property="have.dbdrivers" value="true"/>
+        <condition property="have.jdbc" value="true">
+            <and>
+                <available file="${driver.home}"/>
+                <not>
+                    <equals arg1="${java.specification.version}" arg2="1.6"/>
+                </not>
+            </and>
+        </condition>
+
+
     </target>
 
 	<target name="dist.as" depends="buildtype" if="dist.as">
@@ -183,7 +192,7 @@
 			<fileset file="tests/build/java.policy"/>
 			<fileset file="${org.jboss.jbossts.qa.server_manager_location}"/>
         </copy>
-        <copy todir="${org.jboss.jbossts.qa.dist.buildroot}/qa/lib/all_dbdrivers/" failonerror="${have.dbdrivers}">
+        <copy todir="${org.jboss.jbossts.qa.dist.buildroot}/qa/lib/all_dbdrivers/" failonerror="${have.jdbc}">
             <fileset refid="oracle.drivers"/>
 			<fileset refid="mssql.drivers"/>
 			<fileset refid="pgsql.drivers"/>

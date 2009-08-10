@@ -61,16 +61,9 @@
 		<format property="com.hp.mw.date" pattern="yyyy/MMM/dd HH:mm"/>
 	  	</tstamp>
 
-		<condition property="JDK_VERSION_OK">
-			<or>
-				<equals arg1="${java.specification.version}" arg2="1.4"/>
-				<equals arg1="${java.specification.version}" arg2="1.5"/>
-			</or>
+		<condition property="SKIP_JDBC3">
+		    <equals arg1="${java.specification.version}" arg2="1.6"/>
 		</condition>
-
-		<fail unless="JDK_VERSION_OK">
-			JBossTS JTA currently requires jdk1.4 or jdk1.5 to build.
-		</fail>
 
 		<property name="com.hp.mw.installationdirectory" location="install"/>
 		<property name="com.hp.mw.sourceid" value="unknown"/>
@@ -313,7 +306,7 @@
 		<ant dir="jta" target="com.hp.mw.ts.jta.install"/>
 	</target>
 
-	<target name="com.hp.mwlabs.ts.product.jdbc.install">
+	<target name="com.hp.mwlabs.ts.product.jdbc.install" unless="SKIP_JDBC3">
 		<ant dir="jdbc" target="com.hp.mw.ts.jdbc.install"/>
 	</target>
 
