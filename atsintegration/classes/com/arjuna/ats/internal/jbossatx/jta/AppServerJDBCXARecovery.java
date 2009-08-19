@@ -22,6 +22,11 @@ package com.arjuna.ats.internal.jbossatx.jta;
 
 import com.arjuna.ats.jta.recovery.XAResourceRecovery;
 
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 import javax.transaction.xa.XAResource;
 import javax.naming.InitialContext;
 import javax.sql.XADataSource;
@@ -37,11 +42,16 @@ import java.sql.Connection;
 import java.util.Properties;
 import java.util.Iterator;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Method;
 import java.beans.PropertyEditor;
 import java.beans.PropertyEditorManager;
+import java.security.NoSuchAlgorithmException;
+import java.security.InvalidKeyException;
+import java.math.BigInteger;
 
 import org.jboss.security.SecurityAssociation;
 import org.jboss.security.SimplePrincipal;
@@ -193,6 +203,20 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
                 // debug disabled due to security paranoia - it may log datasource password in cleartext.
                 // log.debug("AppServerJDBCXARecovery.result="+properties);
 
+                ObjectName txCmObjectName = new ObjectName("jboss.jca:name=" +_dataSourceId + ",service=XATxCM");
+                String securityDomainName = (String) server.getAttribute(txCmObjectName, "SecurityDomainJndiName");
+                log.debug("Security domain name associated with JCA ConnectionManager jboss.jca:name=" +_dataSourceId + ",service=XATxCM"+" is:"+securityDomainName);
+
+                if(securityDomainName != null && !securityDomainName.equals(""))
+                {
+                	ObjectName _objectName = new ObjectName("jboss.security:service=XMLLoginConfig");
+                	String config = (String)server.invoke(_objectName, "displayAppConfig", new Object[] {securityDomainName}, new String[] {"java.lang.String"});
+            		_dbUsername = getValueForKey(config, _USERNAME);
+            		String _encryptedPassword = getValueForKey(config, _PASSWORD);
+            		_dbPassword = new String (decode(_encryptedPassword));
+            		_encrypted = true;
+                }
+
                 try {
                     _dataSource = getXADataSource(className, properties);
                     _supportsIsValidMethod = true; // assume it does; we'll lazily check the first time we try to connect
@@ -254,7 +278,7 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
             try {
                 if (_connection != null && _supportsIsValidMethod) {
                     Connection connection = _connection.getConnection();
-                    Method method = connection.getClass().getMethod("isValid", new Class[] {Integer.class});
+                    Method method = connection.getClass().getMethod("isValid",  new Class[] {Integer.class});
                     isConnectionValid = (Boolean) method.invoke(connection, new Integer(5));
                 } else {
                     isConnectionValid = Boolean.FALSE;
@@ -278,7 +302,15 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
                     }
                 }
 
-                _connection = _dataSource.getXAConnection();
+                // Check if the password is encrypted, the criteria should be the existence of <security-domain>EncryptDBPassword</security-domain>
+                // in the -ds.xml file.
+                
+                if(!_encrypted) {
+                    _connection = _dataSource.getXAConnection();
+                }
+                else {
+                    _connection = _dataSource.getXAConnection(_dbUsername, _dbPassword);
+                }
                 _connection.addConnectionEventListener(_connectionEventListener);
                 log.debug("Created new XAConnection");
             }
@@ -396,15 +428,44 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
         }
     }
     
+    private String getValueForKey(String config, String key)
+    {
+		Pattern usernamePattern = Pattern.compile("(name=" + key + ", value=)(.*)(</li>)");
+		Matcher m = usernamePattern.matcher(config);
+		if(m.find())
+		{
+			return m.group(2);
+		}
+		return "";
+	}
+    
+    private static String decode(String secret) throws NoSuchPaddingException, NoSuchAlgorithmException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException
+    {
+	    byte[] kbytes = "jaas is the way".getBytes();
+	    SecretKeySpec key = new SecretKeySpec(kbytes, "Blowfish");
+	
+	    BigInteger n = new BigInteger(secret, 16);
+	    byte[] encoding = n.toByteArray();
+	    
+	    Cipher cipher = Cipher.getInstance("Blowfish");
+	    cipher.init(Cipher.DECRYPT_MODE, key);
+	    byte[] decode = cipher.doFinal(encoding);
+	    return new String(decode);
+	 }
+
     private boolean _supportsIsValidMethod;
     private XAConnection _connection;
     private XADataSource                 _dataSource;
     private LocalConnectionEventListener _connectionEventListener;
     private boolean                      _hasMoreResources;
+    private boolean _encrypted;
 
     private String _dataSourceId;
     private String _username;
     private String _password;
+    private String _dbUsername;
+    private String _dbPassword;
     
     private final String _JNDINAME = "jndiname";
     private final String _USERNAME = "username";
