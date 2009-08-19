@@ -69,17 +69,27 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator
 			if (tx == null)
 				throw new XAException(XAException.XAER_INVAL);
 			
-			if (onePhase)
-				tx.doOnePhaseCommit();
+			if (tx.baseXid() != null)  // activate failed?
+			{
+				if (onePhase)
+					tx.doOnePhaseCommit();
+				else
+					tx.doCommit();
+				
+				TxImporter.removeImportedTransaction(xid);
+			}
 			else
-				tx.doCommit();
-			
-			TxImporter.removeImportedTransaction(xid);
+				throw new XAException(XAException.XA_RETRY);
 		}
 		catch (XAException ex)
 		{
-			TxImporter.removeImportedTransaction(xid);
+			// resource hasn't had a chance to recover yet
 			
+			if (ex.errorCode != XAException.XA_RETRY)
+			{
+				TxImporter.removeImportedTransaction(xid);
+			}
+
 			throw ex;
 		}
 		catch (HeuristicRollbackException ex)
@@ -265,14 +275,24 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator
 			if (tx == null)
 				throw new XAException(XAException.XAER_INVAL);
 
-			tx.doRollback();
-			
-			TxImporter.removeImportedTransaction(xid);
+			if (tx.baseXid() != null)
+			{
+				tx.doRollback();
+				
+				TxImporter.removeImportedTransaction(xid);
+			}
+			else
+				throw new XAException(XAException.XA_RETRY);
 		}
 		catch (XAException ex)
 		{
-			TxImporter.removeImportedTransaction(xid);
+			// resource hasn't had a chance to recover yet
 			
+			if (ex.errorCode != XAException.XA_RETRY)
+			{
+				TxImporter.removeImportedTransaction(xid);
+			}
+
 			throw ex;
 		}
 		catch (HeuristicCommitException ex)
