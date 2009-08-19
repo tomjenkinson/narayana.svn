@@ -72,7 +72,7 @@ import javax.transaction.xa.XAException;
 
 /**
  * @author Mark Little (mark_little@hp.com)
- * @version $Id: XAResourceRecord.java 2342 2006-03-30 13:06:17Z  $
+ * @version $Id: XAResourceRecord.java 2342 2006-03-30 13:06:17Z $
  * @since JTS 1.2.4.
  */
 
@@ -81,9 +81,9 @@ public class XAResourceRecord extends AbstractRecord
 
 	public static final int XACONNECTION = 0;
 
-	private static final Uid START_XARESOURCE = Uid.minUid() ;
+	private static final Uid START_XARESOURCE = Uid.minUid();
 
-	private static final Uid END_XARESOURCE = Uid.maxUid() ;
+	private static final Uid END_XARESOURCE = Uid.maxUid();
 
 	/**
 	 * The params represent specific parameters we need to recreate the
@@ -215,8 +215,8 @@ public class XAResourceRecord extends AbstractRecord
 	 *          [com.arjuna.ats.internal.jta.resources.arjunacore.preparenulltx]
 	 *          {0} - null transaction!
 	 * @message com.arjuna.ats.internal.jta.resources.arjunacore.preparefailed
-	 * 			[com.arjuna.ats.internal.jta.resources.arjunacore.preparefailed]
-	 * 			{0} - prepare failed with exception {1}
+	 *          [com.arjuna.ats.internal.jta.resources.arjunacore.preparefailed]
+	 *          {0} - prepare failed with exception {1}
 	 */
 
 	public int topLevelPrepare()
@@ -276,8 +276,8 @@ public class XAResourceRecord extends AbstractRecord
 						.warn(
 								"com.arjuna.ats.internal.jta.resources.arjunacore.preparefailed",
 								new Object[]
-								{ "XAResourceRecord.prepare", XAHelper
-										.printXAErrorCode(e1) });
+								{ "XAResourceRecord.prepare",
+										XAHelper.printXAErrorCode(e1) });
 			}
 
 			/*
@@ -373,6 +373,9 @@ public class XAResourceRecord extends AbstractRecord
 		}
 		else
 		{
+			if (_theXAResource == null)
+				_theXAResource = getNewXAResource();
+
 			if (_theXAResource != null)
 			{
 				if (_heuristic != TwoPhaseOutcome.FINISH_OK)
@@ -492,6 +495,9 @@ public class XAResourceRecord extends AbstractRecord
 		}
 		else
 		{
+			if (_theXAResource == null)
+				_theXAResource = getNewXAResource();
+
 			if (_theXAResource != null)
 			{
 				if (_heuristic != TwoPhaseOutcome.FINISH_OK)
@@ -531,7 +537,9 @@ public class XAResourceRecord extends AbstractRecord
 						{
 						case XAException.XA_HEURHAZ:
 							return TwoPhaseOutcome.HEURISTIC_HAZARD;
-						case XAException.XA_HEURCOM:  // what about forget? OTS doesn't support this code here.
+						case XAException.XA_HEURCOM: // what about forget?
+														// OTS doesn't support
+														// this code here.
 							break;
 						case XAException.XA_HEURRB:
 						case XAException.XA_RBROLLBACK:
@@ -553,8 +561,8 @@ public class XAResourceRecord extends AbstractRecord
 							return TwoPhaseOutcome.FINISH_ERROR;
 						case XAException.XAER_INVAL:
 						case XAException.XAER_RMFAIL: // resource manager
-													  // failed, did it
-													  // rollback?
+							// failed, did it
+							// rollback?
 							return TwoPhaseOutcome.HEURISTIC_HAZARD;
 						default:
 							return TwoPhaseOutcome.HEURISTIC_HAZARD;
@@ -670,7 +678,7 @@ public class XAResourceRecord extends AbstractRecord
 					case XAException.XA_HEURMIX:
 						return TwoPhaseOutcome.HEURISTIC_HAZARD;
 					case XAException.XA_HEURCOM:
-						forget() ;
+						forget();
 						break;
 					case XAException.XA_HEURRB:
 					case XAException.XA_RBROLLBACK:
@@ -682,19 +690,19 @@ public class XAResourceRecord extends AbstractRecord
 					case XAException.XA_RBTIMEOUT:
 					case XAException.XA_RBTRANSIENT:
 					case XAException.XAER_RMERR:
-						forget() ;
+						forget();
 						return TwoPhaseOutcome.FINISH_ERROR;
 					case XAException.XAER_NOTA:
 					case XAException.XAER_PROTO:
 						break;
 					case XAException.XAER_INVAL:
 					case XAException.XAER_RMFAIL: // resource manager failed,
-												  // did it rollback?
+						// did it rollback?
 						return TwoPhaseOutcome.FINISH_ERROR;
-						// 						return TwoPhaseOutcome.HEURISTIC_HAZARD;
+						// return TwoPhaseOutcome.HEURISTIC_HAZARD;
 					default:
 						return TwoPhaseOutcome.FINISH_ERROR;
-					// 						return TwoPhaseOutcome.HEURISTIC_ROLLBACK;
+						// return TwoPhaseOutcome.HEURISTIC_ROLLBACK;
 					}
 				}
 				catch (Exception e2)
@@ -733,7 +741,7 @@ public class XAResourceRecord extends AbstractRecord
 					"XAResourceRecord.forget for " + _tranID);
 		}
 
-		forget() ;
+		forget();
 
 		removeConnection();
 
@@ -782,11 +790,11 @@ public class XAResourceRecord extends AbstractRecord
 		toDelete = null;
 	}
 
-    /**
-     * @message com.arjuna.ats.internal.jta.resources.arjunacore.savestate
-     *          [com.arjuna.ats.internal.jta.resources.arjunacore.savestate]
-     *          Could not serialize a Serializable XAResource!
-     */
+	/**
+	 * @message com.arjuna.ats.internal.jta.resources.arjunacore.savestate
+	 *          [com.arjuna.ats.internal.jta.resources.arjunacore.savestate]
+	 *          Could not serialize a Serializable XAResource!
+	 */
 
 	public boolean save_state(OutputObjectState os, int t)
 	{
@@ -815,8 +823,8 @@ public class XAResourceRecord extends AbstractRecord
 
 				try
 				{
-				    if (_theXAResource instanceof Serializable)
-					shouldSerialize = true;
+					if (_theXAResource instanceof Serializable)
+						shouldSerialize = true;
 
 					ByteArrayOutputStream s = new ByteArrayOutputStream();
 					ObjectOutputStream o = new ObjectOutputStream(s);
@@ -835,19 +843,20 @@ public class XAResourceRecord extends AbstractRecord
 				}
 				catch (NotSerializableException ex)
 				{
-				    if (!shouldSerialize)
-				    {
-					// have to rely upon XAResource.recover!
-
-					os.packBoolean(false);
-				    }
-				    else
-				    {
-					if (jtaLogger.loggerI18N.isWarnEnabled())
+					if (!shouldSerialize)
 					{
-					    jtaLogger.loggerI18N.warn("com.arjuna.ats.internal.jta.resources.arjunacore.savestate");
+						// have to rely upon XAResource.recover!
+
+						os.packBoolean(false);
 					}
-				    }
+					else
+					{
+						if (jtaLogger.loggerI18N.isWarnEnabled())
+						{
+							jtaLogger.loggerI18N
+									.warn("com.arjuna.ats.internal.jta.resources.arjunacore.savestate");
+						}
+					}
 				}
 			}
 			else
@@ -879,7 +888,8 @@ public class XAResourceRecord extends AbstractRecord
 	 *          Exception on attempting to restore XAResource
 	 * @message com.arjuna.ats.internal.jta.resources.arjunacore.norecoveryxa
 	 *          [com.arjuna.ats.internal.jta.resources.arjunacore.norecoveryxa]
-	 *          Could not find new XAResource to use for recovering non-serializable XAResource {0}
+	 *          Could not find new XAResource to use for recovering
+	 *          non-serializable XAResource {0}
 	 */
 
 	public boolean restore_state(InputObjectState os, int t)
@@ -926,7 +936,9 @@ public class XAResourceRecord extends AbstractRecord
 
 						if (jtaLogger.loggerI18N.isWarnEnabled())
 						{
-							jtaLogger.loggerI18N.warn("com.arjuna.ats.internal.jta.resources.arjunacore.restorestate",
+							jtaLogger.loggerI18N
+									.warn(
+											"com.arjuna.ats.internal.jta.resources.arjunacore.restorestate",
 											ex);
 						}
 
@@ -943,8 +955,13 @@ public class XAResourceRecord extends AbstractRecord
 
 					if (_theXAResource == null)
 					{
-						jtaLogger.loggerI18N.warn("com.arjuna.ats.internal.jta.resources.arjunacore.norecoveryxa",
-								new Object[]{_tranID});
+						jtaLogger.loggerI18N
+								.warn(
+										"com.arjuna.ats.internal.jta.resources.arjunacore.norecoveryxa",
+										new Object[]
+										{ _tranID });
+
+						return false;
 
 						//return false;
 					}
@@ -1142,10 +1159,15 @@ public class XAResourceRecord extends AbstractRecord
 	protected XAResource _theXAResource;
 
 	private RecoverableXAConnection _recoveryObject;
+
 	private Xid _tranID;
+
 	private boolean _prepared;
+
 	private boolean _valid;
+
 	private int _heuristic;
+
 	private TransactionImple _theTransaction;
 
 	private static boolean _rollbackOptimization = false;

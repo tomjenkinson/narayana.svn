@@ -216,6 +216,9 @@ public class XARecoveryModule implements RecoveryModule
 
 	public XAResource getNewXAResource (Xid xid)
 	{
+        if(_xidScans == null)
+            resourceInitiatedRecovery();
+
 		if (_xidScans != null)
 		{
 			Enumeration keys = _xidScans.keys();

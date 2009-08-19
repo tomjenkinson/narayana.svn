@@ -115,8 +115,6 @@ public class SubordinateAtomicAction extends
 	 *         logs in the transaction object store.
 	 */
 
-	// TODO crash recovery!!!!
-
 	public String type ()
 	{
 		return "/StateManager/BasicAction/TwoPhaseCoordinator/AtomicAction/SubordinateAtomicAction";
@@ -270,5 +268,5 @@ public class SubordinateAtomicAction extends
     public boolean activated ()
     {
     	return true;
-    }
+    }	
 }
