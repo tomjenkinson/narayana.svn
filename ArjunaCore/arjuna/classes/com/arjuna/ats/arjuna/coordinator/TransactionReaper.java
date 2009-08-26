@@ -349,7 +349,8 @@ public class TransactionReaper
 			_timeouts.put(control, e);
 			boolean rtn = _transactions.add(e);
 
-			if(_dynamic)
+			// only wake reaper if new element inserted at head
+			if(_dynamic && _transactions.first() == e)
 			{
 				notify(); // force recalc of next wakeup time, taking into account the newly inserted element
 			}
