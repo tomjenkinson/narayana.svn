@@ -65,6 +65,9 @@ public class ReaperElement implements Comparable
 		 */
 
 		_absoluteTimeout = timeout * 1000 + System.currentTimeMillis();
+
+		// add additional variation to distinguish instances created in the same millisecond.
+		_bias = getBias();
 	}
 
 	public void finalize()
@@ -92,13 +95,17 @@ public class ReaperElement implements Comparable
 		ReaperElement other = (ReaperElement)o;
 
                 if(_absoluteTimeout == other._absoluteTimeout) {
-                    if(_control.get_uid().equals(other._control.get_uid())) {
-                        return 0;
+		    if (_bias == other._bias) {
+			if(_control.get_uid().equals(other._control.get_uid())) {
+			    return 0;
 			} else if (_control.get_uid().greaterThan(other._control.get_uid())) {
-				return 1;
-                    } else {
-				return -1;
-                    }
+			    return 1;
+			} else {
+			    return -1;
+			}
+		    } else {
+			return (_bias > other._bias) ? 1 : -1;
+		    }
 		} else {
 			return (_absoluteTimeout > other._absoluteTimeout) ? 1 : -1;
 		}
@@ -107,6 +114,23 @@ public class ReaperElement implements Comparable
 	public Reapable _control;
 
 	public long _absoluteTimeout;
+	private int _bias;
+
+	// bias is used to distinguish/sort instances with the same
+	// _absoluteTimeoutMills as using Uid for this purpose is
+	// expensive. JBTM-611
+
+	private static int biasCounter = 0;
+
+	public static synchronized int getBias()
+	{
+	    if(biasCounter >= 1000000-1) {
+		biasCounter = 0;
+	    } else {
+		biasCounter++;
+	    }
+	    return biasCounter;
+	}
 
 	public int _timeout;
 }
