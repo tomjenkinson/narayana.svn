@@ -22,6 +22,11 @@ package com.arjuna.ats.internal.jbossatx.jta;
 
 import com.arjuna.ats.jta.recovery.XAResourceRecovery;
 
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 import javax.transaction.xa.XAResource;
 import javax.naming.InitialContext;
 import javax.sql.XADataSource;
@@ -33,12 +38,20 @@ import javax.management.ObjectName;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.Iterator;
+import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Method;
 import java.beans.PropertyEditor;
 import java.beans.PropertyEditorManager;
+import java.security.NoSuchAlgorithmException;
+import java.security.InvalidKeyException;
+import java.math.BigInteger;
 
+import org.jboss.security.SecurityAssociation;
+import org.jboss.security.SimplePrincipal;
 import org.jboss.logging.Logger;
 
 /**
@@ -52,8 +65,19 @@ import org.jboss.logging.Logger;
  * which it can then create an XAConnection.
  *
  * To use this class, add an XAResourceRecovery entry in the jta section of jbossjta-properties.xml
- * for each datasource for which you need recovery, ensuring the value ends with ;<datasource-name>
+ * for each database for which you need recovery, ensuring the value ends with ;jndiname=<datasource-name>
  * i.e. the same value as is in the -ds.xml jndi-name element.
+ * 
+ * Note for users with secured JMX invokers, use the extended format:
+ *   ;jndiname=MyExampleDbName,username=foo,password=bar
+ * The username and password refer to the JMX invoker, NOT the datasource.
+ * 
+ * It's not possible to override the jdbc username and password given in the -ds.xml file at present.
+ * Since the recovery system sometimes needs greater db user privs than the app code, it may be preferable to
+ * set up a -ds.xml file only for recovery usage. This approach works for databases which allow users to
+ * recover one another's transactions, which is most of them. But consult
+ * your db docs or friendly neighbourhood DBA to be sure, then test it anyhow.
+ * 
  * You also need the XARecoveryModule enabled and appropriate values for nodeIdentifier and xaRecoveryNode set.
  * See the JBossTS recovery guide if you are unclear on how the recovery system works.
  *
@@ -61,9 +85,11 @@ import org.jboss.logging.Logger;
  * if you configure the recovery manager to run as a separate process. (JMX can be accessed remotely,
  * but it would need code changes to the lookup function and some classpath additions).
  *
+ * 
  *  <properties depends="arjuna" name="jta">
  *  ...
- *    <property name="com.arjuna.ats.jta.recovery.XAResourceRecovery1" value= "com.arjuna.ats.internal.jbossatx.jta.AppServerJDBCXARecovery;MyExampleDbName"/>
+ *    <property name="com.arjuna.ats.jta.recovery.XAResourceRecovery1"
+ *      value= "com.arjuna.ats.internal.jbossatx.jta.AppServerJDBCXARecovery;jndiname=MyExampleDbName[,username=foo,password=bar]"/>
  *    <!-- xaRecoveryNode should match value in nodeIdentifier or be * -->
  *    <property name="com.arjuna.ats.jta.xaRecoveryNode" value="1"/>
  *
@@ -99,9 +125,8 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
 
         if (parameter == null)
             return false;
-
-        // don't create the datasource yet, we'll do it lazily. Just keep its id.
-        _dataSourceId = parameter;
+        
+        retrieveData(parameter, _DELIMITER);
 
         return true;
     }
@@ -157,11 +182,33 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
                 InitialContext context = new InitialContext();
                 MBeanServerConnection server = (MBeanServerConnection)context.lookup("jmx/invoker/RMIAdaptor");
                 ObjectName objectName = new ObjectName("jboss.jca:name="+_dataSourceId+",service=ManagedConnectionFactory");
+                
+                if(_username !=null && _password !=null)
+                {
+                	SecurityAssociation.setPrincipal(new SimplePrincipal(_username));
+                	SecurityAssociation.setCredential(_password);
+                }
+                
                 String className = (String)server.invoke(objectName, "getManagedConnectionFactoryAttribute", new Object[] {"XADataSourceClass"}, new String[] {"java.lang.String"});
                 log.debug("AppServerJDBCXARecovery datasource classname = "+className);
+
                 String properties = (String)server.invoke(objectName, "getManagedConnectionFactoryAttribute", new Object[] {"XADataSourceProperties"}, new String[] {"java.lang.String"});
                 // debug disabled due to security paranoia - it may log datasource password in cleartext.
                 // log.debug("AppServerJDBCXARecovery.result="+properties);
+
+                ObjectName txCmObjectName = new ObjectName("jboss.jca:name=" +_dataSourceId + ",service=XATxCM");
+                String securityDomainName = (String) server.getAttribute(txCmObjectName, "SecurityDomainJndiName");
+                log.debug("Security domain name associated with JCA ConnectionManager jboss.jca:name=" +_dataSourceId + ",service=XATxCM"+" is:"+securityDomainName);
+
+                if(securityDomainName != null && !securityDomainName.equals(""))
+                {
+                	ObjectName _objectName = new ObjectName("jboss.security:service=XMLLoginConfig");
+                	String config = (String)server.invoke(_objectName, "displayAppConfig", new Object[] {securityDomainName}, new String[] {"java.lang.String"});
+            		_dbUsername = getValueForKey(config, _USERNAME);
+            		String _encryptedPassword = getValueForKey(config, _PASSWORD);
+            		_dbPassword = new String (decode(_encryptedPassword));
+            		_encrypted = true;
+                }
 
                 try {
                     _dataSource = getXADataSource(className, properties);
@@ -200,7 +247,15 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
 
             if (_connection == null)
             {
-                _connection = _dataSource.getXAConnection();
+                // Check if the password is encrypted, the criteria should be the existence of <security-domain>EncryptDBPassword</security-domain>
+                // in the -ds.xml file.
+                
+                if(!_encrypted) {
+                    _connection = _dataSource.getXAConnection();
+                }
+                else {
+                    _connection = _dataSource.getXAConnection(_dbUsername, _dbPassword);
+                }
                 _connection.addConnectionEventListener(_connectionEventListener);
             }
         }
@@ -287,12 +342,79 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
         }
         return xads;
     }
+    
+    public void retrieveData(String parameter,String delimiter)
+    {
+        StringTokenizer st = new StringTokenizer(parameter,delimiter);
+        while (st.hasMoreTokens())
+        {
+            String data = st.nextToken();
+            if(data.length()>9)
+            {
+                if(_USERNAME.equalsIgnoreCase(data.substring(0,8)))
+                {
+                    _username =data.substring(9);
+                }
+                if(_PASSWORD.equalsIgnoreCase(data.substring(0,8)))
+                {
+                    _password =data.substring(9);
+                }
+                if(_JNDINAME.equalsIgnoreCase(data.substring(0,8)))
+                {
+                    _dataSourceId=data.substring(9);
+                }
+            }
+        }
+        
+        if(_dataSourceId == null && parameter != null && parameter.indexOf('=') == -1) {
+            // try to fallback to old parameter format where only the dataSourceId is given, without jndiname= prefix
+            _dataSourceId = parameter;
+        }
+    }
+    
+    private String getValueForKey(String config, String key)
+    {
+		Pattern usernamePattern = Pattern.compile("(name=" + key + ", value=)(.*)(</li>)");
+		Matcher m = usernamePattern.matcher(config);
+		if(m.find())
+		{
+			return m.group(2);
+		}
+		return "";
+	}
+    
+    private static String decode(String secret) throws NoSuchPaddingException, NoSuchAlgorithmException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException
+    {
+	    byte[] kbytes = "jaas is the way".getBytes();
+	    SecretKeySpec key = new SecretKeySpec(kbytes, "Blowfish");
+	
+	    BigInteger n = new BigInteger(secret, 16);
+	    byte[] encoding = n.toByteArray();
+	    
+	    Cipher cipher = Cipher.getInstance("Blowfish");
+	    cipher.init(Cipher.DECRYPT_MODE, key);
+	    byte[] decode = cipher.doFinal(encoding);
+	    return new String(decode);
+	 }
 
+    private boolean _supportsIsValidMethod;
     private XAConnection _connection;
     private XADataSource                 _dataSource;
     private LocalConnectionEventListener _connectionEventListener;
     private boolean                      _hasMoreResources;
+    private boolean _encrypted;
 
     private String _dataSourceId;
+    private String _username;
+    private String _password;
+    private String _dbUsername;
+    private String _dbPassword;
+    
+    private final String _JNDINAME = "jndiname";
+    private final String _USERNAME = "username";
+    private final String _PASSWORD = "password";
+    private final String _DELIMITER = ",";
+    
     private Logger log = org.jboss.logging.Logger.getLogger(AppServerJDBCXARecovery.class);
 }
