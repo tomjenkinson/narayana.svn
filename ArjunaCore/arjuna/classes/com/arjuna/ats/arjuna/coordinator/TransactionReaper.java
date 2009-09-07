@@ -44,6 +44,7 @@ import com.arjuna.ats.arjuna.logging.FacilityCode;
 import com.arjuna.common.util.logging.*;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Class to record transactions with non-zero timeout values, and class to
@@ -155,7 +156,7 @@ public class TransactionReaper
 			try
 			{
 				final ReaperElement head = (ReaperElement) _transactions.first();  //_list.peak();
-				return head._absoluteTimeout - System.currentTimeMillis();
+				return head.getAbsoluteTimeout() - System.currentTimeMillis();
 			}
 			catch (final NoSuchElementException nsee)
 			{
@@ -173,10 +174,10 @@ public class TransactionReaper
                      {
                           final ReaperElement head = (ReaperElement) _transactions.first();  //_list.peak();
                           if (head._status != ReaperElement.RUN) {
-                               long waitTime = head._absoluteTimeout - System.currentTimeMillis();
+                               long waitTime = head.getAbsoluteTimeout() - System.currentTimeMillis();
                                if (waitTime < _checkPeriod)
                                {
-                                    return head._absoluteTimeout - System.currentTimeMillis();
+                                    return head.getAbsoluteTimeout() - System.currentTimeMillis();
                                }
                           }
                      }
@@ -200,42 +201,61 @@ public class TransactionReaper
 	{
 	    if (tsLogger.arjLogger.debugAllowed())
 	    {
-		tsLogger.arjLogger.debug(DebugLevel.FUNCTIONS,
-					 VisibilityLevel.VIS_PUBLIC, FacilityCode.FAC_ATOMIC_ACTION,
-					 "TransactionReaper::check ()");
+            tsLogger.arjLogger.debug(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PUBLIC,
+                    FacilityCode.FAC_ATOMIC_ACTION,  "TransactionReaper::check ()");
 	    }
 
 	    do
 	    {
 		final ReaperElement e ;
-		try
-		{
-		    e = (ReaperElement)_transactions.first();
-		}
-		catch (final NoSuchElementException nsee)
-		{
-		    return true ;
-		}
 
-		if (tsLogger.arjLoggerI18N.isDebugEnabled())
-		{
-		    tsLogger.arjLoggerI18N
-			.debug(
-			    DebugLevel.FUNCTIONS,
-			    VisibilityLevel.VIS_PUBLIC,
-			    FacilityCode.FAC_ATOMIC_ACTION,
-			    "com.arjuna.ats.arjuna.coordinator.TransactionReaper_2",
-			    new Object[]
-			    { Long.toString(e._absoluteTimeout) });
-		}
+        synchronized (this)
+        {
+            // purge the pending inerts before doing anything else. This may hold up other inserts
+            // for a while. Future versions may prefer to insert only a portion of the pending set.
+            Set<Map.Entry<Reapable,ReaperElement>> entrySet = _pendingInsertions.entrySet();
+            if(entrySet != null) {
+                Iterator<Map.Entry<Reapable,ReaperElement>> queueIter = entrySet.iterator();
+                while(queueIter.hasNext()) {
+                    Map.Entry<Reapable,ReaperElement> entry = queueIter.next();
+                    ReaperElement element = entry.getValue();
+                    // inert is also locked on (this), but remove is not. So, we are careful to check that
+                    // we don't insert an element that's been removed from the pending set by a concurrent thread.
+                    if(entrySet.remove(entry)) {
+                        synchronousInsert(element);
+                    }
+                }
+            }
 
-		final long now = System.currentTimeMillis();
-		if (now < e._absoluteTimeout)
-		{
-		    // go back to sleep
+            try
+            {
+                e = (ReaperElement)_transactions.first();
+            }
+            catch (final NoSuchElementException nsee)
+            {
+                return true ;
+            }
+            if (tsLogger.arjLoggerI18N.isDebugEnabled())
+            {
+                tsLogger.arjLoggerI18N
+                .debug(
+                    DebugLevel.FUNCTIONS,
+                    VisibilityLevel.VIS_PUBLIC,
+                    FacilityCode.FAC_ATOMIC_ACTION,
+                    "com.arjuna.ats.arjuna.coordinator.TransactionReaper_2",
+                    new Object[]
+                    { Long.toString(e.getAbsoluteTimeout()) });
+            }
 
-		    break;
-		}
+            final long now = System.currentTimeMillis();
+
+            if (now < e.getAbsoluteTimeout())
+            {
+                // go back to sleep
+
+                break;
+            }
+        }
 
 		if (tsLogger.arjLoggerI18N.isWarnEnabled())
 		{
@@ -269,8 +289,7 @@ public class TransactionReaper
 			{
 			    _transactions.remove(e);
 
-			    e._absoluteTimeout =
-				(System.currentTimeMillis() + _cancelWaitPeriod);
+			    e.setAbsoluteTimeout((System.currentTimeMillis() + _cancelWaitPeriod));
 			    _transactions.add(e);
 			}
 
@@ -312,8 +331,7 @@ public class TransactionReaper
 			{
 			    _transactions.remove(e);
 
-			    e._absoluteTimeout =
-				(System.currentTimeMillis() + _cancelWaitPeriod);
+			    e.setAbsoluteTimeout((System.currentTimeMillis() + _cancelWaitPeriod));
 
 			    _transactions.add(e);
 			}
@@ -344,8 +362,7 @@ public class TransactionReaper
 			{
 			    _transactions.remove(e);
 
-			    e._absoluteTimeout =
-				(System.currentTimeMillis() + _cancelFailWaitPeriod);
+			    e.setAbsoluteTimeout((System.currentTimeMillis() + _cancelFailWaitPeriod));
 
 			    _transactions.add(e);
 			}
@@ -734,7 +751,7 @@ public class TransactionReaper
 
 	public final long numberOfTransactions()
 	{
-		return _transactions.size();
+		return _transactions.size() + _pendingInsertions.size();
 	}
 
         /**
@@ -743,49 +760,94 @@ public class TransactionReaper
          */
         public final long numberOfTimeouts()
         {
-                return _timeouts.size();
+                return _timeouts.size() + _pendingInsertions.size();
         }
 
-	/**
-	 * timeout is given in seconds, but we work in milliseconds.
-	 */
 
-	public final boolean insert(Reapable control, int timeout)
+    /**
+     * timeout is given in seconds, but we work in milliseconds.
+     */
+    public final boolean insert(Reapable control, int timeout)
+    {
+        if (tsLogger.arjLogger.debugAllowed())
+        {
+            tsLogger.arjLogger.debug(DebugLevel.FUNCTIONS,
+                    VisibilityLevel.VIS_PUBLIC, FacilityCode.FAC_ATOMIC_ACTION,
+                    "TransactionReaper::insert ( " + control + ", " + timeout
+                            + " )");
+        }
+
+        /*
+         * Ignore if the timeout is zero, since this means the transaction
+         * should never timeout.
+         */
+
+        if (timeout == 0)
+            return true;
+
+
+
+        ReaperElement e = new ReaperElement(control, timeout);
+
+        boolean asyncInsert = false;
+
+        synchronized (this)
+        {
+            if(_transactions.size() > 0) {
+                ReaperElement first = (ReaperElement)_transactions.first();
+                // if the new element would timeout after the earliest one we already have,
+                // we can delay its insertion until that earlier timeout. Hopefully the new tx will
+                // complete before then and we'll never have to insert it at all.
+                if (first != null && e.compareTo(first) > 0) {
+                    // first make sure we have not seen this control already
+                    if (_timeouts.containsKey(control)) {
+                        // hmm, this probably means that the hash or equals implementation on the element has been
+                        // coded wrong
+                        return false;
+                    }
+                    // put it in in the pending list for later insertion but also
+                    // check the return value in case this entry already exists
+                    ReaperElement old = _pendingInsertions.put(control, e);
+                    if (old != null) {
+                        // hmm, this probably means that the hash or equals implementation on the element has been
+                        // coded wrong -- restore the old entry and return false. n.b. checking for a duplicate
+                        //  this way avoids having to do a containsKey test in the normal case.
+                        _pendingInsertions.put(control, old);
+                        return false;
+                    }
+                    asyncInsert = true;
+                }
+            }
+
+            if(asyncInsert) {
+                return true;
+            } else {
+                return synchronousInsert(e);
+            }
+        }
+    }
+
+
+	private final boolean synchronousInsert(ReaperElement elementToInsert)
 	{
-		if (tsLogger.arjLogger.debugAllowed())
-		{
-			tsLogger.arjLogger.debug(DebugLevel.FUNCTIONS,
-					VisibilityLevel.VIS_PUBLIC, FacilityCode.FAC_ATOMIC_ACTION,
-					"TransactionReaper::insert ( " + control + ", " + timeout
-							+ " )");
-		}
-
-		/*
-		 * Ignore if the timeout is zero, since this means the transaction
-		 * should never timeout.
-		 */
-
-		if (timeout == 0)
-			return true;
-
-		/**
-		 * Ignore if it's already in the list with a different timeout.
-		 * (This should never happen)
-		 */
-		if (_timeouts.containsKey(control)) {
-			return false;
-		}
-
-		ReaperElement e = new ReaperElement(control, timeout);
-
 		synchronized (this)
 		{
-			TransactionReaper._lifetime += timeout;
+			TransactionReaper._lifetime += elementToInsert._timeout;
 
-			_timeouts.put(control, e);
-			boolean rtn = _transactions.add(e);
+			ReaperElement old = (ReaperElement)_timeouts.put(elementToInsert._control, elementToInsert);
+            if (old != null) {
+                // hmm, this probably means that the hash or equals implementation on the element has been
+                // coded wrong -- restore the old entry and return false. n.b. checking for a duplicate
+                //  this way avoids having to do a containsKey test in the normal case.
+                _timeouts.put(elementToInsert._control, old);
+                return false;
+            }
 
-			if(_dynamic)
+            // we should not get an error here unless the user has coded the compareTo test wrong
+
+			boolean rtn = _transactions.add(elementToInsert);
+
+			if(_dynamic && _transactions.first() == elementToInsert)
 			{
 				notifyAll(); // force recalc of next wakeup time, taking into account the newly inserted element
 			}
@@ -794,7 +856,20 @@ public class TransactionReaper
 		}
 	}
 
-	public final boolean remove(java.lang.Object control)
+    public final boolean remove(java.lang.Object control)
+    {
+        // _pendingInsertions is a concurrent structure, so we don't lock it here. That means we need to be careful
+        // when transferring elements from pending to the real structures, see check() above. The synchronous remove
+        // must also take care to lock, or things may leak if a remove attempt happens concurrent to a pending copy. 
+
+        if(_pendingInsertions.remove(control) != null) {
+            return true;
+        } else {
+            return synchronousRemove(control);
+        }
+    }
+
+	public final boolean synchronousRemove(java.lang.Object control)
 	{
 		if (tsLogger.arjLogger.debugAllowed())
 		{
@@ -878,7 +953,7 @@ public class TransactionReaper
         else
         {
             // units are in milliseconds at this stage.
-            timeout = reaperElement._absoluteTimeout - System.currentTimeMillis();
+            timeout = reaperElement.getAbsoluteTimeout() - System.currentTimeMillis();
         }
 
         if (tsLogger.arjLoggerI18N.isDebugEnabled()) {
@@ -976,7 +1051,7 @@ public class TransactionReaper
 	            {
 	                e = (ReaperElement) iter.next();
 
-	                e._absoluteTimeout = 0;
+	                e.setAbsoluteTimeout(0);
 	            }
 	        }
 
@@ -1289,6 +1364,8 @@ public class TransactionReaper
 
 	private SortedSet _transactions = Collections.synchronizedSortedSet(new TreeSet()); // C of ReaperElement
 	private Map _timeouts = Collections.synchronizedMap(new HashMap()); // key = Reapable, value = ReaperElement
+
+    private final Map<Reapable, ReaperElement> _pendingInsertions = new ConcurrentHashMap<Reapable, ReaperElement>();
 
 	private List _workQueue = new LinkedList(); // C of ReaperElement
 
