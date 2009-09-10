@@ -48,6 +48,8 @@ import com.arjuna.ats.jts.common.jtsPropertyManager;
 import com.arjuna.ats.arjuna.coordinator.TransactionReaper;
 import com.arjuna.ats.arjuna.coordinator.TxStats;
 import com.arjuna.ats.arjuna.recovery.RecoveryManager;
+import com.arjuna.ats.arjuna.common.arjPropertyManager;
+import com.arjuna.ats.arjuna.utils.Utility;
 import com.arjuna.orbportability.ORB;
 import com.arjuna.orbportability.OA;
 
@@ -129,7 +131,11 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
         this.getLog().info("JBossTS Transaction Service - JBoss Inc.");
 
         this.getLog().info("Setting up property manager MBean and JMX layer");
-
+        
+        // recovery manager properties must be installed before the tx system is initialized. JBTM-598
+        arjPropertyManager.propertyManager = PropertyManagerFactory.getPropertyManager("com.arjuna.ats.propertymanager", "recoverymanager");
+        Utility.getpid(); // socketProcessId needs to own the port, not the tsm. yuck.
+        
         /** Set the tsmx agent implementation to the local JBOSS agent impl **/
         LocalJBossAgentImpl.setLocalAgent(this.getServer());
         System.setProperty(com.arjuna.ats.tsmx.TransactionServiceMX.AGENT_IMPLEMENTATION_PROPERTY,
