@@ -174,6 +174,10 @@ public class TransactionManagerService implements TransactionManagerServiceMBean
 
         log.info("Setting up property manager MBean and JMX layer");
 
+        // recovery manager properties must be installed before the tx system is initialized. JBTM-598
+        arjPropertyManager.propertyManager = PropertyManagerFactory.getPropertyManager("com.arjuna.ats.propertymanager", "recoverymanager");
+        Utility.getpid(); // socketProcessId needs to own the port, not the tsm. yuck.
+
         /** Set the tsmx agent implementation to the local JBOSS agent impl **/
         LocalJBossAgentImpl.setLocalAgent( getMbeanServer() );
         System.setProperty(com.arjuna.ats.tsmx.TransactionServiceMX.AGENT_IMPLEMENTATION_PROPERTY,
