@@ -123,7 +123,7 @@ public class TransactionSynchronizationRegistryImple implements TransactionSynch
 	// Register a Synchronization instance with special ordering semantics.
 	/**
 	 * @message com.arjuna.ats.internal.jta.transaction.jts.syncrollbackexception
-	 * [ccom.arjuna.ats.internal.jta.transaction.jts.syncrollbackexception]
+	 * [com.arjuna.ats.internal.jta.transaction.jts.syncrollbackexception]
 	 * The transaction implementation threw a RollbackException
 	 */
 	public void registerInterposedSynchronization(Synchronization synchronization)
@@ -144,7 +144,7 @@ public class TransactionSynchronizationRegistryImple implements TransactionSynch
 		}
 		catch (RollbackException e)
 		{
-			throw new RuntimeException(jtaLogger.loggerI18N.getString("com.arjuna.ats.internal.jta.transaction.jts.syncrollbackmexception"), e);
+			throw new RuntimeException(jtaLogger.loggerI18N.getString("com.arjuna.ats.internal.jta.transaction.jts.syncrollbackexception"), e);
 		}
 		catch (SystemException e)
 		{
