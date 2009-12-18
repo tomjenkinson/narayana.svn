@@ -211,9 +211,18 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
                 {
                 	ObjectName _objectName = new ObjectName("jboss.security:service=XMLLoginConfig");
                 	String config = (String)server.invoke(_objectName, "displayAppConfig", new Object[] {securityDomainName}, new String[] {"java.lang.String"});
+                	String loginModuleClass = getValueForLoginModuleClass(config);
             		_dbUsername = getValueForKey(config, _USERNAME);
             		String _encryptedPassword = getValueForKey(config, _PASSWORD);
-            		_dbPassword = new String (decode(_encryptedPassword));
+            		if (loginModuleClass.trim().equals("org.jboss.resource.security.SecureIdentityLoginModule"))
+            		{
+            		    _dbPassword = new String (decode(_encryptedPassword));
+            		}
+            		else if (loginModuleClass.trim().equals("org.jboss.resource.security.JaasSecurityDomainIdentityLoginModule"))
+            		{
+            		    String jaasSecurityDomain = getValueForKey(config, "jaasSecurityDomain");
+            		    _dbPassword = new String (decodePBE(server, _encryptedPassword, jaasSecurityDomain));
+            		}
             		_encrypted = true;
                 }
 
@@ -439,6 +448,17 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
 		return "";
 	}
     
+    private String getValueForLoginModuleClass(String config)
+    {
+		Pattern usernamePattern = Pattern.compile("(" + _MODULE + ":)(.*)");
+		Matcher m = usernamePattern.matcher(config);
+		if(m.find())
+		{
+			return m.group(2);
+		}
+		return "";
+	}
+    
     private static String decode(String secret) throws NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidKeyException, BadPaddingException, IllegalBlockSizeException
     {
@@ -453,6 +473,13 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
 	    byte[] decode = cipher.doFinal(encoding);
 	    return new String(decode);
 	 }
+
+    private static String decodePBE(MBeanServerConnection server, String password, String jaasSecurityDomain) throws Exception
+    {
+	     byte[] secret = (byte[]) server.invoke(new ObjectName(jaasSecurityDomain), "decode64", new Object[] {password}, new String[] {"java.lang.String"});
+         return new String(secret, "UTF-8");
+	}
+
 
     private boolean _supportsIsValidMethod;
     private XAConnection _connection;
@@ -470,6 +497,7 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
     private final String _JNDINAME = "jndiname";
     private final String _USERNAME = "username";
     private final String _PASSWORD = "password";
+    private final String _MODULE = "LoginModule Class";
     private final String _DELIMITER = ",";
     
     private Logger log = org.jboss.logging.Logger.getLogger(AppServerJDBCXARecovery.class);
