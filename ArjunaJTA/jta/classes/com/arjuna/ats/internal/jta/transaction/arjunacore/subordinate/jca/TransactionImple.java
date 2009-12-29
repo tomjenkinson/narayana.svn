@@ -125,4 +125,22 @@ public class TransactionImple extends
 		return ((SubordinateAtomicAction) _theTransaction).getXid();
 	}
 	
+	/**
+	 * Force this transaction to try to recover itself again.
+	 */
+
+	public void recover()
+	{
+		_theTransaction.activate();
+	}
+
+	/**
+	 * Has the transaction been activated successfully? If not, we wait and try
+	 * again later.
+	 */
+
+	public boolean activated()
+	{
+		return ((SubordinateAtomicAction) _theTransaction).activated();
+	}
 }

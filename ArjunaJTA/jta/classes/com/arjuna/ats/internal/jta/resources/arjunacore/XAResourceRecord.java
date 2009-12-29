@@ -74,6 +74,13 @@ import javax.transaction.xa.XAException;
  * @author Mark Little (mark_little@hp.com)
  * @version $Id: XAResourceRecord.java 2342 2006-03-30 13:06:17Z  $
  * @since JTS 1.2.4.
+ *
+ * @message com.arjuna.ats.internal.jta.resources.arjunacore.noresource
+ *          [com.arjuna.ats.internal.jta.resources.arjunacore.noresource]
+ *          No XAResource to recover {0}
+ * @message com.arjuna.ats.internal.jta.resources.arjunacore.assumecomplete
+ *          [com.arjuna.ats.internal.jta.resources.arjunacore.assumecomplete]
+ *          Being told to assume complete on Xid {0}
  */
 
 public class XAResourceRecord extends AbstractRecord
@@ -421,6 +428,9 @@ public class XAResourceRecord extends AbstractRecord
 							return TwoPhaseOutcome.HEURISTIC_COMMIT;
 						case XAException.XA_HEURMIX:
 							return TwoPhaseOutcome.HEURISTIC_MIXED;
+						case XAException.XAER_NOTA:
+						    if (_recovered)
+						    	break; // rolled back previously and recovery completed
 						case XAException.XA_HEURRB: // forget?
 						case XAException.XA_RBROLLBACK:
 						case XAException.XA_RBEND:
