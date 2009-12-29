@@ -380,6 +380,9 @@ public class XAResourceRecord extends AbstractRecord
 		}
 		else
 		{
+			if (_theXAResource == null)
+				_theXAResource = getNewXAResource();
+
 			if (_theXAResource != null)
 			{
 				if (_heuristic != TwoPhaseOutcome.FINISH_OK)
@@ -459,7 +462,31 @@ public class XAResourceRecord extends AbstractRecord
 				}
 			}
 			else
-				return TwoPhaseOutcome.FINISH_ERROR;
+			{
+			    if (jtaLogger.loggerI18N.isWarnEnabled())
+			    {
+			    	jtaLogger.loggerI18N
+				    	.warn(
+				    			"com.arjuna.ats.internal.jta.resources.arjunacore.noresource",
+				    			new Object[] {_tranID});
+			    }
+
+			    if (XAResourceRecord._assumedComplete)
+			    {	
+					if (jtaLogger.loggerI18N.isInfoEnabled())
+					{
+					    jtaLogger.loggerI18N
+						.info(
+						      "com.arjuna.ats.internal.jta.resources.arjunacore.assumecomplete",
+						      new Object[] {_tranID});
+					}
+
+					return TwoPhaseOutcome.FINISH_OK;
+			    }
+			    else
+			    	return TwoPhaseOutcome.FINISH_ERROR;
+			}
+
 		}
 
 		return TwoPhaseOutcome.FINISH_OK;
@@ -557,6 +584,8 @@ public class XAResourceRecord extends AbstractRecord
 						case XAException.XA_HEURMIX:
 							return TwoPhaseOutcome.HEURISTIC_MIXED;
 						case XAException.XAER_NOTA:
+							if (_recovered)
+								break; // committed previously and recovery completed
 						case XAException.XAER_PROTO:
 							break;
 						case XAException.XA_RETRY:
@@ -1157,9 +1186,11 @@ public class XAResourceRecord extends AbstractRecord
 	private boolean _valid;
 	private int _heuristic;
 	private TransactionImple _theTransaction;
+	private boolean _recovered = false;
 
 	private static boolean _rollbackOptimization = false;
-
+	private static boolean _assumedComplete = false;
+	
 	static
 	{
 		String optimization = jtaPropertyManager.propertyManager.getProperty(
@@ -1167,6 +1198,24 @@ public class XAResourceRecord extends AbstractRecord
 
 		if (optimization.equals("ON"))
 			_rollbackOptimization = true;
+		/*
+		 * WARNING: USE WITH EXTEREME CARE!!
+		 *
+		 * This assumes that if there is no XAResource that can deal with an Xid
+		 * after recovery, then we failed after successfully committing the transaction
+		 * but before updating the log. In which case we just need to ignore this
+		 * resource and remove the entry from the log.
+		 *
+		 * BUT if not all XAResourceRecovery instances are correctly implemented
+		 * (or present) we may end up removing participants that have not been dealt
+		 * with. Hence USE WITH EXTREME CARE!!
+		 */
+
+		String assumedComplete = jtaPropertyManager.propertyManager.getProperty(
+				Environment.XA_ASSUME_RECOVERY_COMPLETE, "FALSE");
+
+		if (assumedComplete.equalsIgnoreCase("true"))
+			_assumedComplete = true;
 	}
 
 }
