@@ -67,7 +67,7 @@ import org.jboss.logging.Logger;
  * datasource configuration information from the app server's JMX and instantiate an XADataSource from
  * which it can then create an XAConnection.
  *
- * To use this class, add an XAResourceRecovery entry in the jta section of jbossjta-properties.xml
+ * To use this class, add an XAResourceRecovery entry in the jta section of jbossts-properties.xml
  * for each database for which you need recovery, ensuring the value ends with ;jndiname=<datasource-name>
  * i.e. the same value as is in the -ds.xml jndi-name element.
  * 
@@ -174,6 +174,10 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
     private final void createDataSource()
         throws SQLException
     {
+        // Note: the repeated use of SecurityAssociation.set[Principal|Credential] is a workaround for
+        // JBAS-7171 / JBAS-6449 / JBPAPP-2479. Although now fixed in some AS/EAP releases, we keep the
+        // workaround in place for now so we can work on older, non-fixed releases too.
+
         try
         {
             if (_dataSource == null)
@@ -231,10 +235,26 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
                     }
 
                 	String config = (String)server.invoke(_objectName, "displayAppConfig", new Object[] {securityDomainName}, new String[] {"java.lang.String"});
+                    String loginModuleClass = getValueForLoginModuleClass(config);
             		_dbUsername = getValueForKey(config, _USERNAME);
             		String _encryptedPassword = getValueForKey(config, _PASSWORD);
-            		_dbPassword = new String (decode(_encryptedPassword));
-            		_encrypted = true;
+
+                    if("org.jboss.resource.security.JaasSecurityDomainIdentityLoginModule".equals(loginModuleClass))
+                    {
+                        String jaasSecurityDomain = getValueForKey(config, "jaasSecurityDomain");
+                        if(_username !=null && _password !=null)
+                        {
+                            SecurityAssociation.setPrincipal(new SimplePrincipal(_username));
+                            SecurityAssociation.setCredential(_password);
+                        }
+                        _dbPassword = decodePBE(server, _encryptedPassword, jaasSecurityDomain);
+                    }
+                    else
+                    {
+                        _dbPassword = decode(_encryptedPassword);
+                    }
+
+                    _encrypted = true;
                 }
 
                 try {
@@ -442,7 +462,7 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
             }
         }
         
-        if(_dataSourceId == null && parameter != null && !parameter.contains("=")) {
+        if(_dataSourceId == null && parameter != null && parameter.indexOf('=') == -1) {
             // try to fallback to old parameter format where only the dataSourceId is given, without jndiname= prefix
             _dataSourceId = parameter;
         }
@@ -458,6 +478,17 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
 		}
 		return "";
 	}
+
+    private String getValueForLoginModuleClass(String config)
+    {
+        Pattern usernamePattern = Pattern.compile("(" + _MODULE + ":)(.*)");
+        Matcher m = usernamePattern.matcher(config);
+        if(m.find())
+        {
+            return m.group(2).trim();
+        }
+        return "";
+    }
     
     private static String decode(String secret) throws NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidKeyException, BadPaddingException, IllegalBlockSizeException
@@ -473,6 +504,13 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
 	    byte[] decode = cipher.doFinal(encoding);
 	    return new String(decode);
 	 }
+
+    private static String decodePBE(MBeanServerConnection server, String password, String jaasSecurityDomain) throws Exception
+    {
+        byte[] secret = (byte[]) server.invoke(new ObjectName(jaasSecurityDomain), "decode64", new Object[] {password}, new String[] {"java.lang.String"});
+        return new String(secret, "UTF-8");
+    }
+
 
     private boolean _supportsIsValidMethod;
     private XAConnection _connection;
@@ -490,6 +528,7 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
     private final String _JNDINAME = "jndiname";
     private final String _USERNAME = "username";
     private final String _PASSWORD = "password";
+    private final String _MODULE = "LoginModule Class";
     private final String _DELIMITER = ",";
     
     private Logger log = org.jboss.logging.Logger.getLogger(AppServerJDBCXARecovery.class);
