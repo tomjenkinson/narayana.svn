@@ -197,7 +197,7 @@ com.arjuna.ats.jbossatx.jts.TransactionManagerServiceMBean.class, registerDirect
         System.setProperty(com.arjuna.ats.jts.common.Environment.ALWAYS_PROPAGATE_CONTEXT, alwaysPropagateProperty);
 
         /** Register management plugin **/
-        com.arjuna.ats.arjuna.common.arjPropertyManager.propertyManager.addManagementPlugin(new PropertyServiceJMXPlugin());
+        PropertyManagerFactory.getPropertyManager("com.arjuna.ats.propertymanager", "arjuna").addManagementPlugin(new PropertyServiceJMXPlugin());
 
         // Associate transaction reaper with our context classloader.
         TransactionReaper.create() ;
