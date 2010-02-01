@@ -146,7 +146,7 @@ public class TransactionManagerService extends ServiceMBeanSupport implements Tr
         }
 
         /** Register management plugin **/
-        com.arjuna.ats.arjuna.common.arjPropertyManager.propertyManager.addManagementPlugin(new PropertyServiceJMXPlugin());
+        PropertyManagerFactory.getPropertyManager("com.arjuna.ats.propertymanager", "arjuna").addManagementPlugin(new PropertyServiceJMXPlugin());
 
         // Associate transaction reaper with our context classloader.
         TransactionReaper.create() ;
