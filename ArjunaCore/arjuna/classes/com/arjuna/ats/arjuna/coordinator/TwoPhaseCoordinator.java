@@ -143,11 +143,14 @@ public class TwoPhaseCoordinator extends BasicAction implements Reapable
 					}
 				}
 
-				if (_synchs.add(sr))
-				{
-					result = AddOutcome.AR_ADDED;
-				}
-			}
+                // need to guard against synchs being added while we are performing beforeCompletion processing
+                synchronized (_synchs) {
+                    if (_synchs.add(sr))
+                    {
+                        result = AddOutcome.AR_ADDED;
+                    }
+                }
+            }
 			break;
 		default:
 			break;
@@ -230,14 +233,20 @@ public class TwoPhaseCoordinator extends BasicAction implements Reapable
 			 */
 
 			int lastIndexProcessed = -1;
-			SynchronizationRecord[] copiedSynchs = (SynchronizationRecord[])_synchs.toArray(new SynchronizationRecord[] {});
+            SynchronizationRecord[] copiedSynchs;
+            // need to guard against synchs being added while we are performing beforeCompletion processing
+            synchronized (_synchs) {
+                copiedSynchs = (SynchronizationRecord[])_synchs.toArray(new SynchronizationRecord[] {});
+            }
 
 			while( (lastIndexProcessed < _synchs.size()-1) && !problem) {
 
-				// if new Synchronization have been registered, refresh our copy of the collection:
-				if(copiedSynchs.length != _synchs.size()) {
-					copiedSynchs = (SynchronizationRecord[])_synchs.toArray(new SynchronizationRecord[] {});
-				}
+                synchronized (_synchs) {
+                    // if new Synchronization have been registered, refresh our copy of the collection:
+                    if(copiedSynchs.length != _synchs.size()) {
+                        copiedSynchs = (SynchronizationRecord[])_synchs.toArray(new SynchronizationRecord[] {});
+                    }
+                }
 
 				lastIndexProcessed = lastIndexProcessed+1;
 				_currentRecord = copiedSynchs[lastIndexProcessed];
@@ -359,8 +368,10 @@ public class TwoPhaseCoordinator extends BasicAction implements Reapable
 				}
 			}
 
-			_synchs = null;
-			_currentRecord = null;
+            synchronized (_synchs) {
+                // nulling _syncs causes concurrency problems, so dispose contents instead:
+                _synchs.clear();
+            }
 		}
 
 		return !problem;
