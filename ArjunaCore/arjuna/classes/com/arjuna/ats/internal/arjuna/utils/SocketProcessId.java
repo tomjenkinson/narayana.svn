@@ -53,58 +53,51 @@ import java.io.IOException;
 
 public class SocketProcessId implements com.arjuna.ats.arjuna.utils.Process
 {
-
     /**
-     * @return the process id. This had better be unique between processes
-     * on the same machine. If not we're in trouble!
-     *
-     * @message com.arjuna.ats.internal.arjuna.utils.SocketProcessId_1 [com.arjuna.ats.internal.arjuna.utils.SocketProcessId_1]- Invalid port specified
      * @message com.arjuna.ats.internal.arjuna.utils.SocketProcessId_2 [com.arjuna.ats.internal.arjuna.utils.SocketProcessId_2] - SocketProcessId.getpid could not get unique port.
-     * @message com.arjuna.ats.internal.arjuna.utils.SocketProcessId_3 [com.arjuna.ats.internal.arjuna.utils.SocketProcessId_3]- Invalid value for SocketProcessIdMaxPorts specified {0}
      */
-
-    public int getpid ()
+    public SocketProcessId()
     {
-	synchronized (SocketProcessId._lock)
-	{
-	    if (_thePort == 0)
-	    {
-		if (_theSocket == null)
-		{
             Integer port = Utility.lookupBoundedIntegerProperty(arjPropertyManager.propertyManager, Environment.SOCKET_PROCESS_ID_PORT, _defaultPort,
                         "com.arjuna.ats.internal.arjuna.utils.SocketProcessId_1",
                         0, Utility.MAX_PORT);
             Integer maxPorts = Utility.lookupBoundedIntegerProperty(arjPropertyManager.propertyManager, Environment.SOCKET_PROCESS_ID_MAX_PORTS, 1,
                         "com.arjuna.ats.internal.arjuna.utils.SocketProcessId_3",
                         0, Utility.MAX_PORT);
-            int maxPort;
 
-            if (maxPorts <= 1)
-            {
-                maxPort = port;
-            }
-            else if (Utility.MAX_PORT - maxPorts < port)
-            {
-                maxPort = Utility.MAX_PORT;
-            }
-            else
-            {
-                maxPort = port + maxPorts;
-            }
+        int maxPort;
+        
+        if (maxPorts <= 1)
+        {
+            maxPort = port;
+        }
+        else if (Utility.MAX_PORT - maxPorts < port)
+        {
+            maxPort = Utility.MAX_PORT;
+        }
+        else
+        {
+            maxPort = port + maxPorts;
+        }
 
-            do {
-                _theSocket = createSocket(port);
-            } while (_theSocket == null && ++port < maxPort);
+        do {
+            _theSocket = createSocket(port);
+        } while (_theSocket == null && ++port < maxPort);
 
-	    	_thePort = ((_theSocket == null) ? -1 : _theSocket.getLocalPort());
-		}
-	    }
-	}
+        _thePort = ((_theSocket == null) ? -1 : _theSocket.getLocalPort());
 
-	if (_thePort == -1)
-	    throw new FatalError(tsLogger.log_mesg.getString("com.arjuna.ats.internal.arjuna.utils.SocketProcessId_2"));
+        if (_thePort == -1) {
+            throw new FatalError(tsLogger.log_mesg.getString("com.arjuna.ats.internal.arjuna.utils.SocketProcessId_2"));
+        }
+    }
 
-	return _thePort;
+    /**
+     * @return the process id. This had better be unique between processes
+     * on the same machine. If not we're in trouble!
+     */
+    public int getpid ()
+    {
+    	return _thePort;
     }
 
     private static ServerSocket createSocket(int port)
@@ -119,22 +112,11 @@ public class SocketProcessId implements com.arjuna.ats.arjuna.utils.Process
         }
     }
 
-    public static ServerSocket getSocket ()
-    {
-	synchronized (SocketProcessId._lock)
-	{
-	    return _theSocket;
-	}
-    }
-
-    private static int          _thePort = 0;
-    private static ServerSocket _theSocket = null;
-    private static final Object       _lock = new Object();
+    private final int _thePort;
+    private ServerSocket _theSocket;
 
     /**
      * Default port is any free port.
      */
-
     private static final int _defaultPort = 0 ;
-
 }
