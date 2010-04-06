@@ -111,7 +111,7 @@ public class TxStats
 	
 	public static int numberOfInflightTransactions ()
 	{
-		return ActionManager.manager().inflightTransactions().size();
+		return ActionManager.manager().getNumberOfInflightTransactions();
 	}
 
 	/**

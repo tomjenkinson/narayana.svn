@@ -56,7 +56,7 @@ public class SubordinateTestCase extends TestCase
 			tm.doCommit();
 		}
 
-		assertEquals(ActionManager.manager().inflightTransactions().size(), 0);
+		assertEquals(ActionManager.manager().getNumberOfInflightTransactions(), 0);
 	}
 
 	public void testCleanupRollback () throws Exception
@@ -68,7 +68,7 @@ public class SubordinateTestCase extends TestCase
 			tm.doRollback();
 		}
 
-		assertEquals(ActionManager.manager().inflightTransactions().size(), 0);
+		assertEquals(ActionManager.manager().getNumberOfInflightTransactions(), 0);
 	}
 
 	public void testCleanupSecondPhaseRollback () throws Exception
@@ -81,7 +81,7 @@ public class SubordinateTestCase extends TestCase
 			tm.doRollback();
 		}
 
-		assertEquals(ActionManager.manager().inflightTransactions().size(), 0);
+		assertEquals(ActionManager.manager().getNumberOfInflightTransactions(), 0);
 	}
 
 	public void testCleanupOnePhaseCommit () throws Exception
@@ -93,7 +93,7 @@ public class SubordinateTestCase extends TestCase
 			tm.doOnePhaseCommit();
 		}
 
-		assertEquals(ActionManager.manager().inflightTransactions().size(), 0);
+		assertEquals(ActionManager.manager().getNumberOfInflightTransactions(), 0);
 	}
 
     /////////////
