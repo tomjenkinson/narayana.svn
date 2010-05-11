@@ -68,10 +68,10 @@
 
 	</task-runner-definitions>
 
-	<jvm-definitions default="1.5.0">
+	<jvm-definitions default="1.6.0">
         <!-- JBoss hudson server needs here /qa/tools/opt/jdk1.5.0_15 -->
         <jvm version="1.5.0" java-home="/qa/tools/opt/jdk1.5.0_15"/>
-        <jvm version="1.6.0" java-home="/usr/local/jdk1.6.0_05"/>
+        <jvm version="1.6.0" java-home="/usr/local/jdk1.6.0_20"/>
 	</jvm-definitions>
 
 </test-node-configuration>
