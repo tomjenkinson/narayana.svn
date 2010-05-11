@@ -26,10 +26,7 @@
 
 package com.arjuna.wsc11.tests.junit;
 
-import com.arjuna.wsc.AlreadyRegisteredException;
-import com.arjuna.wsc.InvalidProtocolException;
-import com.arjuna.wsc.InvalidStateException;
-import com.arjuna.wsc.NoActivityException;
+import com.arjuna.wsc.*;
 import com.arjuna.wsc.tests.TestUtil;
 import com.arjuna.wsc11.RegistrationCoordinator;
 import com.arjuna.wsc11.tests.TestUtil11;
@@ -56,7 +53,7 @@ public class RegistrationServiceExceptionTestCase extends TestCase
         {
             RegistrationCoordinator.register(coordinationContext, messageId, participantEndpoint, protocolIdentifier) ;
         }
-        catch (final AlreadyRegisteredException are) {}
+        catch (final CannotRegisterException cre) {}
         catch (final Throwable th)
         {
             fail("Unexpected exception: " + th) ;
@@ -125,7 +122,7 @@ public class RegistrationServiceExceptionTestCase extends TestCase
         {
             RegistrationCoordinator.register(coordinationContext, messageId, participantEndpoint, protocolIdentifier) ;
         }
-        catch (final NoActivityException nae) {}
+        catch (final CannotRegisterException cre) {}
         catch (final Throwable th)
         {
             fail("Unexpected exception: " + th) ;

@@ -83,8 +83,8 @@ public class RegistrationCoordinatorProcessorImpl extends RegistrationCoordinato
                 catch (final AlreadyRegisteredException alreadyRegisteredException)
                 {
                     SOAPFactory factory = SOAPFactory.newInstance();
-                    SOAPFault soapFault = factory.createFault(SoapFaultType.FAULT_SENDER.getValue(), CoordinationConstants.WSCOOR_ERROR_CODE_ALREADY_REGISTERED_QNAME);
-                    soapFault.addDetail().addDetailEntry(CoordinationConstants.WSCOOR_ERROR_CODE_ALREADY_REGISTERED_QNAME).addTextNode(WSCLogger.log_mesg.getString("com.arjuna.wsc11.messaging.RegistrationCoordinatorProcessorImpl_1"));
+                    SOAPFault soapFault = factory.createFault(SoapFaultType.FAULT_SENDER.getValue(), CoordinationConstants.WSCOOR_ERROR_CODE_CANNOT_REGISTER_QNAME);
+                    soapFault.addDetail().addDetailEntry(CoordinationConstants.WSCOOR_ERROR_CODE_CANNOT_REGISTER_QNAME).addTextNode(WSCLogger.log_mesg.getString("com.arjuna.wsc11.messaging.RegistrationCoordinatorProcessorImpl_1"));
                     throw new SOAPFaultException(soapFault);
                 }
                 catch (final InvalidProtocolException invalidProtocolException)
@@ -104,8 +104,8 @@ public class RegistrationCoordinatorProcessorImpl extends RegistrationCoordinato
                 catch (final NoActivityException noActivityException)
                 {
                     SOAPFactory factory = SOAPFactory.newInstance();
-                    SOAPFault soapFault = factory.createFault(SoapFaultType.FAULT_SENDER.getValue(), CoordinationConstants.WSCOOR_ERROR_CODE_NO_ACTIVITY_QNAME);
-                    soapFault.addDetail().addDetailEntry(CoordinationConstants.WSCOOR_ERROR_CODE_NO_ACTIVITY_QNAME).addTextNode(WSCLogger.log_mesg.getString("com.arjuna.wsc11.messaging.RegistrationCoordinatorProcessorImpl_4"));
+                    SOAPFault soapFault = factory.createFault(SoapFaultType.FAULT_SENDER.getValue(), CoordinationConstants.WSCOOR_ERROR_CODE_CANNOT_REGISTER_QNAME);
+                    soapFault.addDetail().addDetailEntry(CoordinationConstants.WSCOOR_ERROR_CODE_CANNOT_REGISTER_QNAME).addTextNode(WSCLogger.log_mesg.getString("com.arjuna.wsc11.messaging.RegistrationCoordinatorProcessorImpl_4"));
                     throw new SOAPFaultException(soapFault);
                 }
                 catch (final Throwable th)
@@ -115,8 +115,8 @@ public class RegistrationCoordinatorProcessorImpl extends RegistrationCoordinato
                         WSCLogger.arjLoggerI18N.debug("com.arjuna.wsc11.messaging.RegistrationCoordinatorProcessorImpl_5", th) ;
                     }
                     SOAPFactory factory = SOAPFactory.newInstance();
-                    SOAPFault soapFault = factory.createFault();
-                    soapFault.addDetail().addDetailEntry(CoordinationConstants.WSCOOR_ERROR_CODE_EXCEPTION_QNAME).addTextNode(th.getMessage());
+                    SOAPFault soapFault = factory.createFault(SoapFaultType.FAULT_SENDER.getValue(), CoordinationConstants.WSCOOR_ERROR_CODE_CANNOT_REGISTER_QNAME);
+                    soapFault.addDetail().addDetailEntry(CoordinationConstants.WSCOOR_ERROR_CODE_CANNOT_REGISTER_QNAME).addTextNode(th.getMessage());
                     throw new SOAPFaultException(soapFault);
                 }
             }

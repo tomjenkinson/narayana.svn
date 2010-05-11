@@ -255,20 +255,20 @@ public class EnduranceTestCase extends TestCase
                 protocolIdentifier = TestUtil.NO_ACTIVITY_PROTOCOL_IDENTIFIER;
                 try {
                     coordinator = RegistrationCoordinator.register(coordinationContext, messageId, participantProtocolService, protocolIdentifier) ;
-                } catch (NoActivityException nae) {
+                } catch (CannotRegisterException nae) {
                 }
                 if (coordinator != null) {
-                    fail("expected no activity exception");
+                    fail("expected cannot register exception");
                 }
                 break;
             default:
                 protocolIdentifier = TestUtil.ALREADY_REGISTERED_PROTOCOL_IDENTIFIER;
                 try {
                     coordinator = RegistrationCoordinator.register(coordinationContext, messageId, participantProtocolService, protocolIdentifier) ;
-                } catch (AlreadyRegisteredException are) {
+                } catch (CannotRegisterException are) {
                 }
                 if (coordinator != null) {
-                    fail("expected already registered exception");
+                    fail("expected cannot register exception");
                 }
                 break;
         }
