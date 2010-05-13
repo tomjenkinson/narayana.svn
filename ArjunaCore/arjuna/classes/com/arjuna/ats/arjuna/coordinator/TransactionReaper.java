@@ -33,7 +33,6 @@ package com.arjuna.ats.arjuna.coordinator;
 
 import com.arjuna.ats.arjuna.common.Environment;
 import com.arjuna.ats.arjuna.common.arjPropertyManager;
-import com.arjuna.ats.arjuna.coordinator.listener.ReaperMonitor;
 
 import com.arjuna.ats.internal.arjuna.coordinator.*;
 
@@ -337,8 +336,6 @@ public class TransactionReaper
                                                     "com.arjuna.ats.arjuna.coordinator.TransactionReaper_10",
                                                     new Object[]{reaperElement._control.get_uid()});
                                 }
-
-                                notifyListeners(reaperElement._control, false);
                             } else {
                                 // log a failed preventCommit()
 
@@ -452,8 +449,6 @@ public class TransactionReaper
                             // the stats unpdate in the TwoPhaseCoordinator cancel() method.
                             TxStats.incrementTimeouts();
                         }
-
-                        notifyListeners(e._control, true);
                     }
                 }
             }
@@ -554,8 +549,6 @@ public class TransactionReaper
                                             new Object[]{Thread.currentThread(),
                                                     e._control.get_uid()});
                         }
-
-                        notifyListeners(e._control, false);
                     } else {
                         // log a failed preventCommit()
 
@@ -886,25 +879,6 @@ public class TransactionReaper
         }
     }
 
-
-
-    private final void notifyListeners(Reapable element, boolean rollback)
-    {
-        // notify listeners. Ignore errors.
-
-        for (int i = 0; i < _listeners.size(); i++) {
-            try {
-                if (rollback)
-                    _listeners.get(i).rolledBack(element.get_uid());
-                else
-                    _listeners.get(i).markedRollbackOnly(element.get_uid());
-            }
-            catch (final Throwable ex) {
-                // ignore
-            }
-        }
-    }
-
     /**
      * Currently we let the reaper thread run at same priority as other threads.
      * Could get priority from environment.
@@ -1126,8 +1100,6 @@ public class TransactionReaper
     private final ConcurrentMap<Object, ReaperElement> _timeouts = new ConcurrentHashMap<Object, ReaperElement>();
 
     private final List<ReaperElement> _workQueue = new LinkedList<ReaperElement>();
-
-    private final Vector<ReaperMonitor> _listeners = new Vector<ReaperMonitor>(); // TODO sync properly
 
     private long _checkPeriod = 0;
 
