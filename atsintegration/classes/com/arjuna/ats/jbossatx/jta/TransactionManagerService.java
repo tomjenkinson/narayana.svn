@@ -193,7 +193,7 @@ public class TransactionManagerService implements TransactionManagerServiceMBean
         PropertyManagerFactory.getPropertyManager("com.arjuna.ats.propertymanager", "arjuna").addManagementPlugin(new PropertyServiceJMXPlugin());
 
         // Associate transaction reaper with our context classloader.
-        TransactionReaper.create() ;
+        TransactionReaper.transactionReaper() ;
 
         /** Register propagation context manager **/
         try

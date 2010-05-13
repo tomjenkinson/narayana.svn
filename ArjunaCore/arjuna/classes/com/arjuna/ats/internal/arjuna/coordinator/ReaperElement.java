@@ -31,13 +31,15 @@
 
 package com.arjuna.ats.internal.arjuna.coordinator;
 
-import com.arjuna.common.util.logging.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import com.arjuna.ats.arjuna.logging.tsLogger;
 import com.arjuna.ats.arjuna.coordinator.Reapable;
 import com.arjuna.ats.arjuna.logging.FacilityCode;
+import com.arjuna.ats.arjuna.logging.tsLogger;
+import com.arjuna.common.util.logging.DebugLevel;
+import com.arjuna.common.util.logging.VisibilityLevel;
 
-public class ReaperElement implements Comparable
+public class ReaperElement implements Comparable<ReaperElement>
 {
 
     /*
@@ -48,7 +50,7 @@ public class ReaperElement implements Comparable
 
 	public ReaperElement(Reapable control, int timeout)
 	{
-		if (tsLogger.arjLogger.debugAllowed())
+		if (tsLogger.arjLogger.isDebugEnabled())
 		{
 			tsLogger.arjLogger.debug(DebugLevel.CONSTRUCTORS,
 					VisibilityLevel.VIS_PUBLIC, FacilityCode.FAC_ATOMIC_ACTION,
@@ -72,19 +74,22 @@ public class ReaperElement implements Comparable
         _bias = getBiasCounter();
 
 	}
+	
+	public String toString ()
+	{
+	    return "ReaperElement < "+_control+", "+_timeout+", "+statusName()+", "+_worker+" >";
+	}
 
 	/**
 	 * Order by absoluteTimeout first, then by Uid.
 	 * This is required so that the set maintained by the TransactionReaper
 	 * is in timeout order for efficient processing.
 	 *
-	 * @param o
-	 * @return
+	 * @param other the ReaperElement to compare
+	 * @return 0 if equal, 1 if this is greater, -1 if this is smaller
 	 */
-	public int compareTo(Object o)
+	public int compareTo(ReaperElement other)
 	{
-		ReaperElement other = (ReaperElement)o;
-
         if(this == other) {
             return 0;
         }
@@ -114,16 +119,20 @@ public class ReaperElement implements Comparable
     // bias is used to distinguish/sort instances with the same _absoluteTimeoutMills
     // as using Uid for this purpose is expensive. JBTM-611
 
-    private static int biasCounter = 0;
+    private static int MAX_BIAS = 1000000;
+    private static AtomicInteger biasCounter = new AtomicInteger();
 
-    public static synchronized int getBiasCounter()
+    private static int getBiasCounter()
     {
-        if(biasCounter >= 1000000-1) {
-            biasCounter = 0;
-        } else {
-            biasCounter++;
-        }
-        return biasCounter;
+        int value = 0;
+        do {
+            value = biasCounter.getAndIncrement();
+            if(value == MAX_BIAS) {
+                biasCounter.set(0);
+            }
+        } while(value >= MAX_BIAS);
+
+        return value; // range 0 to MAX_BIAS-1 inclusive.
     }
 
     public int _timeout;

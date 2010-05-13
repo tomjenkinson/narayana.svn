@@ -129,53 +129,47 @@ public class OTSManager
 	/*
 	 * Just in case control is a top-level transaction, and has
 	 * been registered with the reaper, we need to get it removed.
-	 *
-	 * Don't bother if the reaper has not been created.
 	 */
-    
-	if (TransactionReaper.transactionReaper() != null)
+    Coordinator coord = null;
+
+    try
+    {
+	coord = control.get_coordinator();
+    }
+    catch (Exception e)
+    {
+	coord = null;  // nothing else we can do!
+    }
+
+    if (coord != null)
+    {
+	try
 	{
-	    Coordinator coord = null;
-	
-	    try
+	    if (coord.is_top_level_transaction())
 	    {
-		coord = control.get_coordinator();
-	    }
-	    catch (Exception e)
-	    {
-		coord = null;  // nothing else we can do!
-	    }
+		/*
+		 * Transaction is local, but was registered as
+		 * a Control. If this is a performance hit then
+		 * add explicit add/removes for local instances.
+		 */
 
-	    if (coord != null)
-	    {
-		try
+		if (jtsLogger.logger.isDebugEnabled())
 		{
-		    if (coord.is_top_level_transaction())
-		    {
-			/*
-			 * Transaction is local, but was registered as
-			 * a Control. If this is a performance hit then
-			 * add explicit add/removes for local instances.
-			 */
-
-			if (jtsLogger.logger.isDebugEnabled())
-			{
-			    jtsLogger.logger.debug(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PUBLIC,
-						   com.arjuna.ats.jts.logging.FacilityCode.FAC_OTS, "OTS::destroyControl - removing control from reaper.");
-			}
-
-            // wrap the control so it gets compared against reaper list entries using the correct test
-            PseudoControlWrapper wrapper = new PseudoControlWrapper(control);
-			TransactionReaper.transactionReaper().remove(wrapper);
-		    }
-		}
-		catch (Exception e)
-		{
+		    jtsLogger.logger.debug(DebugLevel.FUNCTIONS, VisibilityLevel.VIS_PUBLIC,
+					   com.arjuna.ats.jts.logging.FacilityCode.FAC_OTS, "OTS::destroyControl - removing control from reaper.");
 		}
 
-		coord = null;
+        // wrap the control so it gets compared against reaper list entries using the correct test
+        PseudoControlWrapper wrapper = new PseudoControlWrapper(control);
+		TransactionReaper.transactionReaper().remove(wrapper);
 	    }
 	}
+	catch (Exception e)
+	{
+	}
+
+	coord = null;
+    }
 	
 	/*
 	 * Watch out for conflicts with multiple threads deleting

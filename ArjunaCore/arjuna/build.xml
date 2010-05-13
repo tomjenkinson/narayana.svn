@@ -439,27 +439,16 @@
         <mkdir dir="${com.hp.mwlabs.ts.arjuna.reports.dest}"/>
         <junit printsummary="yes">
             <formatter type="plain"/>
-            <classpath>
+        	<!--jvmarg value="-Xdebug"/>
+         <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000"/-->
+
+            	<classpath>
                 <pathelement location="${com.hp.mwlabs.ts.arjuna.tests.dest}"/>
                 <path location="${com.hp.mwlabs.ts.arjuna.dest}"/>
                 <pathelement path="${build.classpath}"/>
                 <pathelement location="etc"/>
             </classpath>
-        	<batchtest haltonerror="yes" haltonfailure="yes" fork="yes"
-        	                todir="${com.hp.mwlabs.ts.arjuna.reports.dest}">
-        	                <fileset dir="${com.hp.mwlabs.ts.arjuna.tests.src}" includes="**/ReaperTestCase.java"/>
-        	            </batchtest>
-		<!-- decommissioned becaue of timing problems. thsi has been
-		     dealt with in trunk using byteman rules
-		<batchtest haltonerror="yes" haltonfailure="yes" fork="yes"
-		                todir="${com.hp.mwlabs.ts.arjuna.reports.dest}">
-		                <fileset dir="${com.hp.mwlabs.ts.arjuna.tests.src}" includes="**/ReaperTestCase2.java"/>
-		            </batchtest>
-		-->
-            <batchtest haltonerror="yes" haltonfailure="yes" fork="yes"
-                todir="${com.hp.mwlabs.ts.arjuna.reports.dest}">
-                <fileset dir="${com.hp.mwlabs.ts.arjuna.tests.src}" includes="**/ReaperTestCase3.java"/>
-            </batchtest>
+
         	<batchtest haltonerror="yes" haltonfailure="yes" fork="yes"
         	        	                todir="${com.hp.mwlabs.ts.arjuna.reports.dest}">
 				<fileset dir="${com.hp.mwlabs.ts.arjuna.tests.src}" includes="**/TxControlUnitTest.java"/>
@@ -468,6 +457,28 @@
         	        	        	                todir="${com.hp.mwlabs.ts.arjuna.reports.dest}">
         					<fileset dir="${com.hp.mwlabs.ts.arjuna.tests.src}" includes="**/PersistenceUnitTest.java"/>
         	</batchtest>
+        </junit>
+
+        <junit printsummary="yes" fork="true" dir="${basedir}" showoutput="false">
+            <formatter type="plain"/>
+            <classpath>
+                <pathelement location="${com.hp.mwlabs.ts.arjuna.tests.dest}"/>
+                <path location="${com.hp.mwlabs.ts.arjuna.dest}"/>
+                <pathelement path="${build.classpath}"/>
+                <pathelement location="etc"/>
+            </classpath>
+
+            <batchtest haltonerror="yes" haltonfailure="yes" fork="yes"
+                       todir="${com.hp.mwlabs.ts.arjuna.reports.dest}">
+                <fileset dir="${com.hp.mwlabs.ts.arjuna.tests.src}">
+                    <include name="**/reaper/ReaperTestCase.java"/>
+                    <include name="**/reaper/ReaperTestCase2.java"/>
+                    <include name="**/reaper/ReaperTestCase3.java"/>
+                </fileset>
+            </batchtest>
+
+            <jvmarg value="-javaagent:../../ext/byteman.jar=script:tests/byteman-scripts/reaper.txt"/>
+            <jvmarg value="-Dorg.jboss.byteman.debug"/>
         </junit>
     </target>
 

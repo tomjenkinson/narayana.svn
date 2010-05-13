@@ -144,7 +144,7 @@ public class AtomicAction extends TwoPhaseCoordinator
 				_timeout = TxControl.getDefaultTimeout();
 			
 			if (_timeout > 0)
-				TransactionReaper.transactionReaper(true).insert(this, _timeout);
+				TransactionReaper.transactionReaper().insert(this, _timeout);
 		}
 
 		return status;
@@ -182,7 +182,7 @@ public class AtomicAction extends TwoPhaseCoordinator
 
 		ThreadActionData.popAction();
 
-		TransactionReaper.create().remove(this);
+		TransactionReaper.transactionReaper().remove(this);
 
 		return status;
 	}
@@ -206,7 +206,7 @@ public class AtomicAction extends TwoPhaseCoordinator
 
 		ThreadActionData.popAction();
 
-		TransactionReaper.create().remove(this);
+		TransactionReaper.transactionReaper().remove(this);
 
 		return status;
 	}
@@ -220,7 +220,7 @@ public class AtomicAction extends TwoPhaseCoordinator
 		 * the thread-to-tx association though.
 		 */
 
-		TransactionReaper.create().remove(this);
+		TransactionReaper.transactionReaper().remove(this);
 
 		return outcome;
 	}
@@ -234,7 +234,7 @@ public class AtomicAction extends TwoPhaseCoordinator
 		 * the thread-to-tx association though.
 		 */
 
-		TransactionReaper.create().remove(this);
+		TransactionReaper.transactionReaper().remove(this);
 
 		return outcome;
 	}
