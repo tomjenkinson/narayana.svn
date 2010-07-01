@@ -96,6 +96,7 @@ import org.jboss.logging.Logger;
  *    <!-- xaRecoveryNode should match value in nodeIdentifier or be * -->
  *    <property name="com.arjuna.ats.jta.xaRecoveryNode" value="1"/>
  *
+ * @deprecated see JBTM-756
  */
 public class AppServerJDBCXARecovery implements XAResourceRecovery {
 
@@ -148,6 +149,10 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
 
     public boolean hasMoreResources()
     {
+        if(!_force) {
+            return false;
+        }
+
         if (_dataSource == null)
             try
             {
@@ -459,12 +464,20 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
                 {
                     _dataSourceId=data.substring(9);
                 }
+                if(_FORCE.equals(data.substring(0, 10)))
+                {
+                    _force = true;
+                }
             }
         }
         
         if(_dataSourceId == null && parameter != null && parameter.indexOf('=') == -1) {
             // try to fallback to old parameter format where only the dataSourceId is given, without jndiname= prefix
             _dataSourceId = parameter;
+        }
+
+        if(!_force) {
+            log.warn("AppServerJDBCXARecovery is no longer required. See jira.jboss.org/browse/JBTM-756");
         }
     }
     
@@ -519,6 +532,8 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
     private boolean                      _hasMoreResources;
     private boolean _encrypted;
 
+    private boolean _force = false;
+
     private String _dataSourceId;
     private String _username;
     private String _password;
@@ -528,6 +543,7 @@ public class AppServerJDBCXARecovery implements XAResourceRecovery {
     private final String _JNDINAME = "jndiname";
     private final String _USERNAME = "username";
     private final String _PASSWORD = "password";
+    private final String _FORCE = "force=true";
     private final String _MODULE = "LoginModule Class";
     private final String _DELIMITER = ",";
     
