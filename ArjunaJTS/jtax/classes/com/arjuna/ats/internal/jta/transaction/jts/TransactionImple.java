@@ -1297,7 +1297,7 @@ public class TransactionImple implements javax.transaction.Transaction,
      * @return
      */
     public boolean isAlive() {
-        return _transactions.contains(this);
+        return _transactions.containsKey(this.get_uid());
     }
 
 
