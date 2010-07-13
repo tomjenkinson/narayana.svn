@@ -1332,7 +1332,15 @@ public class TransactionImple implements javax.transaction.Transaction,
      * @return
      */
     public boolean isAlive() {
-        return _transactions.containsKey(this.get_uid());
+        try {
+            if(_theTransaction != null) {
+                return _transactions.containsKey(this.get_uid());
+            } else {
+                return false;
+            }
+        } catch(NullPointerException e) {
+            return false; // there is no tx/action, therefore it's not alive.
+        }
     }
 
     protected TransactionImple()
