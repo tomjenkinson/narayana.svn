@@ -13,3 +13,5 @@ will build the JTA version with AS integration
 ant jbossjts	
 
 will build the JTS version with AS integration 
+
+Note that ant versions after apache-ant-1.7.1 no longer distribute some libraries required by this build (notably xerces).
