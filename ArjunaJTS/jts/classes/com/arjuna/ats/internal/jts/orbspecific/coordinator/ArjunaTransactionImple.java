@@ -1451,76 +1451,76 @@ public class ArjunaTransactionImple extends
 					+ get_uid());
 		}
 
-		boolean problem = false;
-		SystemException exp = null;
+	    boolean problem = false;
+	    SystemException exp = null;
 
-		/*
-		 * If we have a synchronization list then we must be top-level.
-		 */
-        if (_synchs != null)
-		{
-			boolean doSuspend = false;
-			ControlWrapper cw = null;
+	    /*
+	     * If we have a synchronization list then we must be top-level.
+	     */
+	    if (_synchs != null)
+	    {
+	        boolean doSuspend = false;
+	        ControlWrapper cw = null;
 
-			try
-			{
-				/*
-				 * Make sure that this transaction is active on the thread
-				 * before we invoke any Synchronizations. They are
-				 * TransactionalObjects and must have the context flowed to
-				 * them.
-				 */
+	        try
+	        {
+	            /*
+	             * Make sure that this transaction is active on the thread
+	             * before we invoke any Synchronizations. They are
+	             * TransactionalObjects and must have the context flowed to
+	             * them.
+	             */
 
-				try
-				{
-					//		    cw = OTSImpleManager.systemCurrent().getControlWrapper();
+	            try
+	            {
+	                //		    cw = OTSImpleManager.systemCurrent().getControlWrapper();
 
-					cw = OTSImpleManager.current().getControlWrapper();
+	                cw = OTSImpleManager.current().getControlWrapper();
 
-					/*
-					 * If there's no transaction incoming, then use the one that
-					 * we got at creation time.
-					 */
+	                /*
+	                 * If there's no transaction incoming, then use the one that
+	                 * we got at creation time.
+	                 */
 
-					if ((cw == null) || (!controlHandle.equals(cw.getImple())))
-					{
-						//			OTSImpleManager.systemCurrent().resumeImple(controlHandle);
+	                if ((cw == null) || (!controlHandle.equals(cw.getImple())))
+	                {
+	                    //			OTSImpleManager.systemCurrent().resumeImple(controlHandle);
 
-						OTSImpleManager.current().resumeImple(controlHandle);
+	                    OTSImpleManager.current().resumeImple(controlHandle);
 
-						doSuspend = true;
-					}
-				}
-				catch (Exception ex)
-				{
-					/*
-					 * It should be OK to continue with the invocations even if
-					 * we couldn't resume, because a Synchronization is only
-					 * supposed to be associated with a single transaction. So,
-					 * it should be able to infer the transaction.
-					 */
-				}
+	                    doSuspend = true;
+	                }
+	            }
+	            catch (Exception ex)
+	            {
+	                /*
+	                 * It should be OK to continue with the invocations even if
+	                 * we couldn't resume, because a Synchronization is only
+	                 * supposed to be associated with a single transaction. So,
+	                 * it should be able to infer the transaction.
+	                 */
+	            }
 
-               /*
-                * Since Synchronizations may add register other Synchronizations, we can't simply
-                * iterate the collection. Instead we work from an ordered copy, which we periodically
-                * check for freshness. The addSynchronization method uses _currentRecord to disallow
-                * adding records in the part of the array we have already traversed, thus all
-                * Synchronization will be called and the (jta only) rules on ordering of interposed
-                * Synchronization will be respected.
-                */
-               int lastIndexProcessed = -1;
-               SynchronizationRecord[] copiedSynchs = (SynchronizationRecord[])_synchs.toArray(new SynchronizationRecord[] {});
+	            /*
+	             * Since Synchronizations may add register other Synchronizations, we can't simply
+	             * iterate the collection. Instead we work from an ordered copy, which we periodically
+	             * check for freshness. The addSynchronization method uses _currentRecord to disallow
+	             * adding records in the part of the array we have already traversed, thus all
+	             * Synchronization will be called and the (jta only) rules on ordering of interposed
+	             * Synchronization will be respected.
+	             */
+	            int lastIndexProcessed = -1;
+	            SynchronizationRecord[] copiedSynchs = (SynchronizationRecord[])_synchs.toArray(new SynchronizationRecord[] {});
 
-               while( (lastIndexProcessed < _synchs.size()-1) && !problem) {
+	            while( (lastIndexProcessed < _synchs.size()-1) && !problem) {
 
-                   // if new Synchronization have been registered, refresh our copy of the collection:
-                   if(copiedSynchs.length != _synchs.size()) {
-                       copiedSynchs = (SynchronizationRecord[])_synchs.toArray(new SynchronizationRecord[] {});
-                   }
+	                // if new Synchronization have been registered, refresh our copy of the collection:
+	                if(copiedSynchs.length != _synchs.size()) {
+	                    copiedSynchs = (SynchronizationRecord[])_synchs.toArray(new SynchronizationRecord[] {});
+	                }
 
-                   lastIndexProcessed = lastIndexProcessed+1;
-                   _currentRecord = copiedSynchs[lastIndexProcessed];
+	                lastIndexProcessed = lastIndexProcessed+1;
+	                _currentRecord = copiedSynchs[lastIndexProcessed];
 
 					Synchronization c = _currentRecord.contents();
 					c.before_completion();
@@ -1534,27 +1534,27 @@ public class ArjunaTransactionImple extends
 					{ "ArjunaTransactionImple.doBeforeCompletion", e });
 				}
 
-				if (!problem)
-				{
-					exp = e;
+	            if (!problem)
+                {
+	                exp = e;
 
-					problem = true;
+	                problem = true;
 
-					/*
-					 * Mark as rollback_only, so when we try to commit it will
-					 * fail.
-					 */
+	                /*
+	                 * Mark as rollback_only, so when we try to commit it will
+	                 * fail.
+	                 */
 
-					try
-					{
-						rollback_only();
-					}
-					catch (Inactive ex)
-					{
-						/*
-						 * This should not happen. If it does, continue with
-						 * commit to tidy-up.
-						 */
+	                try
+                    {
+	                    rollback_only();
+	                }
+	                catch (Inactive ex)
+                    {
+	                    /*
+	                     * This should not happen. If it does, continue with
+	                     * commit to tidy-up.
+	                     */
 
 						if (jtsLogger.loggerI18N.isWarnEnabled())
 						{
@@ -1572,28 +1572,35 @@ public class ArjunaTransactionImple extends
 					{
 						//			OTSImpleManager.systemCurrent().resumeWrapper(cw);
 
-						if (cw != null)
-							OTSImpleManager.current().resumeWrapper(cw);
-						else
-							OTSImpleManager.current().suspend();
-					}
-					catch (Exception ex)
-					{
-					}
+	                    if (cw != null)
+	                        OTSImpleManager.current().resumeWrapper(cw);
+	                    else
+	                        OTSImpleManager.current().suspend();
+	                }
+	                catch (Exception ex)
+	                {
+	                }
 
-					//		    OTSImpleManager.systemCurrent().suspend();
-				}
-			}
-		}
+	                //		    OTSImpleManager.systemCurrent().suspend();
+	            }
+	        }
+	    }
+	    
+	    /*
+	     * If there's no problem so far then call beforeCompletion on the underlying TwoPhaseCoordinator.
+	     */
 
-		if (problem)
-		{
-			if (exp != null)
-				throw exp;
-			else
-				throw new UNKNOWN(ExceptionCodes.SYNCHRONIZATION_EXCEPTION,
-						CompletionStatus.COMPLETED_NO);
-		}
+        if (!problem)
+            problem = !super.beforeCompletion();
+	    
+	    if (problem)
+	    {
+	        if (exp != null)
+	            throw exp;
+	        else
+	            throw new UNKNOWN(ExceptionCodes.SYNCHRONIZATION_EXCEPTION,
+	                    CompletionStatus.COMPLETED_NO);
+	    }
 	}
 
 	/**
@@ -1621,67 +1628,67 @@ public class ArjunaTransactionImple extends
 			return;
 		}
 
-		boolean problem = false;
-		SystemException exp = null;
+	    boolean problem = false;
+	    SystemException exp = null;
 
-		if (_synchs != null)
-		{
-			ControlWrapper cw = null;
-			boolean doSuspend = false;
+	    if (_synchs != null)
+	    {
+	        ControlWrapper cw = null;
+	        boolean doSuspend = false;
 
-			try
-			{
-				//		cw = OTSImpleManager.systemCurrent().getControlWrapper();
+	        try
+	        {
+	            //		cw = OTSImpleManager.systemCurrent().getControlWrapper();
 
-				cw = OTSImpleManager.current().getControlWrapper();
+	            cw = OTSImpleManager.current().getControlWrapper();
 
-				/*
-				 * If there isn't a transaction context shipped, then use the
-				 * one we had during creation.
-				 */
+	            /*
+	             * If there isn't a transaction context shipped, then use the
+	             * one we had during creation.
+	             */
 
-				if ((cw == null) || (!controlHandle.equals(cw.getImple())))
-				{
-					//		    OTSImpleManager.systemCurrent().resumeImple(controlHandle);
+	            if ((cw == null) || (!controlHandle.equals(cw.getImple())))
+	            {
+	                //		    OTSImpleManager.systemCurrent().resumeImple(controlHandle);
 
-					OTSImpleManager.current().resumeImple(controlHandle);
+	                OTSImpleManager.current().resumeImple(controlHandle);
 
-					doSuspend = true;
-				}
-			}
-			catch (Exception ex)
-			{
-				/*
-				 * It should still be OK to make the call without a context
-				 * because a Synchronization can only be associated with a
-				 * single transaction.
-				 */
+	                doSuspend = true;
+	            }
+	        }
+	        catch (Exception ex)
+	        {
+	            /*
+	             * It should still be OK to make the call without a context
+	             * because a Synchronization can only be associated with a
+	             * single transaction.
+	             */
 
-				problem = true;
-			}
+	            problem = true;
+	        }
 
-			/*
-			 * Regardless of failures, we must tell all synchronizations what
-			 * happened.
-			 */
+	        /*
+	         * Regardless of failures, we must tell all synchronizations what
+	         * happened.
+	         */
 
-			// afterCompletions should run in reverse order compared to beforeCompletions
-			Stack stack = new Stack();
-			Iterator iterator = _synchs.iterator();
-			while(iterator.hasNext()) {
-				stack.push(iterator.next());
-			}
+	        // afterCompletions should run in reverse order compared to beforeCompletions
+	        Stack stack = new Stack();
+	        Iterator iterator = _synchs.iterator();
+	        while(iterator.hasNext()) {
+	            stack.push(iterator.next());
+	        }
 
-			iterator = stack.iterator();
+	        iterator = stack.iterator();
 
-			/*
-			 * Regardless of failures, we must tell all synchronizations what
-			 * happened.
-			 */
-			while(!stack.isEmpty())
-			{
-				SynchronizationRecord value = (SynchronizationRecord)stack.pop();
-				Synchronization c = value.contents();
+	        /*
+	         * Regardless of failures, we must tell all synchronizations what
+	         * happened.
+	         */
+	        while(!stack.isEmpty())
+	        {
+	            SynchronizationRecord value = (SynchronizationRecord)stack.pop();
+	            Synchronization c = value.contents();
 
 				try
 				{
@@ -1695,46 +1702,52 @@ public class ArjunaTransactionImple extends
 								+ e);
 					}
 
-					problem = true;
+	                problem = true;
 
-					/*
-					 * Remember the first exception we get, because it may well
-					 * be the only one. In which case we can return it, rather
-					 * than UNKNOWN.
-					 */
+	                /*
+	                 * Remember the first exception we get, because it may well
+	                 * be the only one. In which case we can return it, rather
+	                 * than UNKNOWN.
+	                 */
 
-					if (exp == null)
-						exp = e;
-				}
-			}
+	                if (exp == null)
+	                    exp = e;
+	            }
+	        }
 
-			if (doSuspend)
-			{
-				try
-				{
-					//		    OTSImpleManager.systemCurrent().resumeWrapper(cw);
+	        if (doSuspend)
+	        {
+	            try
+	            {
+	                //		    OTSImpleManager.systemCurrent().resumeWrapper(cw);
 
-					if (cw != null)
-						OTSImpleManager.current().resumeWrapper(cw);
-					else
-						OTSImpleManager.current().suspend();
-				}
-				catch (Exception ex)
-				{
-				}
-			}
+	                if (cw != null)
+	                    OTSImpleManager.current().resumeWrapper(cw);
+	                else
+	                    OTSImpleManager.current().suspend();
+	            }
+	            catch (Exception ex)
+	            {
+	            }
+	        }
 
-			_synchs = null;
-		}
+	        _synchs = null;
+	    }
 
-		if (problem)
-		{
-			if (exp != null)
-				throw exp;
-			else
-				throw new UNKNOWN(ExceptionCodes.SYNCHRONIZATION_EXCEPTION,
-						CompletionStatus.COMPLETED_NO);
-		}
+        /*
+        * If there's no problem so far then call afterCompletion on the underlying TwoPhaseCoordinator.
+        */
+
+        problem = !super.afterCompletion(myStatus == Status.StatusCommitted ? ActionStatus.COMMITTED : ActionStatus.ABORTED);
+
+        if (problem)
+	    {
+	        if (exp != null)
+	            throw exp;
+	        else
+	            throw new UNKNOWN(ExceptionCodes.SYNCHRONIZATION_EXCEPTION,
+	                    CompletionStatus.COMPLETED_NO);
+	    }
 	}
 
 	/**
