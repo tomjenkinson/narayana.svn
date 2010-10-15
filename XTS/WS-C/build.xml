@@ -230,6 +230,7 @@
         <copy file="${dev.dd.dir}/wscoor1.1/wsdl/wscoor-registration-binding.wsdl" tofile="${build.dev.classes11.dir}/org/oasis_open/docs/ws_tx/wscoor/_2006/_06/wsdl/wscoor-registration-binding.wsdl"/>
 
 	<copy file="${dev.dd.dir}/soapfault/wsdl/soapfault.wsdl" tofile="${build.dev.classes11.dir}/org/jboss/jbossts/xts/soapfault/wsdl/soapfault.wsdl"/>
+	<copy file="${dev.dd.dir}/soapfault/wsdl/envelope.xsd" tofile="${build.dev.classes11.dir}/org/jboss/jbossts/xts/soapfault/wsdl/envelope.xsd"/>
         <jar jarfile="${build.dev.lib.dir}/ws-c.jar">
             <fileset dir="${build.dev.classes.dir}" excludes="${ws-c.api.classes}"/>
         </jar>
