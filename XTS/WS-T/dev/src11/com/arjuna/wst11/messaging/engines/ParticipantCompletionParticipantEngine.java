@@ -478,7 +478,7 @@ public class ParticipantCompletionParticipantEngine implements ParticipantComple
      * @param addressingProperties The addressing context.
      * @param arjunaContext The arjuna context.
      * @message com.arjuna.wst11.messaging.engines.ParticipantCompletionParticipantEngine.soapFault_1 [com.arjuna.wst11.messaging.engines.ParticipantCompletionParticipantEngine.soapFault_1] - Unable to delete recovery record during soapFault processing for WS-BA participant {0}
-     * @message com.arjuna.wst11.messaging.engines.ParticipantCompletionParticipantEngine.soapFault_2 [com.arjuna.wst11.messaging.engines.ParticipantCompletionParticipantEngine.soapFault_2] - Cancelling participant {0}
+     * @message com.arjuna.wst11.messaging.engines.ParticipantCompletionParticipantEngine.soapFault_2 [com.arjuna.wst11.messaging.engines.ParticipantCompletionParticipantEngine.soapFault_2] - Compensating participant {0}
      * @message com.arjuna.wst11.messaging.engines.ParticipantCompletionParticipantEngine.soapFault_3 [com.arjuna.wst11.messaging.engines.ParticipantCompletionParticipantEngine.soapFault_3] - Notifying unexpected error for participant {0}
      */
     public void soapFault(final SoapFault soapFault, final AddressingProperties addressingProperties, final ArjunaContext arjunaContext)
