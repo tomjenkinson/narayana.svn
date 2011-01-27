@@ -31,6 +31,7 @@
 
 package com.arjuna.orbportability;
 
+import org.omg.CORBA.OBJECT_NOT_EXIST;
 import org.omg.PortableServer.POA;
 import org.omg.PortableServer.Servant;
 import org.omg.CORBA.SystemException;
@@ -285,9 +286,13 @@ public boolean shutdownObject (Servant obj)
 	}
         catch (Exception e)
         {
-            if (opLogger.loggerI18N.isWarnEnabled())
-            {
-                opLogger.loggerI18N.warn( "com.arjuna.orbportability.OA.caughtexception" , new Object[] { "shutdownObject", e.toString() });
+            if(e instanceof OBJECT_NOT_EXIST) {
+                // ignore - probably something else shut down the POA already
+            } else {
+                if (opLogger.loggerI18N.isWarnEnabled())
+                {
+                    opLogger.loggerI18N.warn( "com.arjuna.orbportability.OA.caughtexception" , new Object[] { "shutdownObject", e.toString() });
+                }
             }
 
             result = false;
