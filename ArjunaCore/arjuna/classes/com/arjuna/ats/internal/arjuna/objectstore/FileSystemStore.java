@@ -296,7 +296,9 @@ public abstract class FileSystemStore extends ObjectStoreImple
 			if ((aUid.notEquals(Uid.nullUid())) && ((match == ObjectStore.OS_UNKNOWN) ||
 								(isType(aUid, tName, match))))
 			{
-			    aUid.pack(store);
+                if(scanZeroLengthFiles || new File(f, entry[i]).length() > 0) {
+			        aUid.pack(store);
+                }
 			}
 		    }
 		}
@@ -955,7 +957,7 @@ public abstract class FileSystemStore extends ObjectStoreImple
     // allow derived classes to specify sync on a per instance basis
 
     protected boolean syncWrites = true;
-    
+
     private String  fullStoreName;
     private String  localStoreRoot;
     private boolean isValid;
@@ -971,6 +973,7 @@ public abstract class FileSystemStore extends ObjectStoreImple
     // global values (some of which may be reset on a per instance basis).
 
     private static boolean   doSync = true;
+    protected static boolean scanZeroLengthFiles = false;
     private static Hashtable fileCache = new Hashtable();
     private static int       createRetry = 100;
     private static int       createTimeout = 100;
@@ -986,6 +989,12 @@ public abstract class FileSystemStore extends ObjectStoreImple
 	}
 	else
 	    FileSystemStore.doSync = true;
+
+        String scanZeroLengthFilesString = arjPropertyManager.propertyManager.getProperty(com.arjuna.ats.arjuna.common.Environment.SCAN_ZERO_LENGTH_FILES);
+        if("YES".equalsIgnoreCase(scanZeroLengthFilesString))
+        {
+                scanZeroLengthFiles = true;
+        }
 
 	if (File.separatorChar != FileSystemStore.unixSeparator)
 	    rewriteSeparator = true;

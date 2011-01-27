@@ -213,7 +213,9 @@ public class HashedStore extends ShadowNoFileLockStore
 				if ((aUid.notEquals(Uid.nullUid())) && ((match == ObjectStore.OS_UNKNOWN) ||
 				    (isType(aUid, tName, match))))
 				{
-				    aUid.pack(store);
+                    if(scanZeroLengthFiles || new File(dir, dirEnt[j]).length() > 0) {
+    				    aUid.pack(store);
+                    }
 				}
 			    }
 			    catch (NumberFormatException e)
