@@ -657,7 +657,7 @@ public class ServerTransaction extends ArjunaTransactionImple
 					+ recoveringActUid + " )");
 		}
 
-		_savingUid = recoveringActUid;
+		_savingUid = new Uid(recoveringActUid);
 		_sync = null;
 		_beforeCompleted = false;
 		_recoveryCoordinator = null;

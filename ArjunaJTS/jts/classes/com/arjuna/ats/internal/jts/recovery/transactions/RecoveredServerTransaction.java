@@ -502,7 +502,9 @@ protected void unpackHeader (InputObjectState os, Uid txId,
 			     Uid processUid) throws IOException
     {
 	_originalProcessUid = new Uid(Uid.nullUid());
-	super.unpackHeader(os, super.objectUid, _originalProcessUid);
+    // caution: override the process id only, not the object id. JBTM-818
+    Uid dummyUid = new Uid(Uid.nullUid());
+    super.unpackHeader(os, dummyUid, _originalProcessUid);
 
 	if (jtsLogger.loggerI18N.isDebugEnabled())
 	{
