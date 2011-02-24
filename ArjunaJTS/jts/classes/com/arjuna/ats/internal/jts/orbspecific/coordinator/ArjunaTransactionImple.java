@@ -1317,23 +1317,18 @@ public class ArjunaTransactionImple extends
 		if ((currentStatus != Status.StatusActive)
 				&& (currentStatus != Status.StatusMarkedRollback))
 		{
-			/*
-			 * If XA compliant then return context even if we're inactive. Otherwise
-			 * throw Unavailable for consistency with other OTS implementations.
-			 */
-
-			if (!XA_COMPLIANT)
+			throw new Unavailable();
+		}
+		else
+		{
+			try
+			{
+				return propagationContext();
+			}
+			catch (Exception e)
+			{
 				throw new Unavailable();
-		}
-
-		try
-		{
-			return propagationContext();
-		}
-		catch (Exception e)
-		{
-			throw new UNKNOWN(e.toString(), ExceptionCodes.UNKNOWN_EXCEPTION,
-				CompletionStatus.COMPLETED_NO);
+			}
 		}
 	}
 
@@ -2374,8 +2369,6 @@ public class ArjunaTransactionImple extends
 	static boolean _propagateTerminator = false;
 
 	static boolean _propagateRemainingTimeout = true;  // OTS 1.2 onwards supported this.
-
-	private static final boolean XA_COMPLIANT = true; // if we ever want to disable this then add an mbean option.
 
 	/**
 	 * @message com.arjuna.ats.internal.jts.orbspecific.coordinator.ipunknown
