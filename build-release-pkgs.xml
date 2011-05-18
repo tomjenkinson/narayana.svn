@@ -44,7 +44,7 @@
       ant -f build-release-pkgs.xml dist downloads
 
       rsync or sftp the downloads to publish to the web site (careful with the trailing '/') e.g.
-        rsync \-\-protocol=29 -avz 4.14.0.Final jbosstm@filemgmt.jboss.org:downloads_htdocs/jbosstm/
+        rsync \-\-protocol=29 -avz 4.14.0.Final_openshiftexpress jbosstm@filemgmt.jboss.org:downloads_htdocs/jbosstm/
 
       Log in to magnolia cms at https://www.jboss.org/author, create page under jbosstm/downloads
        (note: 'magnolia' target below may help) then edit downloads node itself to update table in downloads.html
@@ -56,7 +56,7 @@
         to upload releases to the mvn staging server. Note: this requires you to have login info in your settings.xml
       Then login to https://repository.jboss.org/nexus/ and publish the artifacts.
 
-      This version is for JBossTS 4.14.0.Final onwards. Don't use it for earlier releases, they are structured differently.
+      This version is for JBossTS 4.14.0.Final_openshiftexpress onwards. Don't use it for earlier releases, they are structured differently.
 -->
 <project name="JBossTS Release Packaging" default="dist" basedir=".">
     <description>
@@ -82,9 +82,9 @@
     <!-- where to get the source -->
     <property name="svnbase" value="https://svn.jboss.org/repos/labs/labs/jbosstm/tags"/>
     <!-- The tag as it appears under svnbase -->
-    <property name="tag" value="JBOSSTS_4_14_0_Final"/>
+    <property name="tag" value="JBOSSTS_4_14_0_Final_openshiftexpress"/>
     <!-- The file name base for the user downloadable files. Derive it from the tag -->
-    <property name="filename" value="4.14.0.Final"/>
+    <property name="filename" value="4.14.0.Final_openshiftexpress"/>
     <!-- the location the JBossTS web site content is copied to -->
     <property name="downloads.dir" value="/home/jhalli/IdeaProjects/jboss/filemgmt.jboss.org/downloads_htdocs/jbosstm/"/>
     <!-- the mvn repo to upload to -->
