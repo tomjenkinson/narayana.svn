@@ -71,7 +71,7 @@
             </filterset>
         </copy>
 
-        <exec executable="mvn" dir="${basedir}">
+        <exec executable="mvn" dir="${basedir}" failonerror="true">
             <arg value="-s"/>
             <arg value="settings.xml"/>
             <arg value="dependency:copy-dependencies"/>
