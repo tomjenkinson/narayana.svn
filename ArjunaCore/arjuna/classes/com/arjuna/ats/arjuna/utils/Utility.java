@@ -365,7 +365,7 @@ public class Utility
 
     private static final String hexStart = "0x";
 
-    public static final String defaultProcessId = "com.arjuna.ats.internal.arjuna.utils.SocketProcessId";
+    public static final String defaultProcessId = "com.arjuna.ats.internal.arjuna.utils.UuidProcessId";
 
     /**
      * The maximum queue length for incoming connection indications (a request
