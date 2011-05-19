@@ -21,6 +21,11 @@
 -->
 <project name="jbossts" default="jbossall">
 
+    <property name="com.hp.mw.sourceid" value="JBOSSTS_4_14_0_Final_openshiftexpress"/>
+    <property name="filename" value="4.14.0.Final_openshiftexpress"/>
+    <property name="publican" value="false"/>
+
+
     <taskdef resource="net/sf/antcontrib/antlib.xml">
         <classpath>
             <pathelement location="antbuildsystem/ant-contrib-1.0b3.jar"/>
@@ -80,6 +85,8 @@
     <target name="jbossjts" depends="clean, jts">
         <ant dir="atsintegration" target="dist"/>
         <atsinstall.macro build.type="jts"/>
+        <mvn-artifact.macro artifact="jbossjts" dir="install/lib"/>
+        <mvn-artifact.macro artifact="jbossjts-integration" dir="install/lib"/>
     </target>
 
     <target name="jbossjta" depends="clean, jta">
@@ -87,6 +94,8 @@
             <property name="no_jts" value="true"/>
         </ant>
         <atsinstall.macro build.type="jta"/>
+        <mvn-artifact.macro artifact="jbossjta" dir="install/lib"/>
+        <mvn-artifact.macro artifact="jbossjta-integration" dir="install/lib"/>
     </target>
 
     <target  name="jbossall" depends="jbossjts">
@@ -98,6 +107,11 @@
         <ant dir="docs" target="install.docs">
             <property name="dest.dir" value="../install/docs"/>
         </ant>
+        <mvn-artifact.macro artifact="jbossts-tools" packaging="sar" dir="install/bin"/>
+        <mvn-artifact.macro artifact="jbossts-jopr-plugin" packaging="jar" dir="install/bin"/>
+        <mvn-artifact.macro artifact="jbossxts" packaging="sar" dir="install/xts/sar"/>
+        <mvn-artifact.macro artifact="jbossxts-tests" packaging="zip" dir="install/xts/tests"/>
+        <mvn-artifact.macro artifact="jbossxts-interop-tests" packaging="zip" dir="install/xts/interop-tests"/>
     </target>
 
     <target name="antbuildsystem" depends="clean">
@@ -153,6 +167,35 @@
         <ant dir="maven"/>
     </target>
 
+    <macrodef name="mvn-artifact.macro">
+
+        <attribute name="artifact"/>
+        <attribute name="dir"/>
+        <attribute name="packaging" default="jar"/>
+
+
+        <sequential>
+
+            <property name="groupid" value="org.jboss.jbossts"/>
+
+            <copy  file="maven/pom-template.xml"
+                   tofile="@{dir}/pom-@{artifact}.xml"
+                   filtering="true" overwrite="true">
+                <filterset>
+                    <filter token="groupid" value="${groupid}"/>
+                    <filter token="artifact" value="@{artifact}"/>
+                    <filter token="version" value="${filename}"/>
+                    <filter token="packaging" value="@{packaging}"/>
+                </filterset>
+            </copy>
+
+            <exec executable="mvn" dir="." failonerror="true">
+                <arg value="install:install-file"/>
+                <arg value="-Dfile=@{dir}/@{artifact}.@{packaging}"/>
+                <arg value="-DpomFile=@{dir}/pom-@{artifact}.xml"/>
+            </exec>
+        </sequential>
+   </macrodef>
 </project>
 
 
