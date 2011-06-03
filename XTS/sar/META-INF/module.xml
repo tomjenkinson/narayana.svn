@@ -56,12 +56,19 @@
         <module name="javax.transaction"/>
         -->
         <module name="org.jboss.jts"/>
-        <module name="org.jboss.ws.api"/>
+        <module name="org.jboss.ws.api" services="export"/>
+        <module name="org.jboss.ws.jaxws-client" services="export"/>
+        <module name="org.jboss.ws.cxf.jbossws-cxf-client" services="export"/>
         <module name="org.jboss.logging"/>
         <module name="javax.xml.soap.api"/>
         <module name="javax.xml.ws.api"/>
         <module name="javax.xml.stream.api"/>
         <!-- this is needed to get javax.xml.namespace.QName but it woudl be better if it were exposed on its own -->
         <module name="javax.api"/>
+        <!-- this is needed because our endpoints are not in a normal deployment and we need to be able
+            to resolve the javax.jws.WebService annotation attached to them. presumably an endpoint
+            found in a deployment gets this package auto-added to its module loader
+            -->
+        <module name="javax.jws.api"/>
     </dependencies>
 </module>
