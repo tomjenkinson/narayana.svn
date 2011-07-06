@@ -87,7 +87,7 @@
         org/jboss/jbossts/xts/recovery/participant/ba/XTSBARecoveryManager.class"/>
     <property name="ws-t10.api.classes" value="com/arjuna/wst/BAParticipantManager.class"/>
     <property name="ws-t11.api.classes" value="com/arjuna/wst11/BAParticipantManager.class
-	com/arjuna/wst11/ConfirmCompletedParticipant.class"/>
+        com/arjuna/wst11/ConfirmCompletedParticipant.class"/>
     <property name="ws-t11.coordinator.endpoint.classes" value="com/arjuna/webservices11/wsat/sei/CompletionCoordinatorPortTypeImpl*.class
         com/arjuna/webservices11/wsat/sei/CompletionCoordinatorRPCPortTypeImpl*.class
         com/arjuna/webservices11/wsarjtx/sei/TerminationCoordinatorPortTypeImpl*.class
