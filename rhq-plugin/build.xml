@@ -8,7 +8,6 @@
 	<property name="install.doc.dir" value="../install/docs/rhq"/>
 	<import file="../sharedbuild.xml"/>
 
-	<property name="version" value="1.0.0.SNAPSHOT"/>
 	<property name="maven.project.build.directory" value="${basedir}/target"/>
 	<property name="pluginjar" value="${modulename}.jar"/>
 	<property name="pluginsrcjar" value="${modulename}-sources.jar"/>
@@ -16,15 +15,13 @@
 
 	<target name="maven:package" depends="clean">
 
+<!--
 		<exec executable="mvn" dir="../narayana-parent">
 			<arg value="install"/>
 			<arg value="-DTS_EMMA_JAR=/"/>
 		</exec>
-
+-->
 		<exec executable="mvn" dir="${basedir}">
-			<arg value="-Dversion=${version}"/>
-			<arg value="-DartifactId=${modulename}"/>
-			<arg value="-DTS_EMMA_JAR=/"/>
 			<arg value="package"/>
 		</exec>
 	</target>
