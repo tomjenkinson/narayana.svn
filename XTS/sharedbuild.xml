@@ -85,7 +85,7 @@
     </path>
 
     <!-- compilation flags -->
-    
+
     <property name="debug" value="true"/>
     <property name="deprecation" value="true"/>
 
@@ -140,9 +140,11 @@
                 <path refid="build.classpath"/>
                 <additional.classpath/>
             </classpath>
+            <!-- http://issues.jboss.org/jira/browse/LOGTOOL-23  -->
+            <compilerarg value="-AtranslationFilesPath=${src.dir}"/>
             <additional.src.dirs/>
         </javac>
-            
+
         <emma enabled="@{includeemma}">
             <instr mode="overwrite"
                    metadatafile="${emma.report.dir}/metadata.emma"

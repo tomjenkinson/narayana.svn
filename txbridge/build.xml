@@ -81,6 +81,8 @@
 		<mkdir dir="${build}/classes"/>
 		<javac srcdir="${src}" destdir="${build}/classes" debug="true" includeantruntime="false">
 			<classpath refid="build-prereqs"/>
+            <!-- http://issues.jboss.org/jira/browse/LOGTOOL-23  -->
+            <compilerarg value="-AtranslationFilesPath=${src}"/>
 		</javac>
 
         <emma enabled="${emma.enabled}">

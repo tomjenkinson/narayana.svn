@@ -139,6 +139,8 @@
                 <additional.classpath/>
             </classpath>
             <additional.src.dirs/>
+            <!-- http://issues.jboss.org/jira/browse/LOGTOOL-23  -->
+            <compilerarg value="-AtranslationFilesPath=${src.dir}"/>
         </javac>
 
         <emma enabled="@{includeemma}">
@@ -327,7 +329,7 @@
                 <jar destfile="${build.dir}/lib/${modulename}-sources.jar" update="true">
                     <fileset dir="@{module}/classes"/>
                 </jar>
-                
+
                 <if>
                     <available file="@{module}/${build.dir}/generatedclasses"/>
                     <then>
@@ -480,9 +482,9 @@
                 message="&lt;!DOCTYPE properties SYSTEM &quot;http://java.sun.com/dtd/properties.dtd&quot;&gt;&lt;properties/&gt;"/>
 
         <copy file="${sharedbuild.base.dir}/ArjunaCore/arjuna/etc/log4j.properties" todir="${build.dir}/classes"/>
-        	
+
         <copy todir="${build.dir}" failonerror="false">
-        	<fileset dir="tests/byteman-scripts/"/> 
+        	<fileset dir="tests/byteman-scripts/"/>
        	</copy>
 
         <mkdir dir="${build.dir}/testresults"/>
