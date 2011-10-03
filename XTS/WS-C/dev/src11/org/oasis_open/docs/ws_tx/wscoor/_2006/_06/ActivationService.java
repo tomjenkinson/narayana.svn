@@ -8,7 +8,7 @@ import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import javax.xml.ws.WebEndpoint;
 import javax.xml.ws.WebServiceClient;
-import javax.xml.ws.Service21;
+import javax.xml.ws.Service;
 import javax.xml.ws.soap.AddressingFeature;
 
 
@@ -20,7 +20,7 @@ import javax.xml.ws.soap.AddressingFeature;
  */
 @WebServiceClient(name = "ActivationService", targetNamespace = "http://docs.oasis-open.org/ws-tx/wscoor/2006/06", wsdlLocation = "wsdl/wscoor-activation-binding.wsdl")
 public class ActivationService
-    extends Service21
+    extends Service
 {
 
     private final static URL ACTIVATIONSERVICE_WSDL_LOCATION;
