@@ -36,6 +36,10 @@ import com.arjuna.ats.arjuna.state.OutputBuffer;
 import com.arjuna.ats.arjuna.utils.Utility;
 
 import java.lang.Cloneable;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.Serializable;
 import java.io.PrintStream;
 
@@ -81,6 +85,14 @@ import com.arjuna.ats.arjuna.logging.tsLogger;
  *          [com.arjuna.ats.arjuna.common.Uid_9] - Invalid Uid object.
  * @message com.arjuna.ats.arjuna.common.Uid_10
  *          [com.arjuna.ats.arjuna.common.Uid_10] - Cannot unpack into nullUid!
+ * @message com.arjuna.ats.arjuna.common.Uid_11
+ *          [com.arjuna.ats.arjuna.common.Uid_11] - Cannot create Uid
+ * @message com.arjuna.ats.arjuna.common.Uid_12
+ *          [com.arjuna.ats.arjuna.common.Uid_12] - Exception thrown creating Uid from bytes
+ * @message com.arjuna.ats.arjuna.common.Uid_13
+ *          [com.arjuna.ats.arjuna.common.Uid_13] - Exception thrown getting bytes
+ * @message com.arjuna.ats.arjuna.common.Uid_14
+ *          [com.arjuna.ats.arjuna.common.Uid_14] - Error unpacking Uid
  */
 
 public class Uid implements Cloneable, Serializable
@@ -93,16 +105,19 @@ public class Uid implements Cloneable, Serializable
 
 	public Uid ()
 	{
-		hostAddr = -1;
+		hostAddr = null;
 		process = 0;
 		sec = 0;
 		other = 0;
 		_hashValue = -1;
-		_valid = true;
+		_valid = false;
+		_stringForm = null;
+		_byteForm = null;
 
 		try
 		{
 			hostAddr = Utility.hostInetAddr(); /* calculated only once */
+			_ipv6 = Utility.isIPv6();
 			process = Utility.getpid();
 
 			if (Uid.initTime == 0)
@@ -111,6 +126,10 @@ public class Uid implements Cloneable, Serializable
 			sec = Uid.initTime;
 
 			other = Uid.getValue();
+
+			_valid = true;
+
+			generateHash();
 		}
 		catch (UnknownHostException e)
 		{
@@ -129,6 +148,51 @@ public class Uid implements Cloneable, Serializable
 		copy(copyFrom);
 	}
 
+    public Uid (byte[] byteForm)
+    {
+		init(byteForm);
+    }
+
+    private void init(byte[] byteForm)
+    {
+        if (byteForm == null)
+            throw new IllegalArgumentException();
+
+        hostAddr = new long[2];
+        _hashValue = -1;
+        _stringForm = null;
+        _byteForm = null;
+
+        try
+        {
+            ByteArrayInputStream ba = new ByteArrayInputStream(byteForm);
+            DataInputStream ds = new DataInputStream(ba);
+
+			_ipv6 = Utility.isIPv6();
+
+			if (_ipv6) {
+            	hostAddr[0] = ds.readLong();
+            	hostAddr[1] = ds.readLong();
+			} else {
+            	hostAddr[0] = ds.readInt();
+			}
+
+            process = ds.readInt();
+            sec = ds.readInt();
+            other = ds.readInt();
+
+            _valid = true;
+        }
+        catch (final Throwable ex) {
+            _valid = false;
+
+			throw new FatalError(tsLogger.log_mesg.getString("com.arjuna.ats.arjuna.common.Uid_12" +
+				ex.getMessage() ));
+        }
+
+        generateHash();
+    }
+
 	/**
 	 * Create Uid from string representation. If the string does not represent a
 	 * valid Uid then the instance will be set to nullUid.
@@ -146,14 +210,19 @@ public class Uid implements Cloneable, Serializable
 
 	public Uid (String uidString, boolean errsOk)
 	{
+        if (uidString == null)
+            throw new IllegalArgumentException();
+
 		char theBreakChar = Uid.getBreakChar(uidString);
 
-		hostAddr = -1;
+		hostAddr = new long[2];
 		process = 0;
 		sec = 0;
 		other = 0;
 		_hashValue = -1;
 		_valid = false;
+		_stringForm = null;
+		_byteForm = null;
 
 		if (uidString.length() > 0)
 		{
@@ -163,11 +232,13 @@ public class Uid implements Cloneable, Serializable
 
 			try
 			{
+				_ipv6 = Utility.isIPv6();
+
 				while (uidString.charAt(endIndex) != theBreakChar)
 					endIndex++;
 
 				s = uidString.substring(startIndex, endIndex);
-				hostAddr = (int) Utility.hexStringToLong(s);
+				hostAddr[0] = _ipv6 ? Utility.hexStringToLong(s) : Utility.hexStringToInt(s);
 
 				startIndex = endIndex + 1;
 				endIndex++;
@@ -176,7 +247,10 @@ public class Uid implements Cloneable, Serializable
 					endIndex++;
 
 				s = uidString.substring(startIndex, endIndex);
-				process = (int) Utility.hexStringToLong(s);
+				if (_ipv6)
+					hostAddr[1] = Utility.hexStringToLong(s);
+				else
+					process = (int) Utility.hexStringToLong(s);
 
 				startIndex = endIndex + 1;
 				endIndex++;
@@ -185,12 +259,26 @@ public class Uid implements Cloneable, Serializable
 					endIndex++;
 
 				s = uidString.substring(startIndex, endIndex);
+
+				if (_ipv6) {
+					process = (int) Utility.hexStringToLong(s);
+					startIndex = endIndex + 1;
+					endIndex++;
+
+					while (uidString.charAt(endIndex) != theBreakChar)
+						endIndex++;
+
+					s = uidString.substring(startIndex, endIndex);
+				}
+
 				sec = (int) Utility.hexStringToLong(s);
 
 				s = uidString.substring(endIndex + 1, uidString.length());
 				other = (int) Utility.hexStringToLong(s);
 
 				_valid = true;
+
+				generateHash();
 			}
 			catch (NumberFormatException e)
 			{
@@ -207,12 +295,37 @@ public class Uid implements Cloneable, Serializable
 			}
 			catch (StringIndexOutOfBoundsException e)
 			{
+				if (!errsOk)
+				{
+					if (tsLogger.arjLoggerI18N.isWarnEnabled())
+					{
+						tsLogger.arjLoggerI18N.warn("com.arjuna.ats.arjuna.common.Uid_3", new Object[]
+						{ uidString });
+					}
+				}
+
 				_valid = false;
 			}
+            catch (final Throwable ex)
+			{
+				if (!errsOk)
+				{
+					if (tsLogger.arjLoggerI18N.isWarnEnabled())
+					{
+						tsLogger.arjLoggerI18N.warn("com.arjuna.ats.arjuna.common.Uid_3", new Object[]
+						{ uidString });
+					}
+				}
+
+
+                _valid = false;
+            }
+
 		}
 		else
 		{
 			this.copy(Uid.nullUid());
+			_ipv6 = false;
 		}
 
 		if (!_valid)
@@ -222,6 +335,8 @@ public class Uid implements Cloneable, Serializable
 				try
 				{
 					this.copy(Uid.nullUid());
+
+					_valid = false;
 				}
 				catch (Exception e)
 				{
@@ -250,6 +365,32 @@ public class Uid implements Cloneable, Serializable
 		}
 	}
 
+    public Uid(long[] addr, int processId, int time, int incr)
+    {
+        try
+        {
+            hostAddr = new long[2];
+            hostAddr[0] = addr[0];
+            hostAddr[1] = addr[1];
+			_ipv6 = true;
+
+            process = processId;
+            sec = time;
+            other = incr;
+
+            _valid = true;
+
+            generateHash();
+        }
+        catch (Throwable ex)
+        {
+            _valid = false;
+
+			throw new FatalError(tsLogger.log_mesg.getString("com.arjuna.ats.arjuna.common.Uid_11" +
+				ex.getMessage()));
+        }
+    }
+
 	/**
 	 * Override Object.hashCode. We always return a positive value.
 	 */
@@ -260,9 +401,6 @@ public class Uid implements Cloneable, Serializable
 
 	public int hashCode ()
 	{
-		if (_hashValue == -1)
-			generateHash();
-
 		return _hashValue;
 	}
 
@@ -273,12 +411,7 @@ public class Uid implements Cloneable, Serializable
 	public synchronized void pack (OutputBuffer packInto) throws IOException
 	{
 		if (_valid)
-		{
-			packInto.packInt(hostAddr);
-			packInto.packInt(process);
-			packInto.packInt(sec);
-			packInto.packInt(other);
-		}
+			packInto.packBytes(getBytes());
 		else
 			throw new IOException(
 					tsLogger.log_mesg.getString("com.arjuna.ats.arjuna.common.Uid_9"));
@@ -294,22 +427,10 @@ public class Uid implements Cloneable, Serializable
 			throw new IOException(
 					tsLogger.log_mesg.getString("com.arjuna.ats.arjuna.common.Uid_10"));
 
-		_valid = true; // should not be able to pack an invalid Uid.
-
-		try
-		{
-			hostAddr = unpackFrom.unpackInt();
-			process = unpackFrom.unpackInt();
-			sec = unpackFrom.unpackInt();
-			other = unpackFrom.unpackInt();
-
-			_hashValue = -1;
-		}
-		catch (IOException e)
-		{
-			_valid = false;
-
-			throw e;
+		if (_valid) {
+			init(unpackFrom.unpackBytes());
+		} else {
+			throw new FatalError(tsLogger.log_mesg.getString("com.arjuna.ats.arjuna.common.Uid_14"));
 		}
 	}
 
@@ -324,10 +445,20 @@ public class Uid implements Cloneable, Serializable
 
 	public String stringForm ()
 	{
-		return Utility.intToHexString(hostAddr) + Uid.breakChar
-				+ Utility.intToHexString(process) + Uid.breakChar
-				+ Utility.intToHexString(sec) + Uid.breakChar
-				+ Utility.intToHexString(other);
+		if (_stringForm == null)
+            if (_ipv6)
+                _stringForm = Utility.longToHexString(hostAddr[0]) + Uid.breakChar
+                    + Utility.longToHexString(hostAddr[1]) + Uid.breakChar
+                    + Utility.intToHexString(process) + Uid.breakChar
+                    + Utility.intToHexString(sec) + Uid.breakChar
+                    + Utility.intToHexString(other);
+            else
+                _stringForm = Utility.intToHexString((int) hostAddr[0]) + Uid.breakChar
+                    + Utility.intToHexString(process) + Uid.breakChar
+                    + Utility.intToHexString(sec) + Uid.breakChar
+                    + Utility.intToHexString(other);
+
+        return _stringForm;
 	}
 
 	/**
@@ -337,11 +468,60 @@ public class Uid implements Cloneable, Serializable
 
 	public String fileStringForm ()
 	{
-		return Utility.intToHexString(hostAddr) + Uid.fileBreakChar
-				+ Utility.intToHexString(process) + Uid.fileBreakChar
-				+ Utility.intToHexString(sec) + Uid.fileBreakChar
-				+ Utility.intToHexString(other);
+        if (_ipv6)
+            return Utility.longToHexString(hostAddr[0]) + Uid.fileBreakChar
+                + Utility.longToHexString(hostAddr[1]) + Uid.fileBreakChar
+                + Utility.intToHexString(process) + Uid.fileBreakChar
+                + Utility.intToHexString(sec) + Uid.fileBreakChar
+                + Utility.intToHexString(other);
+        else
+            return Utility.intToHexString((int) hostAddr[0]) + Uid.fileBreakChar
+                + Utility.intToHexString(process) + Uid.fileBreakChar
+                + Utility.intToHexString(sec) + Uid.fileBreakChar
+                + Utility.intToHexString(other);
 	}
+
+    /**
+	 * Get the byte representation of the Uid. Useful for packing and creating other
+	 * representations of transaction ids.
+	 * 
+	 * @return the byte array. Cached once created.
+	 */
+
+    public byte[] getBytes ()
+    {
+        /*
+		 * We should only really be doing this once, so overhead should
+		 * be negligible.
+		 */
+
+        if (_byteForm == null)
+        {
+            ByteArrayOutputStream ba = new ByteArrayOutputStream(UID_SIZE);
+            DataOutputStream ds = new DataOutputStream(ba);
+
+            try
+            {
+				if (Utility.isIPv6()) {
+                	ds.writeLong(hostAddr[0]);
+                	ds.writeLong(hostAddr[1]);
+				} else {
+					ds.writeInt((int) hostAddr[0]);
+				}
+
+                ds.writeInt(process);
+                ds.writeInt(sec);
+                ds.writeInt(other);
+                _byteForm = ba.toByteArray();
+            }
+            catch (final Throwable ex) {
+				throw new FatalError(tsLogger.log_mesg.getString("com.arjuna.ats.arjuna.common.Uid_13" +
+					ex.getMessage() ));
+            }
+        }
+
+        return _byteForm;
+    }
 
 	/**
 	 * Same as stringForm()
@@ -351,6 +531,14 @@ public class Uid implements Cloneable, Serializable
 	{
 		return stringForm();
 	}
+
+    // return the process id value in hex form.
+    // The internal format is Uids mostly should not be exposed, but some
+    // recovery/expiry code need this.
+    public String getHexPid ()
+    {
+        return Utility.intToHexString(process);
+    }
 
 	/**
 	 * Create a copy of this instance.
@@ -365,7 +553,7 @@ public class Uid implements Cloneable, Serializable
 	 * Copy the specified Uid over this instance.
 	 */
 
-	public synchronized void copy (Uid toCopy)
+	private void copy (Uid toCopy)
 	{
 		if (toCopy == this)
 			return;
@@ -402,7 +590,12 @@ public class Uid implements Cloneable, Serializable
 		if (u == this)
 			return true;
 
-		return ((other == u.other) && (sec == u.sec) && (process == u.process) && (hostAddr == u.hostAddr));
+        if (_ipv6)
+            return ((other == u.other) && (sec == u.sec) && (process == u.process)
+                && (hostAddr[0] == u.hostAddr[0]) && (hostAddr[1] == u.hostAddr[1]));
+		else
+            return ((other == u.other) && (sec == u.sec) && (process == u.process)
+                && ((int) hostAddr[0] == (int) u.hostAddr[0]));
 	}
 
 	public boolean notEquals (Uid u)
@@ -413,7 +606,12 @@ public class Uid implements Cloneable, Serializable
 		if (u == this)
 			return false;
 
-		return ((other != u.other) || (sec != u.sec) || (process != u.process) || (hostAddr != u.hostAddr));
+        if (_ipv6)
+		    return ((other != u.other) || (sec != u.sec) || (process != u.process)
+                || (hostAddr[0] != u.hostAddr[0]) || (hostAddr[1] != u.hostAddr[1]));
+        else
+		    return ((other != u.other) || (sec != u.sec) || (process != u.process)
+                || ((int) hostAddr[0] != (int) u.hostAddr[0]));
 	}
 
 	public boolean lessThan (Uid u)
@@ -433,23 +631,26 @@ public class Uid implements Cloneable, Serializable
 		if (LAST_RESOURCE_UID.equals(u))
 			return true ;
 		
-		if (hostAddr < u.hostAddr)
+		if ((hostAddr[0] < u.hostAddr[0])
+			&& (!_ipv6 || hostAddr[1] < u.hostAddr[1]))
 			return true;
 		else
-			if (hostAddr == u.hostAddr)
+		{
+			if ((hostAddr[0] == u.hostAddr[0])
+				&& (!_ipv6 || hostAddr[1] == u.hostAddr[1]))
 			{
 				if (process < u.process)
 					return true;
-				else
-					if (process == u.process)
-					{
-						if (sec < u.sec)
+				else if (process == u.process)
+				{
+					if (sec < u.sec)
+						return true;
+					else
+						if ((sec == u.sec) && (other < u.other))
 							return true;
-						else
-							if ((sec == u.sec) && (other < u.other))
-								return true;
-					}
+				}
 			}
+		}
 		return false;
 	}
 
@@ -470,23 +671,25 @@ public class Uid implements Cloneable, Serializable
 		if (LAST_RESOURCE_UID.equals(u))
 			return false ;
 
-		if (hostAddr > u.hostAddr)
+		if ((hostAddr[0] > u.hostAddr[0]) && (!_ipv6 || hostAddr[1] > u.hostAddr[1]))
 			return true;
 		else
-			if (hostAddr == u.hostAddr)
+		{
+			if ((hostAddr[0] == u.hostAddr[0])
+					&& (!_ipv6 || hostAddr[1] == u.hostAddr[1]))
 			{
 				if (process > u.process)
 					return true;
-				else
-					if (process == u.process)
-					{
-						if (sec > u.sec)
-							return true;
-						else
-							if ((sec == u.sec) && (other > u.other))
-								return true;
-					}
+				else if (process == u.process)
+				{
+					if (sec > u.sec)
+						return true;
+					else if ((sec == u.sec) && (other > u.other))
+						return true;
+				}
 			}
+		}
+
 		return false;
 	}
 
@@ -494,13 +697,13 @@ public class Uid implements Cloneable, Serializable
 	 * Is the Uid valid?
 	 */
 
-	public synchronized final boolean valid ()
+	public final boolean valid ()
 	{
 		return _valid;
 	}
 
 	/**
-	 * Return a null Uid (0:0:0:0)
+	 * Return a null Uid (0:0:0:0:0)
 	 */
 
 	public static final Uid nullUid ()
@@ -509,7 +712,7 @@ public class Uid implements Cloneable, Serializable
 	}
 
 	/**
-	 * Return a last resource Uid (0:0:0:1)
+	 * Return a last resource Uid (0:0:0:0:1)
 	 */
 	public static final Uid lastResourceUid ()
 	{
@@ -517,7 +720,7 @@ public class Uid implements Cloneable, Serializable
 	}
 
 	/**
-	 * Return the maximum Uid (7fffffff:7fffffff:7fffffff:7fffffff)
+	 * Return the maximum Uid (7fffffff:7fffffff:7fffffff:7fffffff:7fffffff)
 	 */
 	public static final Uid maxUid ()
 	{
@@ -525,7 +728,8 @@ public class Uid implements Cloneable, Serializable
 	}
 	
 	/**
-	 * Return the minimum Uid (-80000000:-80000000:-80000000:-80000000)
+	 * Return the minimum Uid
+	 * (-80000000:-80000000:-80000000:-80000000:-80000000)
 	 */
 	public static final Uid minUid ()
 	{
@@ -544,7 +748,13 @@ public class Uid implements Cloneable, Serializable
 	{
 		if (_valid)
 		{
-			out.writeInt(hostAddr);
+			if (_ipv6) {
+				out.writeLong(hostAddr[0]);
+				out.writeLong(hostAddr[1]);
+			} else {
+				out.writeInt((int) hostAddr[0]);
+			}
+
 			out.writeInt(process);
 			out.writeInt(sec);
 			out.writeInt(other);
@@ -563,16 +773,24 @@ public class Uid implements Cloneable, Serializable
 	private void readObject (java.io.ObjectInputStream in) throws IOException,
 			ClassNotFoundException
 	{
-		_valid = true; // should not be able to pack an invalid Uid.
-
 		try
 		{
-			hostAddr = in.readInt();
+			hostAddr = new long[2];
+
+			if (_ipv6) {
+				hostAddr[0] = in.readLong();
+				hostAddr[1] = in.readLong();
+			} else {
+				hostAddr[0] = in.readInt();
+			}
+
 			process = in.readInt();
 			sec = in.readInt();
 			other = in.readInt();
-			_hashValue = -1; // Set hashvalue to -1 to force a regeneration
-								// of the hashcode
+
+			_valid = true; // should not be able to pack an invalid Uid.
+
+			generateHash();
 		}
 		catch (IOException e)
 		{
@@ -582,18 +800,22 @@ public class Uid implements Cloneable, Serializable
 		}
 	}
 
-    private static final int MAX_SEQ_VALUE = 0x40000000; // 2^30, which is a bit conservative.
+    private static final int MAX_SEQ_VALUE = 0x40000000; // 2^30, which is a bit
+                                                         // conservative.
 
 	private static int getValue ()
 	{
         int value = 0;
-        do {
+        do
+		{
             value = uidsCreated.getAndIncrement();
-            if(value == MAX_SEQ_VALUE) {
+            if(value == MAX_SEQ_VALUE)
+            {
                 uidsCreated.set(0);
                 initTime = (int) (System.currentTimeMillis() / 1000);
             }
-        } while(value >= MAX_SEQ_VALUE);
+        }
+		while(value >= MAX_SEQ_VALUE);
 
         return value;
 	}
@@ -603,37 +825,15 @@ public class Uid implements Cloneable, Serializable
 	 * adverse effect.
 	 */
 
-	private final synchronized void generateHash ()
+	private final void generateHash ()
 	{
 		if (_valid)
 		{
-			if (true)
-				_hashValue = hostAddr ^ process ^ sec ^ other;
+			if (_ipv6)
+				_hashValue = (int) hostAddr[0] ^ (int) hostAddr[1] ^ process
+                    ^ sec ^ other;
 			else
-			{
-				int g = 0;
-				String p = toString();
-				int len = p.length();
-				int index = 0;
-
-				if (len > 0)
-				{
-					while (len-- > 0)
-					{
-						_hashValue = (_hashValue << 4)
-								+ (int) (p.charAt(index));
-						g = _hashValue & 0xf0000000;
-
-						if (g > 0)
-						{
-							_hashValue = _hashValue ^ (g >> 24);
-							_hashValue = _hashValue ^ g;
-						}
-
-						index++;
-					}
-				}
-			}
+				_hashValue = (int) hostAddr[0] ^ process ^ sec ^ other;
 
 			/*
 			 * Integers are signed in Java, so we have to be careful and only
@@ -668,7 +868,9 @@ public class Uid implements Cloneable, Serializable
 
 	// use ints rather than longs for interoperability with C++ version
 
-	private volatile int hostAddr;
+	private volatile long[] hostAddr;	// representation of ipv6 address (and
+										// ipv4)
+	private volatile boolean _ipv6;
 
 	private volatile int process;
 
@@ -679,6 +881,10 @@ public class Uid implements Cloneable, Serializable
 	private volatile int _hashValue;
 
 	private volatile boolean _valid;
+
+	private volatile String _stringForm;
+
+	private volatile byte[] _byteForm;
 	
 	private static final AtomicInteger uidsCreated = new AtomicInteger();
 
@@ -688,11 +894,13 @@ public class Uid implements Cloneable, Serializable
 
 	private static final char fileBreakChar = '_';
 
-	private static final Uid NIL_UID = new Uid("0:0:0:0") ;
+	private static final Uid NIL_UID = new Uid("0:0:0:0:0") ;
 
-	private static final Uid LAST_RESOURCE_UID = new Uid("0:0:0:1") ;
+	private static final Uid LAST_RESOURCE_UID = new Uid("0:0:0:0:1") ;
 	
-	private static final Uid MAX_UID = new Uid("7fffffff:7fffffff:7fffffff:7fffffff") ;
+	private static final Uid MAX_UID = new Uid("7fffffff:7fffffff:7fffffff:7fffffff:7fffffff") ;
 	
-	private static final Uid MIN_UID = new Uid("-80000000:-80000000:-80000000:-80000000") ;
+	private static final Uid MIN_UID = new Uid("-80000000:-80000000:-80000000:-80000000:-80000000") ;
+
+	private static final int UID_SIZE = 2*8 + 3*4; // in bytes
 }

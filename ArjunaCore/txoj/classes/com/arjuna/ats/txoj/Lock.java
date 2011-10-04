@@ -119,7 +119,7 @@ public Lock (int lm)
 		 */
 
 		applicPid = currentPid;
-		applicUid.copy(temp);
+		applicUid = new Uid();
 	    }
 
 	    ah.add(applicUid);

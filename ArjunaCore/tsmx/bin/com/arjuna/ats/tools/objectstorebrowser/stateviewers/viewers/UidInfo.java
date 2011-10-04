@@ -33,6 +33,7 @@ import java.io.IOException;
 
 /**
  * Base class for representing common state relevant to Uid's and Xid's
+ * TODO Does this still work with IPv6
  */
 public class UidInfo
 {
