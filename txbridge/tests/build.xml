@@ -27,7 +27,7 @@
 	</description>
 
     <property name="jboss.home" location="/home/jhalli/IdeaProjects/jboss/jbossas_trunk/build/target/jboss-6.0.0-SNAPSHOT"/>
-    
+
     <property name="jbossts.home" location="../.."/>
     <property name="byteman.home" location="${jbossts.home}/build/extlib"/>
 
@@ -53,6 +53,7 @@
             <include name="jboss-logging.jar"/>
             <include name="jnp-client.jar"/>
             <include name="byteman.jar"/>
+            <include name="byteman-submit.jar"/>
             <include name="byteman-dtest.jar"/>
         </fileset>
 
