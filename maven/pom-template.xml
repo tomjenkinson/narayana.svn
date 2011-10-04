@@ -430,6 +430,6 @@
     </dependencies>
 
     <properties>
-        <byteman-version>1.5.1</byteman-version>
+        <byteman-version>1.6.0</byteman-version>
     </properties>
 </project>
