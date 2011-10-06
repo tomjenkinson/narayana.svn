@@ -126,12 +126,12 @@
     <property name="jbossas.home" location="/home/jhalli/IdeaProjects/jboss/jbossas_trunk/build/target/jboss-6.0.0-SNAPSHOT"/>
     <property name="jbossas.server" value="default"/>
 
-    <target name="deploy" depends="dist" description="deploy to JBossAS">
-        <copy file="${build}/txbridge.jar" todir="${jbossas.home}/server/${jbossas.server}/deploy/"/>
-    </target>
-
     <!-- the following targets are utility functions for the JBossTS dev team.
             You probably don't need to worry about them. -->
+
+    <target name="deploy" depends="dist" description="deploy to JBossAS">
+        <copy file="${build}/txbridge.jar" todir="${jbossas.home}/modules/org/jboss/xts/main/"/>
+    </target>
 
     <target name="install-jts">
         <copy todir="${jbossas.home}/common/lib">
