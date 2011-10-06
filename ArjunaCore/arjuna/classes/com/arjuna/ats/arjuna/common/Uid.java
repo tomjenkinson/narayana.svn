@@ -168,8 +168,6 @@ public class Uid implements Cloneable, Serializable
             ByteArrayInputStream ba = new ByteArrayInputStream(byteForm);
             DataInputStream ds = new DataInputStream(ba);
 
-			_ipv6 = Utility.isIPv6();
-
 			if (_ipv6) {
             	hostAddr[0] = ds.readLong();
             	hostAddr[1] = ds.readLong();
@@ -200,7 +198,7 @@ public class Uid implements Cloneable, Serializable
 
 	public Uid (String uidString)
 	{
-		this(uidString, true);
+		this(uidString, false);
 	}
 
 	/**
@@ -232,8 +230,6 @@ public class Uid implements Cloneable, Serializable
 
 			try
 			{
-				_ipv6 = Utility.isIPv6();
-
 				while (uidString.charAt(endIndex) != theBreakChar)
 					endIndex++;
 
@@ -325,7 +321,6 @@ public class Uid implements Cloneable, Serializable
 		else
 		{
 			this.copy(Uid.nullUid());
-			_ipv6 = false;
 		}
 
 		if (!_valid)
@@ -334,6 +329,7 @@ public class Uid implements Cloneable, Serializable
 			{
 				try
 				{
+					// this call assumes that "0:0:0:0:0" always parses correctly
 					this.copy(Uid.nullUid());
 
 					_valid = false;
@@ -347,7 +343,8 @@ public class Uid implements Cloneable, Serializable
 					}
 
 					throw new FatalError(
-							tsLogger.log_mesg.getString("com.arjuna.ats.arjuna.common.Uid_2"));
+							tsLogger.log_mesg.getString("com.arjuna.ats.arjuna.common.Uid_2")
+								+ e.getMessage());
 				}
 			}
 			else
@@ -372,7 +369,6 @@ public class Uid implements Cloneable, Serializable
             hostAddr = new long[2];
             hostAddr[0] = addr[0];
             hostAddr[1] = addr[1];
-			_ipv6 = true;
 
             process = processId;
             sec = time;
@@ -870,8 +866,6 @@ public class Uid implements Cloneable, Serializable
 
 	private volatile long[] hostAddr;	// representation of ipv6 address (and
 										// ipv4)
-	private volatile boolean _ipv6;
-
 	private volatile int process;
 
 	private volatile int sec;
@@ -886,6 +880,8 @@ public class Uid implements Cloneable, Serializable
 
 	private volatile byte[] _byteForm;
 	
+	private static volatile boolean _ipv6;	// cannot mix ipv4 and ipv6 (hence use a static)
+
 	private static final AtomicInteger uidsCreated = new AtomicInteger();
 
 	private static volatile int initTime ;
@@ -894,13 +890,33 @@ public class Uid implements Cloneable, Serializable
 
 	private static final char fileBreakChar = '_';
 
-	private static final Uid NIL_UID = new Uid("0:0:0:0:0") ;
+	private static final Uid NIL_UID;
 
-	private static final Uid LAST_RESOURCE_UID = new Uid("0:0:0:0:1") ;
+	private static final Uid LAST_RESOURCE_UID;
 	
-	private static final Uid MAX_UID = new Uid("7fffffff:7fffffff:7fffffff:7fffffff:7fffffff") ;
+	private static final Uid MAX_UID;
 	
-	private static final Uid MIN_UID = new Uid("-80000000:-80000000:-80000000:-80000000:-80000000") ;
+	private static final Uid MIN_UID;
 
-	private static final int UID_SIZE = 2*8 + 3*4; // in bytes
+	private static final int UID_SIZE;
+
+	static {
+		try {
+			_ipv6 = Utility.isIPv6();
+		} catch (UnknownHostException e) {
+			if (tsLogger.arjLoggerI18N.isWarnEnabled())
+				tsLogger.arjLoggerI18N.warn("com.arjuna.ats.arjuna.common.Uid_1");
+
+			throw new FatalError(tsLogger.log_mesg.getString("com.arjuna.ats.arjuna.common.Uid_1" +
+				e.getMessage() ));
+		}
+
+		NIL_UID = _ipv6 ? new Uid("0:0:0:0:0") : new Uid("0:0:0:0");
+		LAST_RESOURCE_UID = _ipv6 ? new Uid("0:0:0:0:1") : new Uid("0:0:0:1");
+		MAX_UID = _ipv6 ? new Uid("7fffffff:7fffffff:7fffffff:7fffffff:7fffffff") :
+			new Uid("7fffffff:7fffffff:7fffffff:7fffffff");
+		MIN_UID = _ipv6 ? new Uid("-80000000:-80000000:-80000000:-80000000:-80000000") :
+			new Uid("-80000000:-80000000:-80000000:-80000000");
+		UID_SIZE = _ipv6 ? 2*8 + 3*4 : 4*4;	// in bytes
+	}
 }
