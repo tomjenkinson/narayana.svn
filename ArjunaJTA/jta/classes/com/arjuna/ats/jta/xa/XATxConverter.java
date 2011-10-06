@@ -31,12 +31,13 @@
 
 package com.arjuna.ats.jta.xa;
 
+import java.io.UnsupportedEncodingException;
+
+import javax.transaction.xa.Xid;
+
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.arjuna.coordinator.TxControl;
 import com.arjuna.ats.internal.jta.xa.XID;
-
-import javax.transaction.xa.Xid;
-import java.io.UnsupportedEncodingException;
 
 /**
  * @author Mark Little (mark.little@arjuna.com)
@@ -79,21 +80,22 @@ public class XATxConverter
         // gtrid is uid byte form followed by as many chars of the node name as will fit.
         byte[] gtridUid = uid.getBytes();
 
-        if (gtridUid.length > XID.MAXBQUALSIZE) {
+        if (gtridUid.length > XID.MAXGTRIDSIZE) {
             throw new IllegalStateException(); // Uid is too long!!!!
         }
 
-        int spareGtridBytes = XID.MAXGTRIDSIZE - gtridUid.length;
-        byte[] nodeName = TxControl.getXANodeName();
-        int nodeNameLengthToUse =  nodeName.length;
-        if( nodeName.length > spareGtridBytes) {
-            nodeNameLengthToUse = spareGtridBytes;
-        }
+        int nodeName = TxControl.getXANodeName();
+        int nodeNameLengthToUse =  4;
         xid.gtrid_length = gtridUid.length+nodeNameLengthToUse;
 
         // src, srcPos, dest, destPos, length
         System.arraycopy(gtridUid, 0, xid.data, 0, gtridUid.length);
-        System.arraycopy(nodeName, 0, xid.data, gtridUid.length, nodeNameLengthToUse);
+
+    	int offset = gtridUid.length;
+    	xid.data[offset + 0] = (byte) (nodeName >>> 24);
+    	xid.data[offset + 1] = (byte) (nodeName >>> 16);
+    	xid.data[offset + 2] = (byte) (nodeName >>> 8);
+    	xid.data[offset + 3] = (byte) (nodeName >>> 0);
 
         
         if (branch.notEquals(Uid.nullUid()))
@@ -105,7 +107,7 @@ public class XATxConverter
                 throw new IllegalStateException(); // Uid is too long!!!!
             }
 
-            int spareBqualBytes = XID.MAXBQUALSIZE - bqualUid.length;
+            int spareBqualBytes = XID.MAXBQUALSIZE - (bqualUid.length + 4 + 4);
             byte[] eisName;
             try {
                 // caution: we may truncate the byte[] to fit, so double byte encodings are best avoided.
@@ -117,11 +119,21 @@ public class XATxConverter
             if( eisName.length > spareBqualBytes) {
                 eisNameLengthToUse = spareBqualBytes;
             }
-            xid.bqual_length = bqualUid.length+eisNameLengthToUse;
+            xid.bqual_length = bqualUid.length+4+4+eisNameLengthToUse;
 
             // src, srcPos, dest, destPos, length
             System.arraycopy (bqualUid, 0, xid.data, xid.gtrid_length, bqualUid.length);
-            System.arraycopy (eisName, 0, xid.data, xid.gtrid_length+bqualUid.length, eisNameLengthToUse);
+            
+
+        	offset = xid.gtrid_length + bqualUid.length;
+        	xid.data[offset + 0] = (byte) (nodeName >>> 24);
+        	xid.data[offset + 1] = (byte) (nodeName >>> 16);
+        	xid.data[offset + 2] = (byte) (nodeName >>> 8);
+        	xid.data[offset + 3] = (byte) (nodeName >>> 0);
+            
+            // Leave four bytes free to encode the parent node when this XID is inflowed
+        	
+            System.arraycopy (eisName, 0, xid.data, xid.gtrid_length+bqualUid.length+4+4, eisNameLengthToUse);
         }
 		else
 		{
@@ -151,27 +163,61 @@ public class XATxConverter
         return tx;
     }
 
-    public static String getNodeName(XID xid)
-    {
-        // don't check the formatId - it may differ e.g. JTA vs. JTS.
-        
-        // the node name follows the Uid with no separator, so the only
-        // way to tell where it starts is to figure out how long the Uid is.
-        Uid uid = getUid(xid);
-        int uidLength = uid.getBytes().length;
-        int nameLength = xid.gtrid_length-uidLength;
-        byte[] nodeName = new byte[nameLength];
-        System.arraycopy(xid.data, uidLength, nodeName, 0, nodeName.length);
-        
-        try {
-            return new String(nodeName, "US-ASCII");
-        } catch(UnsupportedEncodingException e) {
-            // should never happen, we use a required charset.
-            return "<failed to get nodename>";
-        }
-    }
+	public static int getNodeName(XID xid) {
+		// Arjuna.XID()
+		// don't check the formatId - it may differ e.g. JTA vs. JTS.
+		if (xid.formatID != FORMAT_ID && xid.formatID != 131072
+				&& xid.formatID != 131080) {
+			return -1;
+		}
 
-    private static Uid getBranchUid(XID xid)
+		// the node name follows the Uid with no separator, so the only
+		// way to tell where it starts is to figure out how long the Uid is.
+		int offset = Uid.UID_SIZE;
+
+		return (xid.data[offset + 0] << 24)
+				+ ((xid.data[offset + 1] & 0xFF) << 16)
+				+ ((xid.data[offset + 2] & 0xFF) << 8)
+				+ (xid.data[offset + 3] & 0xFF);
+	}
+
+	public static int getSubordinateNodeName(XID xid) {
+		// Arjuna.XID()
+		// don't check the formatId - it may differ e.g. JTA vs. JTS.
+		if (xid.formatID != FORMAT_ID && xid.formatID != 131072
+				&& xid.formatID != 131080) {
+			return -1;
+		}
+
+		// the node name follows the Uid with no separator, so the only
+		// way to tell where it starts is to figure out how long the Uid is.
+		int offset = Uid.UID_SIZE + 4 + Uid.UID_SIZE;
+
+		return (xid.data[offset + 0] << 24)
+				+ ((xid.data[offset + 1] & 0xFF) << 16)
+				+ ((xid.data[offset + 2] & 0xFF) << 8)
+				+ (xid.data[offset + 3] & 0xFF);
+	}
+
+	public static int getSubordinateParentNodeName(XID xid) {
+		// Arjuna.XID()
+		// don't check the formatId - it may differ e.g. JTA vs. JTS.
+		if (xid.formatID != FORMAT_ID && xid.formatID != 131072
+				&& xid.formatID != 131080) {
+			return -1;
+		}
+
+		// the node name follows the Uid with no separator, so the only
+		// way to tell where it starts is to figure out how long the Uid is.
+		int offset = Uid.UID_SIZE + 4 + Uid.UID_SIZE + 4;
+
+		return (xid.data[offset + 0] << 24)
+				+ ((xid.data[offset + 1] & 0xFF) << 16)
+				+ ((xid.data[offset + 2] & 0xFF) << 8)
+				+ (xid.data[offset + 3] & 0xFF);
+	}
+
+    public static Uid getBranchUid(XID xid)
     {
         if (xid == null || xid.formatID != FORMAT_ID) {
             return Uid.nullUid();
@@ -186,7 +232,7 @@ public class XATxConverter
         return tx;
     }
 
-    private static String getEISName(XID xid)
+    public static String getEISName(XID xid)
     {
         if(xid == null || xid.formatID != FORMAT_ID) {
             return "unknown eis name";
@@ -194,14 +240,14 @@ public class XATxConverter
 
         Uid uid = getUid(xid);
         int uidLength = uid.getBytes().length;
-        int nameLength = xid.bqual_length-uidLength;
+        int nameLength = xid.bqual_length-(uidLength+4+4);
 
         if(nameLength == 0) {
             return "unknown eis name";
         }
 
         byte[] eisName = new byte[nameLength];
-        System.arraycopy(xid.data, xid.gtrid_length+uidLength, eisName, 0, eisName.length);
+        System.arraycopy(xid.data, xid.gtrid_length+uidLength+4+4, eisName, 0, eisName.length);
 
         try {
             return new String(eisName, "US-ASCII");

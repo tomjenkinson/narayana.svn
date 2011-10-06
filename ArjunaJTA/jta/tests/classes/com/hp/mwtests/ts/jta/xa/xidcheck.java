@@ -82,7 +82,7 @@ public class xidcheck
         
         assertEquals(xid1.getTransactionUid(), A.get_uid());
         
-        assertTrue(xid1.getNodeName() != null);
+        assertTrue(xid1.getNodeName() == 1);
         
         assertTrue(xid1.getXID() != null);
         

@@ -41,7 +41,8 @@ public class CoreEnvironmentBean implements CoreEnvironmentBeanMBean
     private volatile String varDir = System.getProperty("user.dir") + File.separator + "var" + File.separator + "tmp";
 
     @FullPropertyName(name = "com.arjuna.ats.arjuna.nodeIdentifier")
-    private volatile String nodeIdentifier = null;
+    private volatile int nodeIdentifier = 1;
+    private volatile boolean nodeIdentifierSet = false;
 
     @FullPropertyName(name = "com.arjuna.ats.internal.arjuna.utils.SocketProcessIdPort")
     private volatile int socketProcessIdPort = 0;
@@ -90,7 +91,7 @@ public class CoreEnvironmentBean implements CoreEnvironmentBeanMBean
      *
      * @return the Node Identifier.
      */
-    public String getNodeIdentifier()
+    public int getNodeIdentifier()
     {
         return nodeIdentifier;
     }
@@ -99,9 +100,13 @@ public class CoreEnvironmentBean implements CoreEnvironmentBeanMBean
      * Sets the node identifier. Should be uniq amongst all instances that share resource managers or an objectstore.
      *
      * @param nodeIdentifier the Node Identifier.
+     * @throws CoreEnvironmentBeanException 
      */
-    public void setNodeIdentifier(String nodeIdentifier)
+    public void setNodeIdentifier(int nodeIdentifier) throws CoreEnvironmentBeanException
     {
+    	if (nodeIdentifier < 1) {
+    		throw new CoreEnvironmentBeanException("The node identifier was set to a value less than 1");
+    	}
         this.nodeIdentifier = nodeIdentifier;
     }
 

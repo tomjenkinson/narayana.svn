@@ -43,12 +43,12 @@ import java.util.List;
  */
 public class NodeNameXAResourceOrphanFilter implements XAResourceOrphanFilter
 {
-    private static final String RECOVER_ALL_NODES = "*";
+    public static final int RECOVER_ALL_NODES = 0;
 
     @Override
     public Vote checkXid(Xid xid)
     {
-        List<String> _xaRecoveryNodes = jtaPropertyManager.getJTAEnvironmentBean().getXaRecoveryNodes();
+        List<Integer> _xaRecoveryNodes = jtaPropertyManager.getJTAEnvironmentBean().getXaRecoveryNodes();
 
         if(_xaRecoveryNodes == null || _xaRecoveryNodes.size() == 0) {
             doWarning();
@@ -64,7 +64,7 @@ public class NodeNameXAResourceOrphanFilter implements XAResourceOrphanFilter
             return Vote.ROLLBACK;
         }
 
-        String nodeName = XAUtils.getXANodeName(xid);
+        int nodeName = XAUtils.getXANodeName(xid);
 
         if (jtaLogger.logger.isDebugEnabled()) {
             jtaLogger.logger.debug("node name of " + xid + " is " + nodeName);

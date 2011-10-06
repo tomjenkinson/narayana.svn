@@ -74,7 +74,7 @@ public class XAUtils
 		return optimize;
 	}
 
-	public static final String getXANodeName (Xid xid)
+	public static final int getXANodeName (Xid xid)
 	{
         XidImple xidImple;
         if(xid instanceof XidImple) {

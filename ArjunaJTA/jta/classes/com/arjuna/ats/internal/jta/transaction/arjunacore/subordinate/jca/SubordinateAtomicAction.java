@@ -69,7 +69,7 @@ public class SubordinateAtomicAction extends
 	{
 		super(timeout); // implicit start (done in base class)
 		
-		_theXid = new XidImple(xid);
+		_theXid = new XidImple(xid, true);
 		_activated = true;
 	}
 	

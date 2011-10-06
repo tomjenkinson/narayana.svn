@@ -37,7 +37,7 @@ public interface JTAEnvironmentBeanMBean
 
     String getTransactionSynchronizationRegistryClassName();
 
-    List<String> getXaRecoveryNodes();
+    List<Integer> getXaRecoveryNodes();
 
     List<String> getXaResourceRecoveryClassNames();
 

@@ -160,14 +160,14 @@ public class TxControl
         return readonlyOptimisation;
     }
 
-    public static final byte[] getXANodeName()
+    public static final int getXANodeName()
 	{
 		return xaNodeName;
 	}
 
-	public static void setXANodeName(byte[] name)
+	public static void setXANodeName(int name)
 	{
-	    if (name.length > NODE_NAME_SIZE) {
+	    if (name < 1) {
             tsLogger.i18NLogger.warn_coordinator_toolong();
 
             throw new IllegalArgumentException();
@@ -229,7 +229,7 @@ public class TxControl
 
 	private static TransactionStatusManager transactionStatusManager = null;
 
-	static byte[] xaNodeName = null;
+	static int xaNodeName = -1;
 
 	static int _defaultTimeout = 60; // 60 seconds
 
@@ -261,53 +261,8 @@ public class TxControl
 
 
 
-		String env =  arjPropertyManager.getCoreEnvironmentBean().getNodeIdentifier();
-		boolean writeNodeName = false;
+        xaNodeName =  arjPropertyManager.getCoreEnvironmentBean().getNodeIdentifier();
 
-		if (env != null)
-		{
-			xaNodeName = env.getBytes();
-		}
-		else {
-            /*
-                * In the past we used a Uid as the default node name. However, this is too
-                * big for the way in which we use it within Xids now that we also support
-                * ipv6. Hence the need to limit the size of a node name to 10 bytes.
-                */
-
-            String nodeName = DEFAULT_NODE_NAME + Utility.getpid();
-
-            tsLogger.i18NLogger.warn_coordinator_TxControl_1(nodeName);
-
-            xaNodeName = nodeName.getBytes();
-
-            writeNodeName = true;
-        }
-
-		if (xaNodeName.length > NODE_NAME_SIZE) {
-            String nodeName = DEFAULT_NODE_NAME + Utility.getpid();
-
-            tsLogger.i18NLogger.warn_coordinator_TxControl_2(nodeName);
-
-            xaNodeName = nodeName.getBytes();
-
-            writeNodeName = true;
-        }
-
-		if ((env != null) && (env.indexOf('-') != -1)) {
-            String nodeName = DEFAULT_NODE_NAME + Utility.getpid();
-
-            tsLogger.i18NLogger.warn_coordinator_TxControl_3(nodeName);
-
-            xaNodeName = nodeName.getBytes();
-
-            writeNodeName = true;
-        }
-
-		if (writeNodeName)
-		{
-            arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier( new String(xaNodeName) );
-		}
 
         _enableTSM = arjPropertyManager.getCoordinatorEnvironmentBean().isTransactionStatusManagerEnable();
 

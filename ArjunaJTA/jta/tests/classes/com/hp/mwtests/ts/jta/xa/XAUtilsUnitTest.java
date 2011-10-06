@@ -72,7 +72,7 @@ public class XAUtilsUnitTest
         
         assertFalse(XAUtils.mustEndSuspendedRMs(xa));
         assertTrue(XAUtils.canOptimizeDelist(xa));      
-        assertTrue(XAUtils.getXANodeName(new XidImple(new Uid())) != null);
+        assertTrue(XAUtils.getXANodeName(new XidImple(new Uid())) == 1);
     }
     
     @Test

@@ -20,20 +20,21 @@
  */
 package com.arjuna.ats.jta.common;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.transaction.TransactionManager;
+import javax.transaction.TransactionSynchronizationRegistry;
+import javax.transaction.UserTransaction;
+
 import com.arjuna.ats.internal.arjuna.common.ClassloadingUtility;
 import com.arjuna.ats.internal.jta.resources.arjunacore.XAResourceRecordWrappingPlugin;
 import com.arjuna.ats.jta.recovery.XAResourceOrphanFilter;
 import com.arjuna.ats.jta.recovery.XAResourceRecovery;
 import com.arjuna.ats.jta.resources.XAResourceMap;
-import com.arjuna.common.internal.util.propertyservice.PropertyPrefix;
-import com.arjuna.common.internal.util.propertyservice.FullPropertyName;
 import com.arjuna.common.internal.util.propertyservice.ConcatenationPrefix;
-import javax.transaction.TransactionManager;
-import javax.transaction.TransactionSynchronizationRegistry;
-import javax.transaction.UserTransaction;
-
-import java.util.List;
-import java.util.ArrayList;
+import com.arjuna.common.internal.util.propertyservice.FullPropertyName;
+import com.arjuna.common.internal.util.propertyservice.PropertyPrefix;
 
 /**
  * A JavaBean containing configuration properties for the JTA subsystem.
@@ -55,7 +56,7 @@ public class JTAEnvironmentBean implements JTAEnvironmentBeanMBean
     private volatile TransactionSynchronizationRegistry transactionSynchronizationRegistry = null;
 
     @ConcatenationPrefix(prefix = "com.arjuna.ats.jta.xaRecoveryNode")
-    private volatile List<String> xaRecoveryNodes = new ArrayList<String>();
+    private volatile List<Integer> xaRecoveryNodes = new ArrayList<Integer>();
 
     @ConcatenationPrefix(prefix = "com.arjuna.ats.jta.recovery.XAResourceRecovery")
     private volatile List<String> xaResourceRecoveryClassNames = new ArrayList<String>();
@@ -363,9 +364,9 @@ public class JTAEnvironmentBean implements JTAEnvironmentBeanMBean
      *
      * @return the set of node identifiers for which to perform recovery.
      */
-    public List<String> getXaRecoveryNodes()
+    public List<Integer> getXaRecoveryNodes()
     {
-       return new ArrayList<String>(xaRecoveryNodes);
+       return new ArrayList<Integer>(xaRecoveryNodes);
     }
 
     /**
@@ -374,12 +375,12 @@ public class JTAEnvironmentBean implements JTAEnvironmentBeanMBean
      *
      * @param xaRecoveryNodes the set of node identifiers for which to perform recovery.
      */
-    public void setXaRecoveryNodes(List<String> xaRecoveryNodes)
+    public void setXaRecoveryNodes(List<Integer> xaRecoveryNodes)
     {
         if(xaRecoveryNodes == null) {
-            this.xaRecoveryNodes = new ArrayList<String>(); 
+            this.xaRecoveryNodes = new ArrayList<Integer>(); 
         } else {
-            this.xaRecoveryNodes = new ArrayList<String>(xaRecoveryNodes);
+            this.xaRecoveryNodes = new ArrayList<Integer>(xaRecoveryNodes);
         }
     }
 
