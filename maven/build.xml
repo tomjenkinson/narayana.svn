@@ -51,6 +51,23 @@
         <delete file="pom.xml"/>
     </target>
 
+    <target name="maven-unix" if="osfamily-unix">
+        <exec executable="mvn" failonerror="true" dir="${basedir}">
+            <arg value="-s"/>
+            <arg value="settings.xml"/>
+            <arg value="dependency:copy-dependencies"/>
+        </exec>
+    </target>
+    <target name="maven-windows" if="osfamily-windows">
+        <exec executable="cmd" failonerror="true" dir="${basedir}">
+            <arg value="/c" />
+            <arg value="mvn.bat" />
+            <arg value="-s"/>
+            <arg value="settings.xml"/>
+            <arg value="dependency:copy-dependencies"/>
+        </exec>
+    </target>
+    	
     <target name="maven">
         <!-- munge the pom template into an actual pom, then use it to install
             the dependencies into the dir where the build looks for them -->
@@ -71,11 +88,16 @@
             </filterset>
         </copy>
 
-        <exec executable="mvn" dir="${basedir}">
-            <arg value="-s"/>
-            <arg value="settings.xml"/>
-            <arg value="dependency:copy-dependencies"/>
-        </exec>
+        <condition property="osfamily-windows">
+                <os family="windows" />
+        </condition>
+
+        <condition property="osfamily-unix">
+                <os family="unix" />
+        </condition>
+    	
+    	<antcall target="maven-unix"/>
+    	<antcall target="maven-windows"/>
 
         <copy todir="${ext.lib.dest}" overwrite="true">
             <fileset dir="${ext.lib.src}">

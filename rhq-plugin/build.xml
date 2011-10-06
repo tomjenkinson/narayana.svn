@@ -13,6 +13,19 @@
 	<property name="pluginsrcjar" value="${modulename}-sources.jar"/>
 	<property name="plugindocjar" value="${modulename}-javadoc.jar"/>
 
+
+    <target name="maven-unix" if="osfamily-unix">
+        <exec executable="mvn" failonerror="true" dir="${basedir}">
+			<arg value="package"/>
+        </exec>
+    </target>
+    <target name="maven-windows" if="osfamily-windows">
+        <exec executable="cmd" failonerror="true" dir="${basedir}">
+            <arg value="/c" />
+            <arg value="mvn.bat" />
+			<arg value="package"/>
+        </exec>
+    </target>
 	<target name="maven:package" depends="clean">
 
 <!--
@@ -21,9 +34,17 @@
 			<arg value="-DTS_EMMA_JAR=/"/>
 		</exec>
 -->
-		<exec executable="mvn" dir="${basedir}">
-			<arg value="package"/>
-		</exec>
+
+        <condition property="osfamily-windows">
+                <os family="windows" />
+        </condition>
+
+        <condition property="osfamily-unix">
+                <os family="unix" />
+        </condition>
+    	
+    	<antcall target="maven-unix"/>
+    	<antcall target="maven-windows"/>
 	</target>
 
 	<target name="dist" depends="maven:package">
