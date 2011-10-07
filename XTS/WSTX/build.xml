@@ -40,7 +40,6 @@
     <property name="jboss.common.lib.dir" location="${jboss.home}/common/lib"/>
 
 	<property name="deploy.dir" value="${jboss.server.dir}/deploy"/>
-	<!--property name="jaxrpc.lib.dir" value="/usr/share/java/jboss-jaxrpc-api_1.1_spec"/-->
 	<property name="jaxrpc.lib.dir" value="${jboss.home}/client"/>
 
 	<!-- Path names -->
@@ -497,3 +496,4 @@
 	<target name="tests-deploy11" depends="com.arjuna.mwlabs.wstx.tests.deploy11"/>
 	<target name="tests-undeploy" depends="com.arjuna.mwlabs.wstx.tests.undeploy"/>
 </project>
+
