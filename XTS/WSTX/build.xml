@@ -40,6 +40,8 @@
     <property name="jboss.common.lib.dir" location="${jboss.home}/common/lib"/>
 
 	<property name="deploy.dir" value="${jboss.server.dir}/deploy"/>
+	<!--property name="jaxrpc.lib.dir" value="/usr/share/java/jboss-jaxrpc-api_1.1_spec"/-->
+	<property name="jaxrpc.lib.dir" value="${jboss.home}/client"/>
 
 	<!-- Path names -->
     <property name="com.arjuna.mwlabs.wstx.src" value="classes"/>
@@ -105,6 +107,7 @@
     <property name="jboss.common.lib.jars" value="servlet-api.jar"/>
     <property name="jboss.lib.jars" value="dom4j.jar"/>
 
+    <property name="jaxrpc.lib.jars" value="jboss-jaxrpc-api_1.1_spec.jar"/>
     <property name="wsas.libs" value="wsas.jar"/>
     <property name="wsc.libs" value="ws-c.jar"/>
     <property name="wsc-api.libs" value="ws-c-api.jar"/>
@@ -167,6 +170,7 @@
         <fileset dir="${com.arjuna.mwlabs.wsc.jar.dest}" includes="${wsc.libs} ${wsc-api.libs}"/>
         <fileset dir="${com.arjuna.mwlabs.wscf.jar.dest}" includes="${wscf.libs}"/>
         <fileset dir="${com.arjuna.mwlabs.wst.jar.dest}" includes="${wst.libs} ${wst-api.libs}"/>
+        <fileset dir="${jaxrpc.lib.dir}" includes="${jaxrpc.lib.jars}"/>
     </path>
 
     <path id="com.arjuna.mwlabs.wstx.lib.classpath10">
