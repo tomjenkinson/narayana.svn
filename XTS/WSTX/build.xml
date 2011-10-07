@@ -312,6 +312,7 @@
 			sourcepathref="com.arjuna.mwlabs.wstx.htdocs.path"
 			destdir="${com.arjuna.mwlabs.wstx.htdocs.dest}"
 			packagenames="${com.arjuna.mwlabs.wstx.htdocs.list}"
+			failonerror="yes"
 	        >
 			<classpath>
                 <path refid="com.arjuna.mwlabs.wstx.lib.classpath"/>

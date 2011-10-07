@@ -160,6 +160,7 @@
 			sourcepathref="com.arjuna.mwlabs.wsas.htdocs.path"
 			destdir="${com.arjuna.mwlabs.wsas.htdocs.dest}"
 			packagenames="${com.arjuna.mwlabs.wsas.htdocs.list}"
+			failonerror="yes"
 	        >
 			<classpath>
 				<path refid="com.arjuna.mwlabs.wsas.lib.classpath"/>

@@ -183,6 +183,7 @@
 			sourcepathref="com.arjuna.mwlabs.xts.htdocs.path"
 			destdir="${com.arjuna.mwlabs.xts.htdocs.dest}"
 			packagenames="${com.arjuna.mwlabs.xts.htdocs.list}"
+			failonerror="yes"
 		>
 			<classpath>
 				<path refid="com.arjuna.mwlabs.xts.lib.classpath"/>
