@@ -39,6 +39,7 @@ import javax.xml.ws.addressing.AddressingProperties;
 import javax.xml.ws.addressing.JAXWSAConstants;
 import javax.xml.ws.handler.MessageContext;
 import javax.annotation.Resource;
+import javax.xml.ws.soap.Addressing;
 
 import org.oasis_open.docs.ws_tx.wscoor._2006._06.CoordinationContext;
 import org.oasis_open.docs.ws_tx.wscoor._2006._06.CoordinationContextType;
@@ -54,8 +55,8 @@ import java.net.URI;
         portName="ParticipantPortType",
         wsdlLocation="/WEB-INF/wsdl/interopat-participant-binding.wsdl",
         serviceName="ParticipantService")
-// @EndpointConfig(configName = "Standard WSAddressing Endpoint")
 @HandlerChain(file="participanthandlers.xml")
+@Addressing(enabled=true, required=true)
 public class ParticipantPortTypeImpl {
 
     /**

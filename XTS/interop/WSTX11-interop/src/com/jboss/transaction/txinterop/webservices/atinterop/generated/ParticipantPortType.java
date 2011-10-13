@@ -27,6 +27,7 @@ import javax.jws.WebParam;
 import javax.jws.WebService;
 import javax.jws.soap.SOAPBinding;
 import javax.xml.ws.RequestWrapper;
+import javax.xml.ws.soap.Addressing;
 
 
 /**
@@ -36,6 +37,7 @@ import javax.xml.ws.RequestWrapper;
  * 
  */
 @WebService(name = "ParticipantPortType", targetNamespace = "http://fabrikam123.com")
+@Addressing(enabled=true, required=true)
 public interface ParticipantPortType {
 
 

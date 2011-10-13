@@ -22,6 +22,7 @@ package com.jboss.transaction.txinterop.webservices.bainterop.sei;
 
 import com.jboss.transaction.txinterop.webservices.atinterop.processors.ATInitiatorProcessor;
 import com.jboss.transaction.txinterop.webservices.bainterop.processors.BAInitiatorProcessor;
+import org.jboss.ws.annotation.EndpointConfig;
 
 import javax.xml.ws.RequestWrapper;
 import javax.xml.ws.WebServiceContext;
@@ -40,6 +41,7 @@ import javax.jws.*;
 import javax.jws.soap.SOAPBinding;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.ws.RequestWrapper;
+import javax.xml.ws.soap.Addressing;
 
 
 /**
@@ -50,8 +52,8 @@ import javax.xml.ws.RequestWrapper;
         portName = "InitiatorPortType",
         wsdlLocation="/WEB-INF/wsdl/interopba-initiator-binding.wsdl",
         serviceName="InitiatorService")
-// @EndpointConfig(configName = "Standard WSAddressing Endpoint")
 @HandlerChain(file="initiatorhandlers.xml")
+@Addressing(enabled=true, required=true)
 public class InitiatorPortTypeImpl {
 
     /**

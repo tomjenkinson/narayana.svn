@@ -43,6 +43,7 @@ import javax.jws.*;
 import javax.jws.soap.SOAPBinding;
 import javax.xml.ws.RequestWrapper;
 import javax.xml.namespace.QName;
+import javax.xml.ws.soap.Addressing;
 
 import org.w3c.dom.Element;
 import org.jboss.jbossts.xts.soapfault.Fault;
@@ -59,8 +60,8 @@ import java.util.Vector;
         portName = "InitiatorPortType",
         wsdlLocation="/WEB-INF/wsdl/interopat-initiator-binding.wsdl",
         serviceName="InitiatorService")
-// @EndpointConfig(configName = "Standard WSAddressing Endpoint")
 @HandlerChain(file="initiatorhandlers.xml")
+@Addressing(enabled=true, required=true)
 public class InitiatorPortTypeImpl {
 
     /**
