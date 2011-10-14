@@ -38,17 +38,21 @@ import com.arjuna.ats.internal.jta.transaction.arjunacore.AtomicAction;
 import com.arjuna.ats.jta.exceptions.InvalidTerminationStateException;
 import com.arjuna.ats.jta.exceptions.UnexpectedConditionException;
 import com.arjuna.ats.jta.logging.*;
+import com.arjuna.ats.jta.xa.XAModifier;
+import com.arjuna.ats.jta.xa.XATxConverter;
+import com.arjuna.ats.jta.xa.XidImple;
 
 import java.lang.IllegalStateException;
 
 import javax.transaction.*;
+import javax.transaction.xa.XAResource;
+import javax.transaction.xa.Xid;
 
 // https://jira.jboss.org/jira/browse/JBTM-384
 
 public class TransactionImple extends
 		com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple
 {
-
 	/**
 	 * Create a new transaction with the specified timeout.
 	 */
@@ -355,5 +359,37 @@ public class TransactionImple extends
     {
     	return true;
     }
+
+	@Override
+	protected Xid createXid(boolean branch, XAModifier theModifier, XAResource xaResource)
+	{
+		Xid xid = baseXid();
+
+		// We can have subordinate XIDs that can be editted
+		if (xid.getFormatId() != XATxConverter.FORMAT_ID)
+			return xid;
+
+        String eisName = null;
+        if(branch) {
+            if(_xaResourceRecordWrappingPlugin != null) {
+                eisName = _xaResourceRecordWrappingPlugin.getEISName(xaResource);
+            }
+        }
+		xid = new XidImple(xid, branch, eisName);
+
+		if (theModifier != null)
+		{
+			try
+			{
+				xid = theModifier.createXid((XidImple) xid);
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		return xid;
+	}
 
 }

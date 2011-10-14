@@ -62,10 +62,7 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 	}
 
 	public XidImple(Xid xid) {
-		_theXid = null;
-
-		copy(xid);
-		hashCode = getHash(_theXid);
+		this(xid, false);
 	}
 
 	public XidImple (Xid xid, boolean subordinate)
@@ -74,17 +71,11 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 
 		copy(xid);
 		
+		// If this is a subordinate transaction and it is one of ours, bump up the parent node name
 		if (subordinate && _theXid.formatID == XATxConverter.FORMAT_ID) {
-			int offset = Uid.UID_SIZE + 4 + Uid.UID_SIZE;
-			_theXid.data[offset + 4] = _theXid.data[offset + 0];
-			_theXid.data[offset + 5] = _theXid.data[offset + 1];
-			_theXid.data[offset + 6] = _theXid.data[offset + 2];
-			_theXid.data[offset + 7] = _theXid.data[offset + 3];
-			int xaNodeName = TxControl.getXANodeName();
-			_theXid.data[offset + 0] = (byte) (xaNodeName >>> 24);
-			_theXid.data[offset + 1] = (byte) (xaNodeName >>> 16);
-			_theXid.data[offset + 2] = (byte) (xaNodeName >>> 8);
-			_theXid.data[offset + 3] = (byte) (xaNodeName >>> 0);
+			int parentNodeName = XATxConverter.getSubordinateNodeName(_theXid);
+			XATxConverter.setParentNodeName(_theXid, parentNodeName);
+			XATxConverter.setSubordinateNodeName(_theXid, TxControl.getXANodeName());
 		}
 		hashCode = getHash(_theXid) ;
 	}
@@ -95,6 +86,14 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 
 	public XidImple(AtomicAction c, boolean branch, String eisName) {
 		this(c.get_uid(), branch, eisName);
+	}
+
+	public XidImple(Xid xid, boolean branch, String eisName) {
+		this(xid, true);
+		if (branch) {
+			XATxConverter.setBranchUID(_theXid, new Uid());
+		}
+		XATxConverter.setEisName(_theXid, eisName);
 	}
 
 	public XidImple(Uid id) {
@@ -185,6 +184,14 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 
 	public final int getNodeName() {
 		return XATxConverter.getNodeName(_theXid);
+	}
+
+	public final int getSubordinateNodeName() {
+		return XATxConverter.getSubordinateNodeName(_theXid);
+	}
+
+	public final int getParentNodeName() {
+		return XATxConverter.getParentNodeName(_theXid);
 	}
 
 	public final XID getXID() {
@@ -380,7 +387,7 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 	 *            The xid.
 	 * @return The hash code.
 	 */
-	private static int getHash(final XID xid) {
+	protected int getHash(final XID xid) {
 		if (xid == null) {
 			return 0;
 		}
@@ -398,7 +405,7 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 	 *            The bytes to include in the hash.
 	 * @return The new hash code.
 	 */
-	private static int generateHash(int hash, final byte[] bytes,
+	protected static int generateHash(int hash, final byte[] bytes,
 			final int start, final int length) {
 		for (int count = start; count < length; count++) {
 			hash = 31 * hash + bytes[count];

@@ -31,12 +31,15 @@
 
 package com.arjuna.ats.internal.jta.transaction.arjunacore.jca;
 
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.transaction.xa.*;
+import javax.transaction.xa.XAException;
+import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.TransactionImple;
+import com.arjuna.ats.internal.jta.xa.XID;
 import com.arjuna.ats.jta.xa.XidImple;
 
 public class TransactionImporterImple implements TransactionImporter
@@ -92,7 +95,7 @@ public class TransactionImporterImple implements TransactionImporter
 		{
 			imported = new TransactionImple(timeout, xid);
 
-			_transactions.put(new XidImple(xid), imported);
+			_transactions.put(new SubordinateXidImple(xid), imported);
 		}
 
 		return imported;
@@ -130,8 +133,9 @@ public class TransactionImporterImple implements TransactionImporter
 
 		if (tx == null)
 		{
-			_transactions.put(recovered.baseXid(), recovered);
 
+			Xid baseXid = recovered.baseXid();
+			_transactions.put(new SubordinateXidImple(baseXid), recovered);
 			recovered.recordTransaction();
 
 			return recovered;
@@ -162,7 +166,7 @@ public class TransactionImporterImple implements TransactionImporter
 		if (xid == null)
 			throw new IllegalArgumentException();
 
-		SubordinateTransaction tx = _transactions.get(new XidImple(xid));
+		SubordinateTransaction tx = _transactions.get(new SubordinateXidImple(xid));
 
 		if (tx == null)
 			return null;
@@ -192,9 +196,46 @@ public class TransactionImporterImple implements TransactionImporter
 		if (xid == null)
 			throw new IllegalArgumentException();
 
-		_transactions.remove(new XidImple(xid));
+		_transactions.remove(new SubordinateXidImple(xid));
 	}
 
-	private static ConcurrentHashMap<Xid, SubordinateTransaction> _transactions = new ConcurrentHashMap<Xid, SubordinateTransaction>();
+	private static ConcurrentHashMap<SubordinateXidImple, SubordinateTransaction> _transactions = new ConcurrentHashMap<SubordinateXidImple, SubordinateTransaction>();
+	
+	private class SubordinateXidImple extends XidImple {
+		public SubordinateXidImple(Xid xid) {
+			super(xid);
+		}
+
+		/**
+		 * Test equality as being part of the same global transaction
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			boolean toReturn = false;
+			if (obj instanceof SubordinateXidImple)
+			{
+				toReturn = isSameTransaction(((SubordinateXidImple)obj));
+			}
+			return toReturn;
+		}
+
+		/**
+		 * Generate the hash code for the xid, subordinates are diffed on the gtrid only.
+		 * 
+		 * @param xid
+		 *            The xid.
+		 * @return The hash code.
+		 */
+		@Override
+		protected int getHash(final XID xid) {
+			if (xid == null) {
+				return 0;
+			}
+			return generateHash(xid.formatID, xid.data, 0,
+					xid.gtrid_length);
+		}
+		
+	}
 
 }
+

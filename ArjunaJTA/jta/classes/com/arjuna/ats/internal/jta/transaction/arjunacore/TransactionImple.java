@@ -45,6 +45,7 @@ import com.arjuna.ats.jta.exceptions.InactiveTransactionException;
 import com.arjuna.ats.jta.exceptions.InvalidTerminationStateException;
 import com.arjuna.ats.jta.resources.LastResourceCommitOptimisation;
 import com.arjuna.ats.jta.utils.XAHelper;
+import com.arjuna.ats.jta.xa.XATxConverter;
 import com.arjuna.ats.jta.xa.XidImple;
 import com.arjuna.ats.jta.logging.*;
 import com.arjuna.ats.jta.xa.XAModifier;
@@ -1483,20 +1484,15 @@ public class TransactionImple implements javax.transaction.Transaction,
 		return null;
 	}
 
-	private final Xid createXid(boolean branch, XAModifier theModifier, XAResource xaResource)
+	protected Xid createXid(boolean branch, XAModifier theModifier, XAResource xaResource)
 	{
-		Xid xid = baseXid();
-
-		if (xid != null)
-			return xid;
-
         String eisName = null;
         if(branch) {
             if(_xaResourceRecordWrappingPlugin != null) {
                 eisName = _xaResourceRecordWrappingPlugin.getEISName(xaResource);
             }
         }
-		xid = new XidImple(_theTransaction, branch, eisName);
+		Xid xid = new XidImple(_theTransaction, branch, eisName);
 
 		if (theModifier != null)
 		{
@@ -1597,7 +1593,7 @@ public class TransactionImple implements javax.transaction.Transaction,
 
 	private static final Class LAST_RESOURCE_OPTIMISATION_INTERFACE;
 
-    private static final XAResourceRecordWrappingPlugin _xaResourceRecordWrappingPlugin;
+    protected static final XAResourceRecordWrappingPlugin _xaResourceRecordWrappingPlugin;
 
 	static
 	{
