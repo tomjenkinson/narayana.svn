@@ -21,41 +21,31 @@ public class XATxConverterTest {
 		arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier(1);
 
 		XidImple rootXid = new XidImple(uid, branch, eisName);
-
 		{
 			assertEquals(XATxConverter.getNodeName(rootXid.getXID()), 1);
-			assertEquals(XATxConverter.getEISName(rootXid.getXID()), "foo");
-			assertEquals(
-					XATxConverter.getSubordinateNodeName(rootXid.getXID()), 1);
-			assertEquals(XATxConverter.getSubordinateParentNodeName(rootXid
-					.getXID()), 0);
+			assertEquals(XATxConverter.getEISName(rootXid.getXID()), eisName);
+			assertEquals(XATxConverter.getSubordinateNodeName(rootXid.getXID()), 1);
+			assertEquals(XATxConverter.getParentNodeName(rootXid.getXID()), 1);
 		}
 
 		TxControl.setXANodeName(2);
 		XidImple subordinateXid = new XidImple(rootXid, true);
 		{
 			assertEquals(XATxConverter.getNodeName(subordinateXid.getXID()), 1);
-			assertEquals(XATxConverter.getEISName(subordinateXid.getXID()),
-					"foo");
-			assertEquals(XATxConverter.getSubordinateNodeName(subordinateXid
-					.getXID()), 2);
-			assertEquals(
-					XATxConverter.getSubordinateParentNodeName(subordinateXid
-							.getXID()), 1);
+			assertEquals(XATxConverter.getEISName(subordinateXid.getXID()), eisName);
+			assertEquals(XATxConverter.getSubordinateNodeName(subordinateXid.getXID()), 2);
+			assertEquals(XATxConverter.getParentNodeName(subordinateXid.getXID()), 1);
 		}
 	}
 
+	@Test
 	public void testForeignXID() {
 		XidImple foreignXidImple = new XidImple(new MyForeignXID());
 
 		assertEquals(XATxConverter.getNodeName(foreignXidImple.getXID()), -1);
-		assertEquals(XATxConverter.getEISName(foreignXidImple.getXID()), null);
-		assertEquals(
-				XATxConverter.getSubordinateNodeName(foreignXidImple.getXID()),
-				0);
-		assertEquals(XATxConverter.getSubordinateParentNodeName(foreignXidImple
-				.getXID()), 0);
-
+		assertEquals(XATxConverter.getEISName(foreignXidImple.getXID()), "unknown eis name");
+		assertEquals(XATxConverter.getSubordinateNodeName(foreignXidImple.getXID()), -1);
+		assertEquals(XATxConverter.getParentNodeName(foreignXidImple.getXID()), -1);
 	}
 
 	private class MyForeignXID implements Xid {
