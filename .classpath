@@ -35,8 +35,8 @@
 	<classpathentry kind="src" path="qa/tests/build/idl"/>
 	<classpathentry excluding="com/arjuna/ats/internal/arjuna/objectstore/jdbc/|com/arjuna/ats/tools/perftest/product/AtomikosProduct.java|com/arjuna/ats/tools/perftest/product/BitronixProduct.java|com/arjuna/ats/tools/perftest/product/JBossTSProduct.java|com/arjuna/ats/tools/perftest/product/JOTMProduct.java|com/arjuna/ats/tools/perftest/product/SimpleJTAProduct.java" kind="src" path="qa/tests/product/src"/>
 	<classpathentry kind="src" path="qa/tests/src"/>
+	<classpathentry kind="src" path="ArjunaJTA/jta/src/test/resources"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/aaa-jboss-transaction-spi"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/spec/javax/transaction/jboss-transaction-api_1.1_spec/1.0.0.Final/jboss-transaction-api_1.1_spec-1.0.0.Final.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/spec/javax/resource/jboss-connector-api_1.6_spec/1.0.0.Final/jboss-connector-api_1.6_spec-1.0.0.Final.jar"/>
 	<classpathentry kind="var" path="M2_REPO/junit/junit/4.8.2/junit-4.8.2.jar"/>
@@ -60,5 +60,6 @@
 	<classpathentry kind="lib" path="ArjunaJTS/jacorb/lib/jacorb.jar"/>
 	<classpathentry kind="lib" path="ArjunaJTS/jacorb/lib/wrapper-3.1.0.jar"/>
 	<classpathentry kind="lib" path="qa/ext/jboss-profiler-jvmti.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/aaa-jboss-transaction-spi"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
