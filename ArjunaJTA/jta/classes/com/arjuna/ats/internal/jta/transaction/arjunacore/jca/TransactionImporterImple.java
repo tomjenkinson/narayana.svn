@@ -40,6 +40,7 @@ import javax.transaction.xa.Xid;
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.TransactionImple;
 import com.arjuna.ats.internal.jta.xa.XID;
+import com.arjuna.ats.jta.xa.XATxConverter;
 import com.arjuna.ats.jta.xa.XidImple;
 
 public class TransactionImporterImple implements TransactionImporter
@@ -211,6 +212,9 @@ public class TransactionImporterImple implements TransactionImporter
 		 */
 		@Override
 		public boolean equals(Object obj) {
+			if (_theXid.formatID != XATxConverter.FORMAT_ID) {
+				return super.equals(obj);
+			}
 			boolean toReturn = false;
 			if (obj instanceof SubordinateXidImple)
 			{
@@ -230,6 +234,9 @@ public class TransactionImporterImple implements TransactionImporter
 		protected int getHash(final XID xid) {
 			if (xid == null) {
 				return 0;
+			}
+			if (_theXid.formatID != XATxConverter.FORMAT_ID) {
+				return super.getHash(xid);
 			}
 			return generateHash(xid.formatID, xid.data, 0,
 					xid.gtrid_length);
