@@ -1,7 +1,6 @@
-package com.arjuna.ats.jta.distributed.impl;
+package com.arjuna.ats.jta.distributed.server.impl;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,9 +36,10 @@ import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinationManag
 import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 import com.arjuna.ats.jbossatx.jta.TransactionManagerService;
 import com.arjuna.ats.jta.common.JTAEnvironmentBean;
-import com.arjuna.ats.jta.distributed.RemoteServer;
-import com.arjuna.ats.jta.distributed.LocalServer;
 import com.arjuna.ats.jta.distributed.TestResourceRecovery;
+import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
+import com.arjuna.ats.jta.distributed.server.LocalServer;
+import com.arjuna.ats.jta.distributed.server.RemoteServer;
 
 public class ServerImpl implements LocalServer, RemoteServer {
 
@@ -181,35 +181,45 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public int propagatePrepare(Xid xid) throws XAException, ConnectException {
+	public void setOffline(boolean offline) {
+		this.offline = offline;
+	}
+
+	@Override
+	public RemoteServer connectTo() {
+		return this;
+	}
+
+	@Override
+	public int propagatePrepare(Xid xid) throws XAException, DummyRemoteException {
 		if (offline) {
-			throw new ConnectException("Connection refused to: " + nodeName);
+			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
 		return SubordinationManager.getTransactionImporter().getImportedTransaction(xid).doPrepare();
 	}
 
 	@Override
 	public void propagateCommit(Xid xid, boolean onePhase) throws IllegalStateException, HeuristicMixedException, HeuristicRollbackException,
-			HeuristicCommitException, SystemException, XAException, ConnectException {
+			HeuristicCommitException, SystemException, XAException, DummyRemoteException {
 		if (offline) {
-			throw new ConnectException("Connection refused to: " + nodeName);
+			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
 		SubordinationManager.getTransactionImporter().getImportedTransaction(xid).doCommit();
 	}
 
 	@Override
 	public void propagateRollback(Xid xid) throws IllegalStateException, HeuristicMixedException, HeuristicCommitException, HeuristicRollbackException,
-			SystemException, XAException, ConnectException {
+			SystemException, XAException, DummyRemoteException {
 		if (offline) {
-			throw new ConnectException("Connection refused to: " + nodeName);
+			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
 		SubordinationManager.getTransactionImporter().getImportedTransaction(xid).doRollback();
 	}
 
 	@Override
-	public Xid[] propagateRecover(List<Integer> recoveryScanStarted, int flag) throws XAException, ConnectException {
+	public Xid[] propagateRecover(List<Integer> recoveryScanStarted, int flag) throws XAException, DummyRemoteException {
 		if (offline) {
-			throw new ConnectException("Connection refused to: " + nodeName);
+			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
 		// Assumes that this thread is used by the recovery thread
 		ProxyXAResource.RECOVERY_SCAN_STARTED.set(recoveryScanStarted);
@@ -217,25 +227,20 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public void propagateForget(Xid xid) throws XAException, ConnectException {
+	public void propagateForget(Xid xid) throws XAException, DummyRemoteException {
 		if (offline) {
-			throw new ConnectException("Connection refused to: " + nodeName);
+			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
 		SubordinationManager.getXATerminator().forget(xid);
 
 	}
 
 	@Override
-	public void propagateBeforeCompletion(Xid xid) throws XAException, SystemException, ConnectException {
+	public void propagateBeforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException {
 		if (offline) {
-			throw new ConnectException("Connection refused to: " + nodeName);
+			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
 		SubordinateTransaction tx = SubordinationManager.getTransactionImporter().getImportedTransaction(xid);
 		tx.doBeforeCompletion();
-	}
-
-	@Override
-	public void setOffline(boolean offline) {
-		this.offline = offline;
 	}
 }

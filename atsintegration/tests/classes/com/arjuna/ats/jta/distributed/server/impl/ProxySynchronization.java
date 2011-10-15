@@ -1,6 +1,4 @@
-package com.arjuna.ats.jta.distributed.impl;
-
-import java.net.ConnectException;
+package com.arjuna.ats.jta.distributed.server.impl;
 
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
@@ -8,6 +6,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.jta.distributed.SimpleIsolatedServers;
+import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 
 public class ProxySynchronization implements Synchronization {
 
@@ -30,7 +29,7 @@ public class ProxySynchronization implements Synchronization {
 			e.printStackTrace();
 		} catch (SystemException e) {
 			e.printStackTrace();
-		} catch (ConnectException e) {
+		} catch (DummyRemoteException e) {
 			e.printStackTrace();
 		}
 	}

@@ -1,4 +1,4 @@
-package com.arjuna.ats.jta.distributed;
+package com.arjuna.ats.jta.distributed.server;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;

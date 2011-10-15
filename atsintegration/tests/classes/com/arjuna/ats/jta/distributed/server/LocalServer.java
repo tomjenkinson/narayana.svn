@@ -1,12 +1,7 @@
-package com.arjuna.ats.jta.distributed;
+package com.arjuna.ats.jta.distributed.server;
 
 import java.io.IOException;
-import java.net.ConnectException;
-import java.util.List;
 
-import javax.transaction.HeuristicCommitException;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
@@ -32,14 +27,16 @@ public interface LocalServer {
 	public long getTimeLeftBeforeTransactionTimeout() throws RollbackException;
 
 	public Xid getCurrentXid() throws SystemException;
-	
+
+	public boolean importTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException,
+			SystemException;
+
+	public RemoteServer connectTo();
+
 	public void setOffline(boolean offline);
 
 	public XAResource generateProxyXAResource(Integer localServerName, Integer remoteServerName);
 
 	public Synchronization generateProxySynchronization(Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst);
-
-	public boolean importTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException,
-			SystemException;
 
 }

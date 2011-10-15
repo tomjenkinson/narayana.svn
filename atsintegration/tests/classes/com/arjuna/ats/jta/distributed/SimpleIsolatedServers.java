@@ -24,6 +24,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
+import com.arjuna.ats.jta.distributed.server.IsolatableServersClassLoader;
+import com.arjuna.ats.jta.distributed.server.LocalServer;
+import com.arjuna.ats.jta.distributed.server.RemoteServer;
 
 public class SimpleIsolatedServers {
 	private static LocalServer[] localServers = new LocalServer[3];
@@ -48,9 +51,9 @@ public class SimpleIsolatedServers {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		for (int i = 0; i < localServers.length; i++) {
 			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader(contextClassLoader);
-			localServers[i] = (LocalServer) classLoader.loadClass("com.arjuna.ats.jta.distributed.impl.ServerImpl").newInstance();
+			localServers[i] = (LocalServer) classLoader.loadClass("com.arjuna.ats.jta.distributed.server.impl.ServerImpl").newInstance();
 			localServers[i].initialise((i + 1) * 1000);
-			remoteServers[i] = (RemoteServer) localServers[i];
+			remoteServers[i] = localServers[i].connectTo();
 		}
 	}
 

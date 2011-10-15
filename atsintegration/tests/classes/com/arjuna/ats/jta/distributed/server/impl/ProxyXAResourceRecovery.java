@@ -1,4 +1,4 @@
-package com.arjuna.ats.jta.distributed.impl;
+package com.arjuna.ats.jta.distributed.server.impl;
 
 import java.io.File;
 import java.io.IOException;
