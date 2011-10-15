@@ -413,6 +413,6 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 		return hash;
 	}
 
-	private XID _theXid;
+	protected XID _theXid;
 	private int hashCode;
 }
