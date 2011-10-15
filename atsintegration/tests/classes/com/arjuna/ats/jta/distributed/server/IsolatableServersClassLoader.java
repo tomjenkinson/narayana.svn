@@ -47,19 +47,21 @@ public class IsolatableServersClassLoader extends ClassLoader {
 			clazz = clazzMap.get(name);
 		}
 
-		if (!name.startsWith("com.arjuna") || (ignoredPackage != null && name.matches(ignoredPackage + ".[A-Za-z0-9]*")) || name.contains("logging")) {
+		if (!name.startsWith("com.arjuna") || (ignoredPackage != null && name.matches(ignoredPackage + ".[A-Za-z0-9]*"))) {
 			clazz = super.loadClass(name);
 		} else {
 
 			String path = name.replace('.', '/').concat(".class");
 			Resource res = ucp.getResource(path, false);
+			if (res == null) {
+				throw new ClassNotFoundException(name);
+			}
 			try {
 				byte[] classData = res.getBytes();
 				clazz = defineClass(name, classData, 0, classData.length);
 				clazzMap.put(name, clazz);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				throw new ClassNotFoundException(name, e);
 			}
 		}
 

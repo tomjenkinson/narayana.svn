@@ -57,7 +57,7 @@ public class SimpleIsolatedServers {
 		if (file.exists()) {
 			file.delete();
 		}
-		int startingTimeout = 0;
+		int startingTimeout = 10;
 
 		// Start out at the first server
 		LocalServer originalServer = getLocalServer(1000);
@@ -73,7 +73,7 @@ public class SimpleIsolatedServers {
 		// down
 		Transaction suspendedTransaction = transactionManager.suspend();
 		long timeLeftBeforeTransactionTimeout = originalServer.getTimeLeftBeforeTransactionTimeout();
-		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000, 3000, 2000, 1000 }));
+		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
 		boolean proxyRequired = recursivelyFlowTransaction(nodesToFlowTo, timeLeftBeforeTransactionTimeout, toMigrate);
 		transactionManager.resume(suspendedTransaction);
 		if (proxyRequired) {
