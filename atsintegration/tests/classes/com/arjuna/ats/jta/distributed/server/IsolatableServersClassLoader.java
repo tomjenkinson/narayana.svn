@@ -1,26 +1,36 @@
 package com.arjuna.ats.jta.distributed.server;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
+
+import sun.misc.Resource;
+import sun.misc.URLClassPath;
 
 public class IsolatableServersClassLoader extends ClassLoader {
 
 	private Map<String, Class<?>> clazzMap = new HashMap<String, Class<?>>();
-	private Method m;
+	private URLClassPath ucp;
+	private String ignoredPackage;
 
-	public IsolatableServersClassLoader(ClassLoader parent) throws SecurityException, NoSuchMethodException {
+	public IsolatableServersClassLoader(String ignoredPackage, ClassLoader parent) throws SecurityException, NoSuchMethodException, MalformedURLException {
 		super(parent);
-		m = ClassLoader.class.getDeclaredMethod("findLoadedClass", new Class[] { String.class });
-		m.setAccessible(true);
+		this.ignoredPackage = ignoredPackage;
+
+		String property = System.getProperty("java.class.path");
+		String[] split = property.split(":");
+		URL[] urls = new URL[1];
+		for (int i = 0; i < urls.length; i++) {
+			String url = split[0];
+			if (url.endsWith(".jar")) {
+				urls[0] = new URL("jar:file:" + url + "/");
+			} else {
+				urls[0] = new URL("file:" + url + "/");
+			}
+		}
+		this.ucp = new URLClassPath(urls);
 	}
 
 	@Override
@@ -37,53 +47,20 @@ public class IsolatableServersClassLoader extends ClassLoader {
 			clazz = clazzMap.get(name);
 		}
 
-		try {
-			ClassLoader parent2 = getParent();
-			Object test1 = m.invoke(parent2, name);
-			if (test1 != null) {
-				
-				if (!name.equals("")) {
-					clazz = super.loadClass(name);
-				}
-			} else {
-				try {
-					String url = "file:" + System.getProperty("user.dir") + "/bin/" + name.replace('.', '/') + ".class";
-					URL myUrl = new URL(url);
-					try {
-						URLConnection connection = myUrl.openConnection();
-						InputStream input = connection.getInputStream();
-						ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-						int data = input.read();
+		if (!name.startsWith("com.arjuna") || name.matches(ignoredPackage + ".[A-Za-z0-9]*") || name.contains("logging")) {
+			clazz = super.loadClass(name);
+		} else {
 
-						while (data != -1) {
-							buffer.write(data);
-							data = input.read();
-						}
-
-						input.close();
-
-						byte[] classData = buffer.toByteArray();
-
-						clazz = defineClass(name, classData, 0, classData.length);
-						clazzMap.put(name, clazz);
-					} catch (FileNotFoundException fnfe) {
-						return super.loadClass(name);
-					}
-				} catch (MalformedURLException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+			String path = name.replace('.', '/').concat(".class");
+			Resource res = ucp.getResource(path, false);
+			try {
+				byte[] classData = res.getBytes();
+				clazz = defineClass(name, classData, 0, classData.length);
+				clazzMap.put(name, clazz);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} catch (IllegalArgumentException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (IllegalAccessException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (InvocationTargetException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
 		}
 
 		return clazz;

@@ -39,6 +39,7 @@ import com.arjuna.ats.jta.common.JTAEnvironmentBean;
 import com.arjuna.ats.jta.distributed.TestResourceRecovery;
 import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
+import com.arjuna.ats.jta.distributed.server.LookupProvider;
 import com.arjuna.ats.jta.distributed.server.RemoteServer;
 
 public class ServerImpl implements LocalServer, RemoteServer {
@@ -47,8 +48,10 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	private RecoveryManagerService recoveryManagerService;
 	private TransactionManagerService transactionManagerService;
 	private boolean offline;
+	private LookupProvider lookupProvider;
 
-	public void initialise(Integer serverName) throws CoreEnvironmentBeanException, IOException {
+	public void initialise(LookupProvider lookupProvider, Integer serverName) throws CoreEnvironmentBeanException, IOException {
+		this.lookupProvider = lookupProvider;
 		this.nodeName = serverName;
 
 		RecoveryEnvironmentBean recoveryEnvironmentBean = com.arjuna.ats.arjuna.common.recoveryPropertyManager.getRecoveryEnvironmentBean();
@@ -117,7 +120,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 		recoveryManagerService = new RecoveryManagerService();
 		recoveryManagerService.create();
-		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(serverName));
+		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(lookupProvider, serverName));
 		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(serverName));
 		// recoveryManagerService.start();
 		RecoveryManager.manager().initialize();
@@ -171,13 +174,13 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public XAResource generateProxyXAResource(Integer localServerName, Integer remoteServerName) {
-		return new ProxyXAResource(localServerName, remoteServerName);
+	public XAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
+		return new ProxyXAResource(lookupProvider, localServerName, remoteServerName);
 	}
 
 	@Override
-	public Synchronization generateProxySynchronization(Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst) {
-		return new ProxySynchronization(localServerName, remoteServerName, toRegisterAgainst);
+	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst) {
+		return new ProxySynchronization(lookupProvider, localServerName, remoteServerName, toRegisterAgainst);
 	}
 
 	@Override

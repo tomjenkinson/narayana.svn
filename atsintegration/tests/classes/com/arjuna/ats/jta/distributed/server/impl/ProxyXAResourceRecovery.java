@@ -9,18 +9,19 @@ import javax.transaction.xa.XAResource;
 
 import org.jboss.tm.XAResourceRecovery;
 
+import com.arjuna.ats.jta.distributed.server.LookupProvider;
 
 public class ProxyXAResourceRecovery implements XAResourceRecovery {
 
 	private List<ProxyXAResource> resources = new ArrayList<ProxyXAResource>();
 
-	public ProxyXAResourceRecovery(int id) throws IOException {
+	public ProxyXAResourceRecovery(LookupProvider lookupProvider, int id) throws IOException {
 		File file = new File(System.getProperty("user.dir") + "/tmp/ProxyXAResource/" + id + "/");
 		if (file.exists() && file.isDirectory()) {
 			File[] listFiles = file.listFiles();
 			for (int i = 0; i < listFiles.length; i++) {
 				File currentFile = listFiles[i];
-				resources.add(new ProxyXAResource(id, currentFile));
+				resources.add(new ProxyXAResource(lookupProvider, id, currentFile));
 			}
 		}
 	}

@@ -20,8 +20,8 @@ import javax.transaction.xa.Xid;
 import org.jboss.tm.XAResourceWrapper;
 
 import com.arjuna.ats.arjuna.common.Uid;
-import com.arjuna.ats.jta.distributed.SimpleIsolatedServers;
 import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
+import com.arjuna.ats.jta.distributed.server.LookupProvider;
 
 public class ProxyXAResource implements XAResource, XAResourceWrapper {
 
@@ -33,12 +33,16 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	private File file;
 	private Integer localServerName;
 
-	public ProxyXAResource(Integer localServerName, Integer remoteServerName) {
+	private LookupProvider lookupProvider;
+
+	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
+		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
 	}
 
-	public ProxyXAResource(Integer localServerName, File file) throws IOException {
+	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, File file) throws IOException {
+		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
 		this.file = file;
 		DataInputStream fis = new DataInputStream(new FileInputStream(file));
@@ -151,7 +155,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		}
 
 		try {
-			int propagatePrepare = SimpleIsolatedServers.lookup(remoteServerName).propagatePrepare(xid);
+			int propagatePrepare = lookupProvider.lookup(remoteServerName).propagatePrepare(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARED");
 			return propagatePrepare;
 		} catch (DummyRemoteException ce) {
@@ -164,7 +168,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
 
 		try {
-			SimpleIsolatedServers.lookup(remoteServerName).propagateCommit(xid, onePhase);
+			lookupProvider.lookup(remoteServerName).propagateCommit(xid, onePhase);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
 		} catch (IllegalStateException e) {
 			throw new XAException(XAException.XAER_INVAL);
@@ -189,7 +193,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	public synchronized void rollback(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
 		try {
-			SimpleIsolatedServers.lookup(remoteServerName).propagateRollback(xid);
+			lookupProvider.lookup(remoteServerName).propagateRollback(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
 		} catch (IllegalStateException e) {
 			throw new XAException(XAException.XAER_INVAL);
@@ -229,7 +233,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 				// Make sure that the remote server has recovered all
 				// transactions
 				try {
-					SimpleIsolatedServers.lookup(remoteServerName).propagateRecover(startScanned, flag);
+					lookupProvider.lookup(remoteServerName).propagateRecover(startScanned, flag);
 				} catch (DummyRemoteException ce) {
 					throw new XAException(XAException.XA_RETRY);
 				} finally {
@@ -247,7 +251,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 
 			if (!startScanned.contains(remoteServerName)) {
 				try {
-					SimpleIsolatedServers.lookup(remoteServerName).propagateRecover(startScanned, flag);
+					lookupProvider.lookup(remoteServerName).propagateRecover(startScanned, flag);
 				} catch (DummyRemoteException ce) {
 					throw new XAException(XAException.XA_RETRY);
 				} finally {
@@ -266,7 +270,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	public void forget(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGET  [" + xid + "]");
 		try {
-			SimpleIsolatedServers.lookup(remoteServerName).propagateForget(xid);
+			lookupProvider.lookup(remoteServerName).propagateForget(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGETED[" + xid + "]");
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);

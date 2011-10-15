@@ -2,8 +2,6 @@ package com.arjuna.ats.jta.distributed;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,33 +24,22 @@ import org.junit.Test;
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.jta.distributed.server.IsolatableServersClassLoader;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
+import com.arjuna.ats.jta.distributed.server.LookupProvider;
 import com.arjuna.ats.jta.distributed.server.RemoteServer;
 
 public class SimpleIsolatedServers {
+	private static LookupProvider lookupProvider = new MyLookupProvider();
 	private static LocalServer[] localServers = new LocalServer[3];
 	private static RemoteServer[] remoteServers = new RemoteServer[3];
 
 	@BeforeClass
 	public static void setup() throws SecurityException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException,
 			CoreEnvironmentBeanException, IOException {
-
-		// Get the Server interface loaded, only way I found to do this was
-		// instantiate one
-		java.lang.reflect.Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[] { LocalServer.class, RemoteServer.class },
-				new InvocationHandler() {
-
-					@Override
-					public Object invoke(Object arg0, Method arg1, Object[] arg2) throws Throwable {
-						// TODO Auto-generated method stub
-						return null;
-					}
-				});
-
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		for (int i = 0; i < localServers.length; i++) {
-			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader(contextClassLoader);
+			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.ats.jta.distributed.server", contextClassLoader);
 			localServers[i] = (LocalServer) classLoader.loadClass("com.arjuna.ats.jta.distributed.server.impl.ServerImpl").newInstance();
-			localServers[i].initialise((i + 1) * 1000);
+			localServers[i].initialise(lookupProvider, (i + 1) * 1000);
 			remoteServers[i] = localServers[i].connectTo();
 		}
 	}
@@ -90,9 +77,10 @@ public class SimpleIsolatedServers {
 		boolean proxyRequired = recursivelyFlowTransaction(nodesToFlowTo, timeLeftBeforeTransactionTimeout, toMigrate);
 		originalServer.getTransactionManager().resume(suspendedTransaction);
 		if (proxyRequired) {
-			XAResource proxyXAResource = originalServer.generateProxyXAResource(originalServer.getNodeName(), 2000);
+			XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 			originalTransaction.enlistResource(proxyXAResource);
-			originalTransaction.registerSynchronization(originalServer.generateProxySynchronization(originalServer.getNodeName(), 2000, toMigrate));
+			originalTransaction.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, originalServer.getNodeName(), 2000,
+					toMigrate));
 		}
 
 		Transaction transaction = transactionManager.getTransaction();
@@ -135,10 +123,10 @@ public class SimpleIsolatedServers {
 			// RESUME THE TRANSACTION IN CASE THERE IS MORE WORK
 			currentServer.getTransactionManager().resume(suspendedTransaction);
 			if (proxyRequired) {
-				XAResource proxyXAResource = currentServer.generateProxyXAResource(currentServer.getNodeName(), nextServerNodeName);
+				XAResource proxyXAResource = currentServer.generateProxyXAResource(lookupProvider, currentServer.getNodeName(), nextServerNodeName);
 				suspendedTransaction.enlistResource(proxyXAResource);
-				suspendedTransaction.registerSynchronization(currentServer.generateProxySynchronization(currentServer.getNodeName(), nextServerNodeName,
-						toMigrate));
+				suspendedTransaction.registerSynchronization(currentServer.generateProxySynchronization(lookupProvider, currentServer.getNodeName(),
+						nextServerNodeName, toMigrate));
 			}
 		}
 		// SUSPEND THE TRANSACTION WHEN YOU ARE READY TO RETURN TO YOUR CALLER
@@ -146,13 +134,18 @@ public class SimpleIsolatedServers {
 		return requiresProxyAtPreviousServer;
 	}
 
-	public static RemoteServer lookup(Integer jndiName) {
-		int index = (jndiName / 1000) - 1;
-		return remoteServers[index];
-	}
-
 	private static LocalServer getLocalServer(Integer jndiName) {
 		int index = (jndiName / 1000) - 1;
 		return localServers[index];
+	}
+
+	private static class MyLookupProvider implements LookupProvider {
+
+		@Override
+		public RemoteServer lookup(Integer jndiName) {
+			int index = (jndiName / 1000) - 1;
+			return remoteServers[index];
+		}
+
 	}
 }

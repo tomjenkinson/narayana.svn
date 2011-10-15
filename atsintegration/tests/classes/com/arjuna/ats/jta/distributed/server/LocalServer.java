@@ -16,7 +16,7 @@ import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 
 public interface LocalServer {
 
-	public void initialise(Integer nodeName) throws CoreEnvironmentBeanException, IOException;
+	public void initialise(LookupProvider lookupProvider, Integer nodeName) throws CoreEnvironmentBeanException, IOException;
 
 	public Integer getNodeName();
 
@@ -35,8 +35,8 @@ public interface LocalServer {
 
 	public void setOffline(boolean offline);
 
-	public XAResource generateProxyXAResource(Integer localServerName, Integer remoteServerName);
+	public XAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName);
 
-	public Synchronization generateProxySynchronization(Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst);
+	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst);
 
 }

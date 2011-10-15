@@ -1,6 +1,5 @@
 package com.arjuna.ats.jta.distributed.server;
 
-import java.net.ConnectException;
 import java.util.List;
 
 import javax.transaction.HeuristicCommitException;
