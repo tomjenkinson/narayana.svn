@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +21,6 @@ import javax.transaction.xa.Xid;
 import org.jboss.tm.XAResourceWrapper;
 
 import com.arjuna.ats.arjuna.common.Uid;
-import com.arjuna.ats.jta.distributed.Server;
 import com.arjuna.ats.jta.distributed.SimpleIsolatedServers;
 
 public class ProxyXAResource implements XAResource, XAResourceWrapper {
@@ -29,17 +29,17 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 
 	private int transactionTimeout;
 	private Xid xid;
-	private int serverIdToProxyTo = -1;
+	private Integer remoteServerName = -1;
 	private File file;
-	private Integer serverId;
+	private Integer localServerName;
 
-	public ProxyXAResource(int serverId, int serverIdToProxyTo) {
-		this.serverId = serverId;
-		this.serverIdToProxyTo = serverIdToProxyTo;
+	public ProxyXAResource(Integer localServerName, Integer remoteServerName) {
+		this.localServerName = localServerName;
+		this.remoteServerName = remoteServerName;
 	}
 
-	public ProxyXAResource(int recoverFor, File file) throws IOException {
-		this.serverId = recoverFor;
+	public ProxyXAResource(Integer localServerName, File file) throws IOException {
+		this.localServerName = localServerName;
 		this.file = file;
 		DataInputStream fis = new DataInputStream(new FileInputStream(file));
 		final int formatId = fis.readInt();
@@ -49,8 +49,8 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		final int bqual_length = fis.readInt();
 		final byte[] bqual = new byte[bqual_length];
 		fis.read(bqual, 0, bqual_length);
-		int serverIdToProxyTo = fis.readInt();
-		this.serverIdToProxyTo = serverIdToProxyTo;
+		int remoteServerName = fis.readInt();
+		this.remoteServerName = remoteServerName;
 		this.xid = new Xid() {
 			@Override
 			public byte[] getGlobalTransactionId() {
@@ -111,22 +111,22 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 
 	@Override
 	public void start(Xid xid, int flags) throws XAException {
-		System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_START   [" + xid + "]");
+		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_START   [" + xid + "]");
 		this.xid = xid;
 	}
 
 	@Override
 	public void end(Xid xid, int flags) throws XAException {
-		System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_END     [" + xid + "]");
+		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_END     [" + xid + "]");
 		this.xid = null;
 	}
 
 	@Override
 	public synchronized int prepare(Xid xid) throws XAException {
-		System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_PREPARE [" + xid + "]");
+		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARE [" + xid + "]");
 
 		try {
-			File dir = new File(System.getProperty("user.dir") + "/tmp/ProxyXAResource/" + serverId + "/");
+			File dir = new File(System.getProperty("user.dir") + "/tmp/ProxyXAResource/" + localServerName + "/");
 			dir.mkdirs();
 			file = new File(dir, new Uid().fileStringForm());
 
@@ -144,24 +144,28 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			fos.write(gtrid, 0, gtrid_length);
 			fos.writeInt(bqual_length);
 			fos.write(bqual, 0, bqual_length);
-			fos.writeInt(serverIdToProxyTo);
+			fos.writeInt(remoteServerName);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new XAException(XAException.XAER_RMERR);
 		}
 
-		int propagatePrepare = getServerToProxyTo().propagatePrepare(xid);
-		System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_PREPARED");
-		return propagatePrepare;
+		try {
+			int propagatePrepare = SimpleIsolatedServers.lookup(remoteServerName).propagatePrepare(xid);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARED");
+			return propagatePrepare;
+		} catch (ConnectException ce) {
+			throw new XAException(XAException.XA_RETRY);
+		}
 	}
 
 	@Override
 	public synchronized void commit(Xid xid, boolean onePhase) throws XAException {
-		System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_COMMIT  [" + xid + "]");
+		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
 
 		try {
-			getServerToProxyTo().propagateCommit(xid, onePhase);
-			System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_COMMITED");
+			SimpleIsolatedServers.lookup(remoteServerName).propagateCommit(xid, onePhase);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
 		} catch (IllegalStateException e) {
 			throw new XAException(XAException.XAER_INVAL);
 		} catch (HeuristicMixedException e) {
@@ -172,6 +176,8 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			throw new XAException(XAException.XA_HEURCOM);
 		} catch (SystemException e) {
 			throw new XAException(XAException.XAER_PROTO);
+		} catch (ConnectException ce) {
+			throw new XAException(XAException.XA_RETRY);
 		}
 
 		if (file != null) {
@@ -181,10 +187,10 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 
 	@Override
 	public synchronized void rollback(Xid xid) throws XAException {
-		System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_ROLLBACK[" + xid + "]");
+		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
 		try {
-			getServerToProxyTo().propagateRollback(xid);
-			System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_ROLLBACKED");
+			SimpleIsolatedServers.lookup(remoteServerName).propagateRollback(xid);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
 		} catch (IllegalStateException e) {
 			throw new XAException(XAException.XAER_INVAL);
 		} catch (HeuristicMixedException e) {
@@ -195,6 +201,8 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			throw new XAException(XAException.XA_HEURRB);
 		} catch (SystemException e) {
 			throw new XAException(XAException.XAER_PROTO);
+		} catch (ConnectException ce) {
+			throw new XAException(XAException.XA_RETRY);
 		}
 
 		if (file != null) {
@@ -212,28 +220,43 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 
 		int tocheck = (flag & XAResource.TMSTARTRSCAN);
 		if (tocheck == XAResource.TMSTARTRSCAN) {
-			System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_RECOVER [XAResource.TMSTARTRSCAN]: " + serverIdToProxyTo);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMSTARTRSCAN]: "
+					+ remoteServerName);
 
-			if (!startScanned.contains(serverIdToProxyTo)) {
-				startScanned.add(serverIdToProxyTo);
+			if (!startScanned.contains(remoteServerName)) {
+				startScanned.add(remoteServerName);
 
 				// Make sure that the remote server has recovered all
 				// transactions
-				getServerToProxyTo().propagateRecover(startScanned, flag);
-				startScanned.remove((Integer) serverIdToProxyTo);
+				try {
+					SimpleIsolatedServers.lookup(remoteServerName).propagateRecover(startScanned, flag);
+				} catch (ConnectException ce) {
+					throw new XAException(XAException.XA_RETRY);
+				} finally {
+					startScanned.remove((Integer) remoteServerName);
+				}
 			}
 
-			System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_RECOVERD[XAResource.TMSTARTRSCAN]: " + serverIdToProxyTo);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMSTARTRSCAN]: "
+					+ remoteServerName);
 		}
 		tocheck = (flag & XAResource.TMENDRSCAN);
 		if (tocheck == XAResource.TMENDRSCAN) {
-			System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_RECOVER [XAResource.TMENDRSCAN]: " + serverIdToProxyTo);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMENDRSCAN]: "
+					+ remoteServerName);
 
-			if (!startScanned.contains(serverIdToProxyTo)) {
-				getServerToProxyTo().propagateRecover(startScanned, flag);
+			if (!startScanned.contains(remoteServerName)) {
+				try {
+					SimpleIsolatedServers.lookup(remoteServerName).propagateRecover(startScanned, flag);
+				} catch (ConnectException ce) {
+					throw new XAException(XAException.XA_RETRY);
+				} finally {
+					startScanned.remove((Integer) remoteServerName);
+				}
 			}
 
-			System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_RECOVERD[XAResource.TMENDRSCAN]: " + serverIdToProxyTo);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMENDRSCAN]: "
+					+ remoteServerName);
 		}
 
 		return new Xid[] { xid };
@@ -241,9 +264,13 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 
 	@Override
 	public void forget(Xid xid) throws XAException {
-		System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_FORGET  [" + xid + "]");
-		getServerToProxyTo().propagateForget(xid);
-		System.out.println("     ProxyXAResource (" + serverId + ":" + serverIdToProxyTo + ") XA_FORGETED[" + xid + "]");
+		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGET  [" + xid + "]");
+		try {
+			SimpleIsolatedServers.lookup(remoteServerName).propagateForget(xid);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGETED[" + xid + "]");
+		} catch (ConnectException ce) {
+			throw new XAException(XAException.XA_RETRY);
+		}
 	}
 
 	@Override
@@ -289,10 +316,5 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	@Override
 	public String getJndiName() {
 		return "ProxyXAResource";
-	}
-
-	private Server getServerToProxyTo() {
-		int index = (serverIdToProxyTo / 1000) - 1;
-		return SimpleIsolatedServers.getServers()[index];
 	}
 }

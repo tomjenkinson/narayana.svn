@@ -1,5 +1,7 @@
 package com.arjuna.ats.jta.distributed.impl;
 
+import java.net.ConnectException;
+
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
@@ -9,25 +11,26 @@ import com.arjuna.ats.jta.distributed.SimpleIsolatedServers;
 
 public class ProxySynchronization implements Synchronization {
 
-	private int serverId;
-	private int serverIdToProxyTo;
+	private int localServerName;
+	private int remoteServerName;
 	private Xid toRegisterAgainst;
 
-	public ProxySynchronization(int serverId, int serverIdToProxyTo, Xid toRegisterAgainst) {
-		this.serverId = serverId;
-		this.serverIdToProxyTo = serverIdToProxyTo;
+	public ProxySynchronization(int localServerName, int remoteServerName, Xid toRegisterAgainst) {
+		this.localServerName = localServerName;
+		this.remoteServerName = remoteServerName;
 		this.toRegisterAgainst = toRegisterAgainst;
 	}
 
 	@Override
 	public void beforeCompletion() {
-		System.out.println("ProxySynchronization (" + serverId + ":" + serverIdToProxyTo + ") beforeCompletion");
-		int index = (serverIdToProxyTo / 1000) - 1;
+		System.out.println("ProxySynchronization (" + localServerName + ":" + remoteServerName + ") beforeCompletion");
 		try {
-			SimpleIsolatedServers.getServers()[index].propagateBeforeCompletion(toRegisterAgainst);
+			SimpleIsolatedServers.lookup(remoteServerName).propagateBeforeCompletion(toRegisterAgainst);
 		} catch (XAException e) {
 			e.printStackTrace();
 		} catch (SystemException e) {
+			e.printStackTrace();
+		} catch (ConnectException e) {
 			e.printStackTrace();
 		}
 	}
