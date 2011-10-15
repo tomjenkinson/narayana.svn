@@ -14,6 +14,7 @@ import javax.transaction.InvalidTransactionException;
 import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
+import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -32,6 +33,7 @@ import com.arjuna.ats.arjuna.tools.osb.mbean.ObjStoreBrowser;
 import com.arjuna.ats.internal.jbossatx.jta.XAResourceRecordWrappingPluginImpl;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateTransaction;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateXidImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinationManager;
 import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 import com.arjuna.ats.jbossatx.jta.TransactionManagerService;
@@ -49,6 +51,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	private TransactionManagerService transactionManagerService;
 	private boolean offline;
 	private LookupProvider lookupProvider;
+	private Map<SubordinateXidImple, TransactionImple> transactions = new HashMap<SubordinateXidImple, TransactionImple>();
 
 	public void initialise(LookupProvider lookupProvider, Integer serverName) throws CoreEnvironmentBeanException, IOException {
 		this.lookupProvider = lookupProvider;
@@ -145,15 +148,17 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public boolean importTransaction(int remainingTimeout, Xid toResume) throws XAException, InvalidTransactionException, IllegalStateException,
-			SystemException {
+	public boolean getTransaction(int remainingTimeout, Xid toResume) throws XAException, InvalidTransactionException, IllegalStateException, SystemException {
 		boolean existed = true;
-		SubordinateTransaction importTransaction = SubordinationManager.getTransactionImporter().getImportedTransaction(toResume);
-		if (importTransaction == null) {
-			importTransaction = SubordinationManager.getTransactionImporter().importTransaction(toResume, remainingTimeout);
-			existed = false;
+		Transaction transaction = transactions.get(new SubordinateXidImple(toResume));
+		if (transaction == null) {
+			transaction = SubordinationManager.getTransactionImporter().getImportedTransaction(toResume);
+			if (transaction == null) {
+				transaction = SubordinationManager.getTransactionImporter().importTransaction(toResume, remainingTimeout);
+				existed = false;
+			}
 		}
-		getTransactionManager().resume(importTransaction);
+		transactionManagerService.getTransactionManager().resume(transaction);
 		return existed;
 	}
 
@@ -168,9 +173,16 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public Xid getCurrentXid() throws SystemException {
+	public Xid storeCurrentTransaction() throws SystemException {
 		TransactionImple transaction = ((TransactionImple) transactionManagerService.getTransactionManager().getTransaction());
-		return transaction.getTxId();
+		Xid txId = transaction.getTxId();
+		transactions.put(new SubordinateXidImple(txId), transaction);
+		return txId;
+	}
+
+	@Override
+	public void removeTransaction(Xid toMigrate) {
+		transactions.remove(new SubordinateXidImple(toMigrate));
 	}
 
 	@Override

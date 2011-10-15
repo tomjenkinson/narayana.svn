@@ -7,6 +7,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
+import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -26,9 +27,11 @@ public interface LocalServer {
 
 	public long getTimeLeftBeforeTransactionTimeout() throws RollbackException;
 
-	public Xid getCurrentXid() throws SystemException;
+	public Xid storeCurrentTransaction() throws SystemException;
 
-	public boolean importTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException,
+	public void removeTransaction(Xid toMigrate);
+
+	public boolean getTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException,
 			SystemException;
 
 	public RemoteServer connectTo();
@@ -38,5 +41,4 @@ public interface LocalServer {
 	public XAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName);
 
 	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst);
-
 }

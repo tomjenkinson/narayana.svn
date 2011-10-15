@@ -67,15 +67,15 @@ public class SimpleIsolatedServers {
 		Transaction originalTransaction = transactionManager.getTransaction();
 		originalTransaction.registerSynchronization(new TestSynchronization(originalServer.getNodeName()));
 		originalTransaction.enlistResource(new TestResource(originalServer.getNodeName(), false));
-		Xid toMigrate = originalServer.getCurrentXid();
+		Xid toMigrate = originalServer.storeCurrentTransaction();
 
 		// Loop through the rest of the servers passing the transaction up and
 		// down
-		Transaction suspendedTransaction = originalServer.getTransactionManager().suspend();
+		Transaction suspendedTransaction = transactionManager.suspend();
 		long timeLeftBeforeTransactionTimeout = originalServer.getTimeLeftBeforeTransactionTimeout();
-		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
+		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000, 3000, 2000, 1000 }));
 		boolean proxyRequired = recursivelyFlowTransaction(nodesToFlowTo, timeLeftBeforeTransactionTimeout, toMigrate);
-		originalServer.getTransactionManager().resume(suspendedTransaction);
+		transactionManager.resume(suspendedTransaction);
 		if (proxyRequired) {
 			XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 			originalTransaction.enlistResource(proxyXAResource);
@@ -85,6 +85,7 @@ public class SimpleIsolatedServers {
 
 		Transaction transaction = transactionManager.getTransaction();
 		transaction.commit();
+		originalServer.removeTransaction(toMigrate);
 	}
 
 	private boolean recursivelyFlowTransaction(List<Integer> nodesToFlowTo, long timeLeftBeforeTransactionTimeout, Xid toMigrate) throws RollbackException,
@@ -96,7 +97,7 @@ public class SimpleIsolatedServers {
 		// Migrate the transaction to the next server
 		int remainingTimeout = (int) (timeLeftBeforeTransactionTimeout / 1000);
 
-		boolean requiresProxyAtPreviousServer = !currentServer.importTransaction(remainingTimeout, toMigrate);
+		boolean requiresProxyAtPreviousServer = !currentServer.getTransaction(remainingTimeout, toMigrate);
 		// Perform work on the migrated transaction
 		TransactionManager transactionManager = currentServer.getTransactionManager();
 		Transaction transaction = transactionManager.getTransaction();
@@ -107,7 +108,7 @@ public class SimpleIsolatedServers {
 			Integer nextServerNodeName = nodesToFlowTo.get(0);
 
 			// SUSPEND THE TRANSACTION
-			Transaction suspendedTransaction = currentServer.getTransactionManager().suspend();
+			Transaction suspendedTransaction = transactionManager.suspend();
 			// FLOW THE TRANSACTION
 			timeLeftBeforeTransactionTimeout = currentServer.getTimeLeftBeforeTransactionTimeout();
 			boolean proxyRequired = recursivelyFlowTransaction(nodesToFlowTo, timeLeftBeforeTransactionTimeout, toMigrate);
@@ -121,7 +122,7 @@ public class SimpleIsolatedServers {
 			// performance
 			// issues
 			// RESUME THE TRANSACTION IN CASE THERE IS MORE WORK
-			currentServer.getTransactionManager().resume(suspendedTransaction);
+			transactionManager.resume(suspendedTransaction);
 			if (proxyRequired) {
 				XAResource proxyXAResource = currentServer.generateProxyXAResource(lookupProvider, currentServer.getNodeName(), nextServerNodeName);
 				suspendedTransaction.enlistResource(proxyXAResource);
@@ -129,8 +130,9 @@ public class SimpleIsolatedServers {
 						nextServerNodeName, toMigrate));
 			}
 		}
+
 		// SUSPEND THE TRANSACTION WHEN YOU ARE READY TO RETURN TO YOUR CALLER
-		currentServer.getTransactionManager().suspend();
+		transactionManager.suspend();
 		return requiresProxyAtPreviousServer;
 	}
 
