@@ -46,7 +46,9 @@ public class SimpleIsolatedServers {
 
 	@Test
 	public void testRecovery() {
-		localServers[0].doRecoveryManagerScan();
+		getLocalServer(3000).doRecoveryManagerScan();
+		getLocalServer(2000).doRecoveryManagerScan();
+		getLocalServer(1000).doRecoveryManagerScan();
 	}
 
 	@Test
