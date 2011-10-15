@@ -23,6 +23,7 @@ package com.arjuna.ats.arjuna.common;
 import com.arjuna.ats.internal.arjuna.common.ClassloadingUtility;
 import com.arjuna.common.internal.util.propertyservice.PropertyPrefix;
 import com.arjuna.common.internal.util.propertyservice.FullPropertyName;
+import com.arjuna.ats.arjuna.logging.tsLogger;
 import com.arjuna.ats.arjuna.utils.Utility;
 import com.arjuna.common.util.ConfigurationInfo;
 import com.arjuna.ats.arjuna.utils.Process;
@@ -105,9 +106,14 @@ public class CoreEnvironmentBean implements CoreEnvironmentBeanMBean
     public void setNodeIdentifier(int nodeIdentifier) throws CoreEnvironmentBeanException
     {
     	if (nodeIdentifier < 1) {
-    		throw new CoreEnvironmentBeanException("The node identifier was set to a value less than 1");
+    		throw new CoreEnvironmentBeanException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
+    	}
+    	
+    	if (this.nodeIdentifierSet) {
+    		throw new CoreEnvironmentBeanException(tsLogger.i18NLogger.get_node_identifier_reset_attempt());
     	}
         this.nodeIdentifier = nodeIdentifier;
+        this.nodeIdentifierSet = true;
     }
 
     /**
