@@ -42,7 +42,7 @@ public class RecoveryManagerService implements XAResourceRecoveryRegistry
 {
     private RecoveryManager _recoveryManager;
 
-    public void create() throws Exception
+    public void create()
     {
         String tag = ConfigurationInfo.getSourceId();
 

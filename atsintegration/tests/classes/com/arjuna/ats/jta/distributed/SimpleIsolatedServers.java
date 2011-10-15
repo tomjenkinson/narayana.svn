@@ -31,7 +31,7 @@ public class SimpleIsolatedServers {
 
 		// Get the Server interface loaded, only way I found to do this was
 		// instantiate one
-		Server server = (Server) java.lang.reflect.Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[] { Server.class },
+		java.lang.reflect.Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[] { Server.class },
 				new InvocationHandler() {
 
 					@Override

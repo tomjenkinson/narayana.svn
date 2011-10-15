@@ -113,9 +113,7 @@ public class ServerImpl implements Server {
 		jTAEnvironmentBean.setXAResourceRecordWrappingPlugin(new XAResourceRecordWrappingPluginImpl());
 
 		recoveryManagerService = new RecoveryManagerService();
-//		recoveryManagerService.create();
-		RecoveryManager.delayRecoveryManagerThread();
-		RecoveryManager.manager();
+		recoveryManagerService.create();
 		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(id));
 		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(id));
 		// recoveryManagerService.start();
