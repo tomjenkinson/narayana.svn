@@ -150,7 +150,10 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public void doRecoveryManagerScan() {
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 		_recoveryManager.scan();
+		Thread.currentThread().setContextClassLoader(classLoader);
 	}
 
 	@Override
@@ -159,7 +162,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public boolean getAndResumeTransaction(int remainingTimeout, Xid toResume) throws XAException, InvalidTransactionException, IllegalStateException, SystemException {
+	public boolean getAndResumeTransaction(int remainingTimeout, Xid toResume) throws XAException, InvalidTransactionException, IllegalStateException,
+			SystemException {
 		boolean existed = true;
 		Transaction transaction = transactions.get(new SubordinateXidImple(toResume));
 		if (transaction == null) {
