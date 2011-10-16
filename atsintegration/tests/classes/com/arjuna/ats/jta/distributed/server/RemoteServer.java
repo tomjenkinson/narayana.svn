@@ -17,7 +17,7 @@ public interface RemoteServer {
 	public void propagateRollback(Xid xid) throws IllegalStateException, HeuristicMixedException, HeuristicCommitException, HeuristicRollbackException,
 			SystemException, XAException, DummyRemoteException;
 
-	public Xid[] propagateRecover(Integer serverNodeNameToRecoverFor, int flag) throws XAException, DummyRemoteException;
+	public Xid[] propagateRecover(int formatId, byte[] gtrid, Integer serverNodeNameToRecoverFor, int flag) throws XAException, DummyRemoteException;
 
 	public void propagateForget(Xid xid) throws XAException, DummyRemoteException;
 

@@ -185,14 +185,16 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 					+ remoteServerName);
 		}
 
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		try {
-			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			recovered = lookupProvider.lookup(remoteServerName).propagateRecover(localServerName, flag);
-		} catch (DummyRemoteException ce) {
-			throw new XAException(XAException.XA_RETRY);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
+		if (this.xid != null) {
+			ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+			try {
+				Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+				recovered = lookupProvider.lookup(remoteServerName).propagateRecover(xid.getFormatId(), xid.getGlobalTransactionId(), localServerName, flag);
+			} catch (DummyRemoteException ce) {
+				throw new XAException(XAException.XA_RETRY);
+			} finally {
+				Thread.currentThread().setContextClassLoader(contextClassLoader);
+			}
 		}
 
 		for (int i = 0; i < recovered.length; i++) {

@@ -3,6 +3,7 @@ package com.arjuna.ats.jta.distributed.server.impl;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -253,17 +254,17 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public Xid[] propagateRecover(Integer serverNodeNameToRecoverFor, int flag) throws XAException, DummyRemoteException {
+	public Xid[] propagateRecover(int formatId, byte[] gtrid, Integer serverNodeNameToRecoverFor, int flag) throws XAException, DummyRemoteException {
 		if (offline) {
 			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
-		// Assumes that this thread is used by the recovery thread
-		// ProxyXAResource.RECOVERY_SCAN_STARTED.set(recoveryScanStarted);
 		List<Xid> toReturn = new ArrayList<Xid>();
 		Xid[] recovered = SubordinationManager.getXATerminator().recover(flag);
 		if (recovered != null) {
 			for (int i = 0; i < recovered.length; i++) {
-				if (XATxConverter.getParentNodeName(((XidImple) recovered[i]).getXID()) == serverNodeNameToRecoverFor) {
+				// Filter out the transactions that are not owned by this parent
+				if (recovered[i].getFormatId() == formatId && Arrays.equals(gtrid, recovered[i].getGlobalTransactionId())
+						&& XATxConverter.getParentNodeName(((XidImple) recovered[i]).getXID()) == serverNodeNameToRecoverFor) {
 					toReturn.add(recovered[i]);
 				}
 			}
