@@ -126,10 +126,8 @@ public class XATxConverter
             // src, srcPos, dest, destPos, length
             System.arraycopy (bqualUid, 0, xid.data, offset, bqualUid.length);
             offset = offset + bqualUid.length;
-            setSubordinateNodeName(xid, nodeName);
-            offset = offset + 4;
-            setParentNodeName(xid, nodeName);
-            offset = offset + 4;
+            offset = offset + 4; // Reserve space for parent node name
+            offset = offset + 4; // Reserve space for subordinate node name
             System.arraycopy (eisName, 0, xid.data, offset, eisNameLengthToUse);
         }
 		else

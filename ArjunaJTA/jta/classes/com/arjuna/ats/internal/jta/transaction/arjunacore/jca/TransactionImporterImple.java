@@ -91,7 +91,7 @@ public class TransactionImporterImple implements TransactionImporter
 		if (imported == null)
 		{
 			imported = new TransactionImple(timeout, xid);
-
+			
 			_transactions.put(new SubordinateXidImple(xid), imported);
 		}
 

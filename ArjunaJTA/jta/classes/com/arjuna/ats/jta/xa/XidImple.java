@@ -74,6 +74,9 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 		// If this is a subordinate transaction and it is one of ours, bump up the parent node name
 		if (subordinate && _theXid.formatID == XATxConverter.FORMAT_ID) {
 			int parentNodeName = XATxConverter.getSubordinateNodeName(_theXid);
+			if (parentNodeName == 0) {
+				parentNodeName = XATxConverter.getNodeName(_theXid);
+			}
 			XATxConverter.setParentNodeName(_theXid, parentNodeName);
 			XATxConverter.setSubordinateNodeName(_theXid, TxControl.getXANodeName());
 		}
@@ -89,7 +92,7 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 	}
 
 	public XidImple(Xid xid, boolean branch, String eisName) {
-		this(xid, true);
+		this(xid, false);
 		if (branch) {
 			XATxConverter.setBranchUID(_theXid, new Uid());
 		}
