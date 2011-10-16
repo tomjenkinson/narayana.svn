@@ -35,19 +35,21 @@ public class SimpleIsolatedServers {
 	@BeforeClass
 	public static void setup() throws SecurityException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException,
 			CoreEnvironmentBeanException, IOException, IllegalArgumentException, NoSuchFieldException {
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		for (int i = 0; i < localServers.length; i++) {
+			ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.ats.jta.distributed.server", contextClassLoader);
 			localServers[i] = (LocalServer) classLoader.loadClass("com.arjuna.ats.jta.distributed.server.impl.ServerImpl").newInstance();
+			Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
 			localServers[i].initialise(lookupProvider, (i + 1) * 1000);
 			remoteServers[i] = localServers[i].connectTo();
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 
 	@Test
 	public void testRecovery() {
-		getLocalServer(3000).doRecoveryManagerScan();
-		getLocalServer(2000).doRecoveryManagerScan();
+		// getLocalServer(3000).doRecoveryManagerScan();
+		// getLocalServer(2000).doRecoveryManagerScan();
 		getLocalServer(1000).doRecoveryManagerScan();
 	}
 
@@ -59,86 +61,37 @@ public class SimpleIsolatedServers {
 		if (file.exists()) {
 			file.delete();
 		}
-		int startingTimeout = 10;
+		int startingTimeout = 10000;
+		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
 
 		// Start out at the first server
 		LocalServer originalServer = getLocalServer(1000);
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
 		TransactionManager transactionManager = originalServer.getTransactionManager();
 		transactionManager.setTransactionTimeout(startingTimeout);
 		transactionManager.begin();
 		Transaction originalTransaction = transactionManager.getTransaction();
-		originalTransaction.registerSynchronization(new TestSynchronization(originalServer.getNodeName()));
-		originalTransaction.enlistResource(new TestResource(originalServer.getNodeName(), false));
-		Xid toMigrate = originalServer.storeCurrentTransaction();
-
-		// Loop through the rest of the servers passing the transaction up and
-		// down
-		Transaction suspendedTransaction = transactionManager.suspend();
-		long timeLeftBeforeTransactionTimeout = originalServer.getTimeLeftBeforeTransactionTimeout();
-		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
-		boolean proxyRequired = recursivelyFlowTransaction(nodesToFlowTo, timeLeftBeforeTransactionTimeout, toMigrate);
-		transactionManager.resume(suspendedTransaction);
-		if (proxyRequired) {
-			XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
-			originalTransaction.enlistResource(proxyXAResource);
-			originalTransaction.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, originalServer.getNodeName(), 2000,
-					toMigrate));
-		}
-
-		Transaction transaction = transactionManager.getTransaction();
-		transaction.commit();
-		originalServer.removeTransaction(toMigrate);
+		int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
+		Xid currentXid = originalServer.getCurrentXid();
+		originalServer.storeRootTransaction();
+		transactionManager.suspend();
+		performTransactionalWork(nodesToFlowTo, remainingTimeout, currentXid);
+		transactionManager.resume(originalTransaction);
+		originalServer.removeRootTransaction(currentXid);
+		originalTransaction.commit();
+		Thread.currentThread().setContextClassLoader(classLoader);
 	}
 
-	@Test
-	public void testMigrateTransactionRollback() throws NotSupportedException, SystemException, IllegalStateException, RollbackException,
-			InvalidTransactionException, XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
-
-		File file = new File(System.getProperty("user.dir") + "/tmp/");
-		if (file.exists()) {
-			file.delete();
-		}
-		int startingTimeout = 10;
-
-		// Start out at the first server
-		LocalServer originalServer = getLocalServer(1000);
-		TransactionManager transactionManager = originalServer.getTransactionManager();
-		transactionManager.setTransactionTimeout(startingTimeout);
-		transactionManager.begin();
-		Transaction originalTransaction = transactionManager.getTransaction();
-		originalTransaction.registerSynchronization(new TestSynchronization(originalServer.getNodeName()));
-		originalTransaction.enlistResource(new TestResource(originalServer.getNodeName(), false));
-		Xid toMigrate = originalServer.storeCurrentTransaction();
-
-		// Loop through the rest of the servers passing the transaction up and
-		// down
-		Transaction suspendedTransaction = transactionManager.suspend();
-		long timeLeftBeforeTransactionTimeout = originalServer.getTimeLeftBeforeTransactionTimeout();
-		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
-		boolean proxyRequired = recursivelyFlowTransaction(nodesToFlowTo, timeLeftBeforeTransactionTimeout, toMigrate);
-		transactionManager.resume(suspendedTransaction);
-		if (proxyRequired) {
-			XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
-			originalTransaction.enlistResource(proxyXAResource);
-			originalTransaction.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, originalServer.getNodeName(), 2000,
-					toMigrate));
-		}
-
-		Transaction transaction = transactionManager.getTransaction();
-		transaction.rollback();
-		originalServer.removeTransaction(toMigrate);
-	}
-
-	private boolean recursivelyFlowTransaction(List<Integer> nodesToFlowTo, long timeLeftBeforeTransactionTimeout, Xid toMigrate) throws RollbackException,
+	private boolean performTransactionalWork(List<Integer> nodesToFlowTo, int remainingTimeout, Xid toMigrate) throws RollbackException,
 			InvalidTransactionException, IllegalStateException, XAException, SystemException, NotSupportedException {
-
 		Integer currentServerName = nodesToFlowTo.remove(0);
 		LocalServer currentServer = getLocalServer(currentServerName);
 
-		// Migrate the transaction to the next server
-		int remainingTimeout = (int) (timeLeftBeforeTransactionTimeout / 1000);
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(currentServer.getClass().getClassLoader());
 
-		boolean requiresProxyAtPreviousServer = !currentServer.getTransaction(remainingTimeout, toMigrate);
+		boolean requiresProxyAtPreviousServer = !currentServer.getAndResumeTransaction(remainingTimeout, toMigrate);
 		// Perform work on the migrated transaction
 		TransactionManager transactionManager = currentServer.getTransactionManager();
 		Transaction transaction = transactionManager.getTransaction();
@@ -148,32 +101,33 @@ public class SimpleIsolatedServers {
 		if (!nodesToFlowTo.isEmpty()) {
 			Integer nextServerNodeName = nodesToFlowTo.get(0);
 
-			// SUSPEND THE TRANSACTION
-			Transaction suspendedTransaction = transactionManager.suspend();
 			// FLOW THE TRANSACTION
-			timeLeftBeforeTransactionTimeout = currentServer.getTimeLeftBeforeTransactionTimeout();
-			boolean proxyRequired = recursivelyFlowTransaction(nodesToFlowTo, timeLeftBeforeTransactionTimeout, toMigrate);
+			remainingTimeout = (int) (currentServer.getTimeLeftBeforeTransactionTimeout() / 1000);
+
+			// SUSPEND THE TRANSACTION
+			Xid currentXid = currentServer.getCurrentXid();
+			transactionManager.suspend();
+			boolean proxyRequired = performTransactionalWork(nodesToFlowTo, remainingTimeout, currentXid);
+			transactionManager.resume(transaction);
+
 			// Create a proxy for the new server if necessary, this can orphan
-			// the
-			// remote server but XA recovery will handle that on the remote
+			// the remote server but XA recovery will handle that on the remote
 			// server
 			// The alternative is to always create a proxy but this is a
-			// performance
-			// drain and will result in multiple subordinate transactions and
-			// performance
-			// issues
-			// RESUME THE TRANSACTION IN CASE THERE IS MORE WORK
-			transactionManager.resume(suspendedTransaction);
+			// performance drain and will result in multiple subordinate
+			// transactions and performance issues
 			if (proxyRequired) {
 				XAResource proxyXAResource = currentServer.generateProxyXAResource(lookupProvider, currentServer.getNodeName(), nextServerNodeName);
-				suspendedTransaction.enlistResource(proxyXAResource);
-				suspendedTransaction.registerSynchronization(currentServer.generateProxySynchronization(lookupProvider, currentServer.getNodeName(),
-						nextServerNodeName, toMigrate));
+				transaction.enlistResource(proxyXAResource);
+				transaction.registerSynchronization(currentServer.generateProxySynchronization(lookupProvider, currentServer.getNodeName(), nextServerNodeName,
+						toMigrate));
 			}
 		}
 
 		// SUSPEND THE TRANSACTION WHEN YOU ARE READY TO RETURN TO YOUR CALLER
 		transactionManager.suspend();
+
+		Thread.currentThread().setContextClassLoader(classLoader);
 		return requiresProxyAtPreviousServer;
 	}
 

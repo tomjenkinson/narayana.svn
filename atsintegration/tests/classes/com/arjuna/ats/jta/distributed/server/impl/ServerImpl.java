@@ -1,7 +1,6 @@
 package com.arjuna.ats.jta.distributed.server.impl;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +31,6 @@ import com.arjuna.ats.arjuna.coordinator.TxControl;
 import com.arjuna.ats.arjuna.recovery.RecoveryManager;
 import com.arjuna.ats.arjuna.tools.osb.mbean.ObjStoreBrowser;
 import com.arjuna.ats.internal.jbossatx.jta.XAResourceRecordWrappingPluginImpl;
-import com.arjuna.ats.internal.jta.recovery.arjunacore.RecoveryXids;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateTransaction;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateXidImple;
@@ -45,6 +43,8 @@ import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 import com.arjuna.ats.jta.distributed.server.RemoteServer;
+import com.arjuna.ats.jta.xa.XATxConverter;
+import com.arjuna.ats.jta.xa.XidImple;
 
 public class ServerImpl implements LocalServer, RemoteServer {
 
@@ -140,11 +140,12 @@ public class ServerImpl implements LocalServer, RemoteServer {
 				.setTransactionSynchronizationRegistry(new com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple());
 		transactionManagerService.create();
 
-		Field safetyIntervalMillis = RecoveryXids.class.getDeclaredField("safetyIntervalMillis");
-		safetyIntervalMillis.setAccessible(true);
-		Field modifiersField = Field.class.getDeclaredField("modifiers");
-		modifiersField.setAccessible(true);
-		safetyIntervalMillis.set(null, 0);
+		// Field safetyIntervalMillis =
+		// RecoveryXids.class.getDeclaredField("safetyIntervalMillis");
+		// safetyIntervalMillis.setAccessible(true);
+		// Field modifiersField = Field.class.getDeclaredField("modifiers");
+		// modifiersField.setAccessible(true);
+		// safetyIntervalMillis.set(null, 0);
 	}
 
 	@Override
@@ -158,7 +159,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public boolean getTransaction(int remainingTimeout, Xid toResume) throws XAException, InvalidTransactionException, IllegalStateException, SystemException {
+	public boolean getAndResumeTransaction(int remainingTimeout, Xid toResume) throws XAException, InvalidTransactionException, IllegalStateException, SystemException {
 		boolean existed = true;
 		Transaction transaction = transactions.get(new SubordinateXidImple(toResume));
 		if (transaction == null) {
@@ -183,20 +184,25 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public Xid storeCurrentTransaction() throws SystemException {
+	public void storeRootTransaction() throws SystemException {
 		TransactionImple transaction = ((TransactionImple) transactionManagerService.getTransactionManager().getTransaction());
 		Xid txId = transaction.getTxId();
 		transactions.put(new SubordinateXidImple(txId), transaction);
-		return txId;
 	}
 
 	@Override
-	public void removeTransaction(Xid toMigrate) {
+	public Xid getCurrentXid() throws SystemException {
+		TransactionImple transaction = ((TransactionImple) transactionManagerService.getTransactionManager().getTransaction());
+		return transaction.getTxId();
+	}
+
+	@Override
+	public void removeRootTransaction(Xid toMigrate) {
 		transactions.remove(new SubordinateXidImple(toMigrate));
 	}
 
 	@Override
-	public XAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
+	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
 		return new ProxyXAResource(lookupProvider, localServerName, remoteServerName);
 	}
 
@@ -242,13 +248,22 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public Xid[] propagateRecover(List<Integer> recoveryScanStarted, int flag) throws XAException, DummyRemoteException {
+	public Xid[] propagateRecover(Integer serverNodeNameToRecoverFor, int flag) throws XAException, DummyRemoteException {
 		if (offline) {
 			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
 		// Assumes that this thread is used by the recovery thread
-		ProxyXAResource.RECOVERY_SCAN_STARTED.set(recoveryScanStarted);
-		return SubordinationManager.getXATerminator().recover(flag);
+		// ProxyXAResource.RECOVERY_SCAN_STARTED.set(recoveryScanStarted);
+		List<Xid> toReturn = new ArrayList<Xid>();
+		Xid[] recovered = SubordinationManager.getXATerminator().recover(flag);
+		if (recovered != null) {
+			for (int i = 0; i < recovered.length; i++) {
+				if (XATxConverter.getParentNodeName(((XidImple) recovered[i]).getXID()) == serverNodeNameToRecoverFor) {
+					toReturn.add(recovered[i]);
+				}
+			}
+		}
+		return toReturn.toArray(new Xid[0]);
 	}
 
 	@Override
@@ -267,5 +282,11 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		}
 		SubordinateTransaction tx = SubordinationManager.getTransactionImporter().getImportedTransaction(xid);
 		tx.doBeforeCompletion();
+	}
+
+	@Override
+	public Xid extractXid(XAResource xaResource) {
+		ProxyXAResource proxyXAResource = (ProxyXAResource) xaResource;
+		return proxyXAResource.getXid();
 	}
 }

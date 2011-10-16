@@ -124,6 +124,7 @@ public class TestResource implements XAResource {
 		if (file != null) {
 			file.delete();
 		}
+		this.xid = null;
 	}
 
 	public synchronized void rollback(Xid xid) throws XAException {
@@ -131,6 +132,7 @@ public class TestResource implements XAResource {
 		if (file != null) {
 			file.delete();
 		}
+		this.xid = null;
 	}
 
 	public void end(Xid xid, int flags) throws XAException {
@@ -171,7 +173,11 @@ public class TestResource implements XAResource {
 		if (flag == XAResource.TMNOFLAGS) {
 			System.out.println("        TestResource (" + serverId + ")      RECOVER[XAResource.TMENDRSCAN]: " + serverId);
 		}
-		return new Xid[] { xid };
+		if (xid == null) {
+			return null;
+		} else {
+			return new Xid[] { xid };
+		}
 	}
 
 	public boolean setTransactionTimeout(int seconds) throws XAException {

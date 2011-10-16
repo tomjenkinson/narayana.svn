@@ -1,7 +1,5 @@
 package com.arjuna.ats.jta.distributed.server;
 
-import java.util.List;
-
 import javax.transaction.HeuristicCommitException;
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
@@ -19,7 +17,7 @@ public interface RemoteServer {
 	public void propagateRollback(Xid xid) throws IllegalStateException, HeuristicMixedException, HeuristicCommitException, HeuristicRollbackException,
 			SystemException, XAException, DummyRemoteException;
 
-	public Xid[] propagateRecover(List<Integer> startScanned, int flag) throws XAException, DummyRemoteException;
+	public Xid[] propagateRecover(Integer serverNodeNameToRecoverFor, int flag) throws XAException, DummyRemoteException;
 
 	public void propagateForget(Xid xid) throws XAException, DummyRemoteException;
 

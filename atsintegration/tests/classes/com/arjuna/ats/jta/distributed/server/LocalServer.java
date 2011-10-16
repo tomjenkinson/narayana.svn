@@ -27,11 +27,11 @@ public interface LocalServer {
 
 	public long getTimeLeftBeforeTransactionTimeout() throws RollbackException;
 
-	public Xid storeCurrentTransaction() throws SystemException;
+	public void storeRootTransaction() throws SystemException;
 
-	public void removeTransaction(Xid toMigrate);
+	public void removeRootTransaction(Xid toMigrate);
 
-	public boolean getTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException, SystemException;
+	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException, SystemException;
 
 	public RemoteServer connectTo();
 
@@ -40,4 +40,8 @@ public interface LocalServer {
 	public XAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName);
 
 	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst);
+
+	public Xid extractXid(XAResource proxyXAResource);
+
+	public Xid getCurrentXid() throws SystemException;
 }
