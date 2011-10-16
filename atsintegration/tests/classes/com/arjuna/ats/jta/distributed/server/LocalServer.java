@@ -7,7 +7,6 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
-import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -17,7 +16,8 @@ import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 
 public interface LocalServer {
 
-	public void initialise(LookupProvider lookupProvider, Integer nodeName) throws CoreEnvironmentBeanException, IOException;
+	public void initialise(LookupProvider lookupProvider, Integer nodeName) throws CoreEnvironmentBeanException, IOException, SecurityException,
+			NoSuchFieldException, IllegalArgumentException, IllegalAccessException;
 
 	public Integer getNodeName();
 
@@ -31,8 +31,7 @@ public interface LocalServer {
 
 	public void removeTransaction(Xid toMigrate);
 
-	public boolean getTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException,
-			SystemException;
+	public boolean getTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException, SystemException;
 
 	public RemoteServer connectTo();
 

@@ -1,6 +1,7 @@
 package com.arjuna.ats.jta.distributed.server.impl;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import com.arjuna.ats.arjuna.coordinator.TxControl;
 import com.arjuna.ats.arjuna.recovery.RecoveryManager;
 import com.arjuna.ats.arjuna.tools.osb.mbean.ObjStoreBrowser;
 import com.arjuna.ats.internal.jbossatx.jta.XAResourceRecordWrappingPluginImpl;
+import com.arjuna.ats.internal.jta.recovery.arjunacore.RecoveryXids;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateTransaction;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateXidImple;
@@ -52,8 +54,10 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	private boolean offline;
 	private LookupProvider lookupProvider;
 	private Map<SubordinateXidImple, TransactionImple> transactions = new HashMap<SubordinateXidImple, TransactionImple>();
+	private RecoveryManager _recoveryManager;
 
-	public void initialise(LookupProvider lookupProvider, Integer serverName) throws CoreEnvironmentBeanException, IOException {
+	public void initialise(LookupProvider lookupProvider, Integer serverName) throws CoreEnvironmentBeanException, IOException, SecurityException,
+			NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
 		this.lookupProvider = lookupProvider;
 		this.nodeName = serverName;
 
@@ -126,6 +130,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(lookupProvider, serverName));
 		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(serverName));
 		// recoveryManagerService.start();
+		_recoveryManager = RecoveryManager.manager();
 		RecoveryManager.manager().initialize();
 
 		transactionManagerService = new TransactionManagerService();
@@ -135,11 +140,16 @@ public class ServerImpl implements LocalServer, RemoteServer {
 				.setTransactionSynchronizationRegistry(new com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple());
 		transactionManagerService.create();
 
+		Field safetyIntervalMillis = RecoveryXids.class.getDeclaredField("safetyIntervalMillis");
+		safetyIntervalMillis.setAccessible(true);
+		Field modifiersField = Field.class.getDeclaredField("modifiers");
+		modifiersField.setAccessible(true);
+		safetyIntervalMillis.set(null, 0);
 	}
 
 	@Override
 	public void doRecoveryManagerScan() {
-		RecoveryManager.manager().scan();
+		_recoveryManager.scan();
 	}
 
 	@Override

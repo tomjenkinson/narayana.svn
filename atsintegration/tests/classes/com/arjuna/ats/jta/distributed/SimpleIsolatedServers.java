@@ -34,7 +34,7 @@ public class SimpleIsolatedServers {
 
 	@BeforeClass
 	public static void setup() throws SecurityException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException,
-			CoreEnvironmentBeanException, IOException {
+			CoreEnvironmentBeanException, IOException, IllegalArgumentException, NoSuchFieldException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		for (int i = 0; i < localServers.length; i++) {
 			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.ats.jta.distributed.server", contextClassLoader);
@@ -52,8 +52,8 @@ public class SimpleIsolatedServers {
 	}
 
 	@Test
-	public void testMigrateTransaction() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, InvalidTransactionException,
-			XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
+	public void testMigrateTransactionCommit() throws NotSupportedException, SystemException, IllegalStateException, RollbackException,
+			InvalidTransactionException, XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
 
 		File file = new File(System.getProperty("user.dir") + "/tmp/");
 		if (file.exists()) {
@@ -87,6 +87,45 @@ public class SimpleIsolatedServers {
 
 		Transaction transaction = transactionManager.getTransaction();
 		transaction.commit();
+		originalServer.removeTransaction(toMigrate);
+	}
+
+	@Test
+	public void testMigrateTransactionRollback() throws NotSupportedException, SystemException, IllegalStateException, RollbackException,
+			InvalidTransactionException, XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
+
+		File file = new File(System.getProperty("user.dir") + "/tmp/");
+		if (file.exists()) {
+			file.delete();
+		}
+		int startingTimeout = 10;
+
+		// Start out at the first server
+		LocalServer originalServer = getLocalServer(1000);
+		TransactionManager transactionManager = originalServer.getTransactionManager();
+		transactionManager.setTransactionTimeout(startingTimeout);
+		transactionManager.begin();
+		Transaction originalTransaction = transactionManager.getTransaction();
+		originalTransaction.registerSynchronization(new TestSynchronization(originalServer.getNodeName()));
+		originalTransaction.enlistResource(new TestResource(originalServer.getNodeName(), false));
+		Xid toMigrate = originalServer.storeCurrentTransaction();
+
+		// Loop through the rest of the servers passing the transaction up and
+		// down
+		Transaction suspendedTransaction = transactionManager.suspend();
+		long timeLeftBeforeTransactionTimeout = originalServer.getTimeLeftBeforeTransactionTimeout();
+		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
+		boolean proxyRequired = recursivelyFlowTransaction(nodesToFlowTo, timeLeftBeforeTransactionTimeout, toMigrate);
+		transactionManager.resume(suspendedTransaction);
+		if (proxyRequired) {
+			XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
+			originalTransaction.enlistResource(proxyXAResource);
+			originalTransaction.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, originalServer.getNodeName(), 2000,
+					toMigrate));
+		}
+
+		Transaction transaction = transactionManager.getTransaction();
+		transaction.rollback();
 		originalServer.removeTransaction(toMigrate);
 	}
 
