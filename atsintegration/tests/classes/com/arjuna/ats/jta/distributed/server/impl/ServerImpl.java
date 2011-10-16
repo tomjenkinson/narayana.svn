@@ -151,7 +151,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	@Override
 	public void doRecoveryManagerScan() {
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+		ClassLoader serversClassLoader = this.getClass().getClassLoader();
+		Thread.currentThread().setContextClassLoader(serversClassLoader);
 		_recoveryManager.scan();
 		Thread.currentThread().setContextClassLoader(classLoader);
 	}
