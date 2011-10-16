@@ -183,5 +183,6 @@ public class RecoveryXids
     private XAResource _xares;
     private long _lastValidated;
 
-    private static final int safetyIntervalMillis = 10000; // may eventually want to make this configurable?
+    // JBTM-916 removed final so 10000 is not inlined into source code until we make this configurable
+    private static int safetyIntervalMillis = 10000; // may eventually want to make this configurable?
 }
