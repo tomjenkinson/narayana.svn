@@ -85,5 +85,15 @@ public class XAUtils
         return xidImple.getNodeName();
 	}
 
+	public static int getSubordinateNodeName(Xid xid) {
+        XidImple xidImple;
+        if(xid instanceof XidImple) {
+            xidImple = (XidImple)xid;
+        } else {
+            xidImple = new XidImple(xid);
+        }
+        return xidImple.getSubordinateNodeName();
+	}
+
 	private static final String ORACLE = "oracle";
 }
