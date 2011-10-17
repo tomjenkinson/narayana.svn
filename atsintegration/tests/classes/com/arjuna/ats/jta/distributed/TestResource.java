@@ -164,8 +164,12 @@ public class TestResource implements XAResource {
 	}
 
 	public Xid[] recover(int flag) throws XAException {
+		Xid[] toReturn = null;
 		if ((flag & XAResource.TMSTARTRSCAN) == XAResource.TMSTARTRSCAN) {
 			System.out.println("        TestResource (" + serverId + ")      RECOVER[XAResource.TMSTARTRSCAN]: " + serverId);
+			if (xid != null) {
+				toReturn = new Xid[] { xid };
+			}
 		}
 		if ((flag & XAResource.TMENDRSCAN) == XAResource.TMENDRSCAN) {
 			System.out.println("        TestResource (" + serverId + ")      RECOVER[XAResource.TMENDRSCAN]: " + serverId);
@@ -173,11 +177,7 @@ public class TestResource implements XAResource {
 		if (flag == XAResource.TMNOFLAGS) {
 			System.out.println("        TestResource (" + serverId + ")      RECOVER[XAResource.TMENDRSCAN]: " + serverId);
 		}
-		if (xid == null) {
-			return null;
-		} else {
-			return new Xid[] { xid };
-		}
+		return toReturn;
 	}
 
 	public boolean setTransactionTimeout(int seconds) throws XAException {

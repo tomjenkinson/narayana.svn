@@ -31,11 +31,10 @@ public interface LocalServer {
 
 	public void removeRootTransaction(Xid toMigrate);
 
-	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException, SystemException;
+	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException,
+			SystemException;
 
 	public RemoteServer connectTo();
-
-	public void setOffline(boolean offline);
 
 	public XAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName);
 

@@ -122,7 +122,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 		xaResourceOrphanFilterClassNames.add("com.arjuna.ats.internal.jta.recovery.arjunacore.JTATransactionLogXAResourceOrphanFilter");
 		xaResourceOrphanFilterClassNames.add("com.arjuna.ats.internal.jta.recovery.arjunacore.JTANodeNameXAResourceOrphanFilter");
-		// xaResourceOrphanFilterClassNames.add("com.arjuna.ats.internal.jta.recovery.arjunacore.ParentNodeNameXAResourceOrphanFilter");
+		xaResourceOrphanFilterClassNames.add("com.arjuna.ats.internal.jta.recovery.arjunacore.SubordinateJTAXAResourceOrphanFilter");
 		jTAEnvironmentBean.setXaResourceOrphanFilterClassNames(xaResourceOrphanFilterClassNames);
 		jTAEnvironmentBean.setXAResourceRecordWrappingPlugin(new XAResourceRecordWrappingPluginImpl());
 
@@ -219,7 +219,11 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public void setOffline(boolean offline) {
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		ClassLoader serversClassLoader = this.getClass().getClassLoader();
+		Thread.currentThread().setContextClassLoader(serversClassLoader);
 		this.offline = offline;
+		Thread.currentThread().setContextClassLoader(classLoader);
 	}
 
 	@Override

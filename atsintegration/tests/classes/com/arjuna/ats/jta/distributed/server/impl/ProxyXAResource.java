@@ -180,7 +180,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMSTARTRSCAN]: "
 					+ remoteServerName);
 		}
-		if ((flag & XAResource.TMSTARTRSCAN) == XAResource.TMENDRSCAN) {
+		if ((flag & XAResource.TMENDRSCAN) == XAResource.TMENDRSCAN) {
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMENDRSCAN]: "
 					+ remoteServerName);
 		}
@@ -201,20 +201,17 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") recovered: " + recovered[i]);
 		}
 
+		Xid[] toReturn = null;
 		if ((flag & XAResource.TMSTARTRSCAN) == XAResource.TMSTARTRSCAN) {
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMSTARTRSCAN]: "
 					+ remoteServerName);
+			toReturn = new Xid[] { xid };
 		}
-		if ((flag & XAResource.TMSTARTRSCAN) == XAResource.TMENDRSCAN) {
+		if ((flag & XAResource.TMENDRSCAN) == XAResource.TMENDRSCAN) {
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMENDRSCAN]: "
 					+ remoteServerName);
 		}
-
-		if (recovered.length > 0) {
-			return new Xid[] { xid };
-		} else {
-			return null;
-		}
+		return toReturn;
 	}
 
 	@Override
