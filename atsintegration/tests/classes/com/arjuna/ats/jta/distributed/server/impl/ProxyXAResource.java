@@ -7,10 +7,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import javax.transaction.HeuristicCommitException;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -18,6 +14,7 @@ import javax.transaction.xa.Xid;
 import org.jboss.tm.XAResourceWrapper;
 
 import com.arjuna.ats.arjuna.common.Uid;
+import com.arjuna.ats.arjuna.coordinator.TwoPhaseOutcome;
 import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 
@@ -114,6 +111,9 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 
 	}
 
+	/**
+	 * The remote side will not accept a one phase optimization.
+	 */
 	@Override
 	public synchronized void commit(Xid xid, boolean onePhase) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
@@ -121,18 +121,8 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			lookupProvider.lookup(remoteServerName).propagateCommit(xid, onePhase);
+			lookupProvider.lookup(remoteServerName).propagateCommit(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
-		} catch (IllegalStateException e) {
-			throw new XAException(XAException.XAER_INVAL);
-		} catch (HeuristicMixedException e) {
-			throw new XAException(XAException.XA_HEURMIX);
-		} catch (HeuristicRollbackException e) {
-			throw new XAException(XAException.XA_HEURRB);
-		} catch (HeuristicCommitException e) {
-			throw new XAException(XAException.XA_HEURCOM);
-		} catch (SystemException e) {
-			throw new XAException(XAException.XAER_PROTO);
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
 		} finally {
@@ -152,16 +142,6 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			lookupProvider.lookup(remoteServerName).propagateRollback(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
-		} catch (IllegalStateException e) {
-			throw new XAException(XAException.XAER_INVAL);
-		} catch (HeuristicMixedException e) {
-			throw new XAException(XAException.XA_HEURMIX);
-		} catch (HeuristicCommitException e) {
-			throw new XAException(XAException.XA_HEURCOM);
-		} catch (HeuristicRollbackException e) {
-			throw new XAException(XAException.XA_HEURRB);
-		} catch (SystemException e) {
-			throw new XAException(XAException.XAER_PROTO);
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
 		} finally {

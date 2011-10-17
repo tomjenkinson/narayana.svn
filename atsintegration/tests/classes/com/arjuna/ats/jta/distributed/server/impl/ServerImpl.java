@@ -8,9 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.transaction.HeuristicCommitException;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
 import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
@@ -36,6 +33,7 @@ import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateTransaction;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateXidImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinationManager;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.XATerminatorImple;
 import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 import com.arjuna.ats.jbossatx.jta.TransactionManagerService;
 import com.arjuna.ats.jta.common.JTAEnvironmentBean;
@@ -236,25 +234,25 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		if (offline) {
 			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
-		return SubordinationManager.getTransactionImporter().getImportedTransaction(xid).doPrepare();
+		SubordinateTransaction tx = SubordinationManager
+                .getTransactionImporter().getImportedTransaction(xid);
+		return SubordinationManager.getXATerminator().prepare(xid);
 	}
 
 	@Override
-	public void propagateCommit(Xid xid, boolean onePhase) throws IllegalStateException, HeuristicMixedException, HeuristicRollbackException,
-			HeuristicCommitException, SystemException, XAException, DummyRemoteException {
+	public void propagateCommit(Xid xid) throws XAException, DummyRemoteException {
 		if (offline) {
 			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
-		SubordinationManager.getTransactionImporter().getImportedTransaction(xid).doCommit();
+		SubordinationManager.getXATerminator().commit(xid, false);
 	}
 
 	@Override
-	public void propagateRollback(Xid xid) throws IllegalStateException, HeuristicMixedException, HeuristicCommitException, HeuristicRollbackException,
-			SystemException, XAException, DummyRemoteException {
+	public void propagateRollback(Xid xid) throws XAException, DummyRemoteException {
 		if (offline) {
 			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
-		SubordinationManager.getTransactionImporter().getImportedTransaction(xid).doRollback();
+		SubordinationManager.getXATerminator().rollback(xid);
 	}
 
 	@Override
@@ -290,8 +288,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		if (offline) {
 			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
-		SubordinateTransaction tx = SubordinationManager.getTransactionImporter().getImportedTransaction(xid);
-		tx.doBeforeCompletion();
+		((XATerminatorImple) SubordinationManager.getXATerminator()).beforeCompletion(xid);
 	}
 
 	@Override

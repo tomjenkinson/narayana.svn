@@ -61,7 +61,7 @@ public class SimpleIsolatedServers {
 		if (file.exists()) {
 			file.delete();
 		}
-		int startingTimeout = 10000;
+		int startingTimeout = 0;
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
 
 		// Start out at the first server
@@ -81,6 +81,55 @@ public class SimpleIsolatedServers {
 		originalServer.removeRootTransaction(currentXid);
 		originalTransaction.commit();
 		Thread.currentThread().setContextClassLoader(classLoader);
+	}
+
+	@Test
+	public void testMigrateTransactionSubordinateTimeout() throws NotSupportedException, SystemException, IllegalStateException, RollbackException,
+			InvalidTransactionException, XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException, InterruptedException {
+
+		File file = new File(System.getProperty("user.dir") + "/tmp/");
+		if (file.exists()) {
+			file.delete();
+		}
+		int rootTimeout = 10000;
+		int subordinateTimeout = 1;
+
+		// Start out at the first server
+		LocalServer originalServer = getLocalServer(1000);
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+		TransactionManager transactionManager = originalServer.getTransactionManager();
+		transactionManager.setTransactionTimeout(rootTimeout);
+		transactionManager.begin();
+		Transaction originalTransaction = transactionManager.getTransaction();
+		Xid toMigrate = originalServer.getCurrentXid();
+		originalServer.storeRootTransaction();
+		Transaction transaction = transactionManager.getTransaction();
+		transaction.enlistResource(new TestResource(originalServer.getNodeName(), false));
+		transactionManager.suspend();
+
+		// Migrate a transaction
+		LocalServer currentServer = getLocalServer(2000);
+		ClassLoader parentsClassLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(currentServer.getClass().getClassLoader());
+		currentServer.getAndResumeTransaction(subordinateTimeout, toMigrate);
+		currentServer.getTransactionManager().getTransaction().enlistResource(new TestResource(currentServer.getNodeName(), false));
+		currentServer.getTransactionManager().suspend();
+		Thread.currentThread().setContextClassLoader(parentsClassLoader);
+
+		// Complete the transaction at the original server
+		transactionManager.resume(transaction);
+		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
+		transaction.enlistResource(proxyXAResource);
+		originalServer.removeRootTransaction(toMigrate);
+		Thread.currentThread().sleep((subordinateTimeout + 1) * 1000);
+		try {
+			originalTransaction.commit();
+		} catch (RollbackException rbe) {
+			// GOOD!
+		} finally {
+			Thread.currentThread().setContextClassLoader(classLoader);
+		}
 	}
 
 	private boolean performTransactionalWork(List<Integer> nodesToFlowTo, int remainingTimeout, Xid toMigrate) throws RollbackException,
