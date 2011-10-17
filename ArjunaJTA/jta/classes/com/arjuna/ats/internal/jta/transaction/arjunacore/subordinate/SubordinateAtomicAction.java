@@ -28,6 +28,8 @@
 
 package com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate;
 
+import javax.transaction.Status;
+
 import com.arjuna.ats.arjuna.AtomicAction;
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.arjuna.coordinator.ActionStatus;
@@ -146,6 +148,7 @@ public class SubordinateAtomicAction extends
 		else
 		{
 			super.phase2Abort(true);
+			super.afterCompletion(Status.STATUS_ROLLEDBACK);
 
 			return TwoPhaseOutcome.PREPARE_NOTOK;
 		}
