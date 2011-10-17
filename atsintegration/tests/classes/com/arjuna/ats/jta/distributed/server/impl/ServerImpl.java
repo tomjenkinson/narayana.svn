@@ -256,7 +256,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public Xid[] propagateRecover(int formatId, byte[] gtrid, Integer serverNodeNameToRecoverFor, int flag) throws XAException, DummyRemoteException {
+	public Xid[] propagateRecover(int formatId, byte[] gtrid, int flag) throws XAException, DummyRemoteException {
 		if (offline) {
 			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
@@ -265,8 +265,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		if (recovered != null) {
 			for (int i = 0; i < recovered.length; i++) {
 				// Filter out the transactions that are not owned by this parent
-				if (recovered[i].getFormatId() == formatId && Arrays.equals(gtrid, recovered[i].getGlobalTransactionId())
-						&& XATxConverter.getParentNodeName(((XidImple) recovered[i]).getXID()) == serverNodeNameToRecoverFor) {
+				if (recovered[i].getFormatId() == formatId && Arrays.equals(gtrid, recovered[i].getGlobalTransactionId())) {
 					toReturn.add(recovered[i]);
 				}
 			}

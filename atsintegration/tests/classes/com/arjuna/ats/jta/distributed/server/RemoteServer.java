@@ -14,7 +14,7 @@ public interface RemoteServer {
 
 	public void propagateRollback(Xid xid) throws XAException, DummyRemoteException;
 
-	public Xid[] propagateRecover(int formatId, byte[] gtrid, Integer serverNodeNameToRecoverFor, int flag) throws XAException, DummyRemoteException;
+	public Xid[] propagateRecover(int formatId, byte[] gtrid, int flag) throws XAException, DummyRemoteException;
 
 	public void propagateForget(Xid xid) throws XAException, DummyRemoteException;
 
