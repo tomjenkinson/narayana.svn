@@ -33,6 +33,8 @@ import java.io.IOException;
 import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.arjuna.common.Uid;
+import com.arjuna.ats.arjuna.exceptions.ObjectStoreException;
+import com.arjuna.ats.arjuna.objectstore.StoreManager;
 import com.arjuna.ats.arjuna.state.InputObjectState;
 import com.arjuna.ats.arjuna.state.OutputObjectState;
 import com.arjuna.ats.jta.xa.XidImple;
@@ -63,6 +65,22 @@ public class SubordinateAtomicAction extends
 		super(actId);
 		
 		_activated = activate(); // if this fails, we'll retry later.
+	}
+	
+	public SubordinateAtomicAction(Uid actId, boolean peekXidOnly) throws ObjectStoreException, IOException {
+		super(actId);
+		if (peekXidOnly) {
+			InputObjectState os = StoreManager.getParticipantStore().read_committed(objectUid, type());
+			boolean haveXid = os.unpackBoolean();
+
+			if (haveXid) {
+				_theXid = new XidImple();
+
+				((XidImple) _theXid).unpackFrom(os);
+			}
+		} else {
+			_activated = activate();
+		}
 	}
 	
 	public SubordinateAtomicAction (int timeout, Xid xid)

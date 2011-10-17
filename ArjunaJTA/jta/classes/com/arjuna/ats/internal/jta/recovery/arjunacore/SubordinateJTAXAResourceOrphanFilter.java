@@ -20,14 +20,18 @@
  */
 package com.arjuna.ats.internal.jta.recovery.arjunacore;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Stack;
 
 import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.arjuna.common.Uid;
+import com.arjuna.ats.arjuna.exceptions.ObjectStoreException;
 import com.arjuna.ats.arjuna.objectstore.RecoveryStore;
-import com.arjuna.ats.arjuna.objectstore.StateStatus;
 import com.arjuna.ats.arjuna.objectstore.StoreManager;
+import com.arjuna.ats.arjuna.state.InputObjectState;
+import com.arjuna.ats.internal.arjuna.common.UidHelper;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.SubordinateAtomicAction;
 import com.arjuna.ats.internal.jta.utils.XAUtils;
 import com.arjuna.ats.jta.common.jtaPropertyManager;
@@ -81,8 +85,6 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 	 *         <code>false</code> if there isn't.
 	 */
 	private boolean transactionLog(Xid xid) {
-		RecoveryStore recoveryStore = StoreManager.getRecoveryStore();
-		String transactionType = SubordinateAtomicAction.getType();
 
 		XidImple theXid = new XidImple(xid);
 		Uid u = theXid.getTransactionUid();
@@ -92,30 +94,56 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 		}
 
 		if (!u.equals(Uid.nullUid())) {
+			RecoveryStore recoveryStore = StoreManager.getRecoveryStore();
+			String transactionType = SubordinateAtomicAction.getType();
+
+			if (jtaLogger.logger.isDebugEnabled()) {
+				jtaLogger.logger.debug("Looking for " + u + " and " + transactionType);
+			}
+
+			InputObjectState states = new InputObjectState();
 			try {
+				if (recoveryStore.allObjUids(transactionType, states) && (states.notempty())) {
+					Stack values = new Stack();
+					boolean finished = false;
 
-				if (jtaLogger.logger.isDebugEnabled()) {
-					jtaLogger.logger.debug("Looking for " + u + " and " + transactionType);
-				}
+					do {
+						Uid uid = null;
 
-				if (recoveryStore.currentState(u, transactionType) != StateStatus.OS_UNKNOWN) {
-					if (jtaLogger.logger.isDebugEnabled()) {
-						jtaLogger.logger.debug("Found record for " + theXid);
-					}
+						try {
+							uid = UidHelper.unpackFrom(states);
+						} catch (IOException ex) {
+							ex.printStackTrace();
 
-					return true;
-				} else {
+							finished = true;
+						}
+
+						if (uid.notEquals(Uid.nullUid())) {
+							SubordinateAtomicAction tx = new SubordinateAtomicAction(uid, true);
+							if (((XidImple)tx.getXid()).isSameTransaction(xid)) {
+								if (jtaLogger.logger.isDebugEnabled()) {
+									jtaLogger.logger.debug("Found record for " + theXid);
+								}
+								return true;
+							}
+						} else
+							finished = true;
+
+					} while (!finished);
 					if (jtaLogger.logger.isDebugEnabled()) {
 						jtaLogger.logger.debug("No record found for " + theXid);
 					}
+				} else {
+					jtaLogger.i18NLogger.info_recovery_notaxid(XAHelper.xidToString(xid));
 				}
-			} catch (Exception ex) {
-				ex.printStackTrace();
+			} catch (ObjectStoreException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} else {
-			jtaLogger.i18NLogger.info_recovery_notaxid(XAHelper.xidToString(xid));
 		}
-
 		return false;
 	}
 }
