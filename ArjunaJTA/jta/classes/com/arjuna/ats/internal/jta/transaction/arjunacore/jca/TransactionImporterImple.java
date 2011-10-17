@@ -33,6 +33,7 @@ package com.arjuna.ats.internal.jta.transaction.arjunacore.jca;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
@@ -167,6 +168,16 @@ public class TransactionImporterImple implements TransactionImporter
 
 		if (tx == null)
 			return null;
+		
+		// JBTM-917
+		try {
+			if (tx.getStatus() == javax.transaction.Status.STATUS_ROLLEDBACK) {
+				throw new XAException(XAException.XA_RBROLLBACK);
+			}
+		} catch (SystemException e) {
+			e.printStackTrace();
+			throw new XAException(XAException.XA_RBROLLBACK);
+		}
 
 		if (!tx.activated())
 		{

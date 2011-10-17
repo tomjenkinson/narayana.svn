@@ -200,10 +200,19 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
 
     public int prepare (Xid xid) throws XAException
     {
+
+    	// JBTM-927 this can happen if the transaction has been rolled back by the TransactionReaper
+		SubordinateTransaction tx = null;
+		try {
+			tx = SubordinationManager.getTransactionImporter().getImportedTransaction(xid);
+		} catch (XAException xae) {
+			if (xae.errorCode == XAException.XA_RBROLLBACK) {
+				SubordinationManager.getTransactionImporter().removeImportedTransaction(xid);
+			}
+			throw xae;
+		}
         try
         {
-            SubordinateTransaction tx = SubordinationManager
-                    .getTransactionImporter().getImportedTransaction(xid);
 
             if (tx == null)
                 throw new XAException(XAException.XAER_INVAL);
@@ -395,10 +404,20 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
 
     public void rollback (Xid xid) throws XAException
     {
+		// JBTM-927 this can happen if the transaction has been rolled back by
+		// the TransactionReaper
+		SubordinateTransaction tx = null;
+		try {
+			tx = SubordinationManager.getTransactionImporter().getImportedTransaction(xid);
+		} catch (XAException xae) {
+			if (xae.errorCode == XAException.XA_RBROLLBACK) {
+				// do nothing as already rolled back
+				return;
+			}
+			throw xae;
+		}
         try
         {
-            SubordinateTransaction tx = SubordinationManager
-                    .getTransactionImporter().getImportedTransaction(xid);
 
             if (tx == null)
                 throw new XAException(XAException.XAER_INVAL);
