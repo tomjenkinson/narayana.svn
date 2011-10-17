@@ -24,8 +24,8 @@ public class XATxConverterTest {
 		{
 			assertEquals(XATxConverter.getNodeName(rootXid.getXID()), 1);
 			assertEquals(XATxConverter.getEISName(rootXid.getXID()), eisName);
-			assertEquals(XATxConverter.getSubordinateNodeName(rootXid.getXID()), 1);
-			assertEquals(XATxConverter.getParentNodeName(rootXid.getXID()), 1);
+			assertEquals(XATxConverter.getSubordinateNodeName(rootXid.getXID()), 0);
+			assertEquals(XATxConverter.getParentNodeName(rootXid.getXID()), 0);
 		}
 
 		TxControl.setXANodeName(2);
