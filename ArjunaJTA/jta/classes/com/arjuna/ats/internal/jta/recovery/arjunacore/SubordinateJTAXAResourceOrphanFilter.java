@@ -20,6 +20,8 @@
  */
 package com.arjuna.ats.internal.jta.recovery.arjunacore;
 
+import java.util.List;
+
 import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.arjuna.common.Uid;
@@ -27,33 +29,46 @@ import com.arjuna.ats.arjuna.objectstore.RecoveryStore;
 import com.arjuna.ats.arjuna.objectstore.StateStatus;
 import com.arjuna.ats.arjuna.objectstore.StoreManager;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.SubordinateAtomicAction;
+import com.arjuna.ats.internal.jta.utils.XAUtils;
+import com.arjuna.ats.jta.common.jtaPropertyManager;
 import com.arjuna.ats.jta.logging.jtaLogger;
 import com.arjuna.ats.jta.recovery.XAResourceOrphanFilter;
 import com.arjuna.ats.jta.utils.XAHelper;
-import com.arjuna.ats.jta.xa.XATxConverter;
 import com.arjuna.ats.jta.xa.XidImple;
 
 /**
- * An XAResourceOrphanFilter which vetos rollback for xids owned by top level
- * JTA transactions.
- * 
- * @author Jonathan Halliday (jonathan.halliday@redhat.com), 2010-03
+ * An XAResourceOrphanFilter which uses detects orphaned subordinate XA
+ * Resources.
  */
-public class SubordinateJTATransactionLogXAResourceOrphanFilter implements XAResourceOrphanFilter {
+public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFilter {
+	public static final int RECOVER_ALL_NODES = 0;
+
 	@Override
 	public Vote checkXid(Xid xid) {
-		if (xid.getFormatId() != XATxConverter.FORMAT_ID) {
-			// we only care about Xids created by the JTA
+		List<Integer> _xaRecoveryNodes = jtaPropertyManager.getJTAEnvironmentBean().getXaRecoveryNodes();
+
+		if (_xaRecoveryNodes == null || _xaRecoveryNodes.size() == 0) {
+			jtaLogger.i18NLogger.info_recovery_noxanodes();
 			return Vote.ABSTAIN;
 		}
 
-		if (transactionLog(xid)) {
-			// it's owned by a logged transaction which
-			// will recover it top down in due course
-			return Vote.LEAVE_ALONE;
+		int nodeName = XAUtils.getSubordinateNodeName(xid);
+
+		if (jtaLogger.logger.isDebugEnabled()) {
+			jtaLogger.logger.debug("subordinate node name of " + xid + " is " + nodeName);
 		}
 
-		return Vote.ABSTAIN;
+		if (_xaRecoveryNodes.contains(nodeName)) {
+			if (transactionLog(xid)) {
+				// it's owned by a logged transaction which
+				// will recover it top down in due course
+				return Vote.LEAVE_ALONE;
+			} else {
+				return Vote.ROLLBACK;
+			}
+		} else {
+			return Vote.ABSTAIN;
+		}
 	}
 
 	/**
