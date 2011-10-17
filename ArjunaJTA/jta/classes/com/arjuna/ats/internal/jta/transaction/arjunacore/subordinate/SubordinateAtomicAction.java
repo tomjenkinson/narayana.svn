@@ -121,6 +121,11 @@ public class SubordinateAtomicAction extends
 	public int doPrepare ()
 	{
         int status = super.status();
+        
+        // JBTM-927 it is possible this transaction has been aborted by the TransactionReaper
+        if (status == ActionStatus.ABORTED) {
+        	return TwoPhaseOutcome.PREPARE_NOTOK;
+        }
 
         // In JTA spec, beforeCompletions are run on commit attempts only, not rollbacks.
         // We attempt to mimic that here, even though we are outside the scope of the spec.

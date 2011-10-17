@@ -208,7 +208,8 @@ public class TransactionImple extends
                 jtaLogger.i18NLogger.warn_transaction_arjunacore_endsuspendfailed1();
 			}
 
-			int res = subAct.doRollback();
+			// JBTM-927 the transaction reaper may have aborted this transaction already
+			int res = subAct.status() == ActionStatus.ABORTED ? ActionStatus.ABORTED : subAct.doRollback();
 
 			switch (res)
 			{
