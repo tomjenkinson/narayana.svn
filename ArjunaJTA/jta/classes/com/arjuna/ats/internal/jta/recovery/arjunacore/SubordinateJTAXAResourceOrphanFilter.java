@@ -33,11 +33,11 @@ import com.arjuna.ats.arjuna.objectstore.StoreManager;
 import com.arjuna.ats.arjuna.state.InputObjectState;
 import com.arjuna.ats.internal.arjuna.common.UidHelper;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.SubordinateAtomicAction;
-import com.arjuna.ats.internal.jta.utils.XAUtils;
 import com.arjuna.ats.jta.common.jtaPropertyManager;
 import com.arjuna.ats.jta.logging.jtaLogger;
 import com.arjuna.ats.jta.recovery.XAResourceOrphanFilter;
 import com.arjuna.ats.jta.utils.XAHelper;
+import com.arjuna.ats.jta.xa.XATxConverter;
 import com.arjuna.ats.jta.xa.XidImple;
 
 /**
@@ -56,7 +56,7 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 			return Vote.ABSTAIN;
 		}
 
-		int nodeName = XAUtils.getSubordinateNodeName(xid);
+		int nodeName = XATxConverter.getSubordinateNodeName(new XidImple(xid).getXID());
 
 		if (jtaLogger.logger.isDebugEnabled()) {
 			jtaLogger.logger.debug("subordinate node name of " + xid + " is " + nodeName);
@@ -120,7 +120,7 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 
 						if (uid.notEquals(Uid.nullUid())) {
 							SubordinateAtomicAction tx = new SubordinateAtomicAction(uid, true);
-							if (((XidImple)tx.getXid()).isSameTransaction(xid)) {
+							if (((XidImple) tx.getXid()).isSameTransaction(xid)) {
 								if (jtaLogger.logger.isDebugEnabled()) {
 									jtaLogger.logger.debug("Found record for " + theXid);
 								}

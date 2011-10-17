@@ -31,9 +31,11 @@
 
 package com.arjuna.ats.internal.jta.utils;
 
-import com.arjuna.ats.jta.xa.XidImple;
+import javax.transaction.xa.XAResource;
+import javax.transaction.xa.Xid;
 
-import javax.transaction.xa.*;
+import com.arjuna.ats.jta.xa.XATxConverter;
+import com.arjuna.ats.jta.xa.XidImple;
 
 /**
  * @author Mark Little (mark.little@arjuna.com)
@@ -82,17 +84,7 @@ public class XAUtils
         } else {
             xidImple = new XidImple(xid);
         }
-        return xidImple.getNodeName();
-	}
-
-	public static int getSubordinateNodeName(Xid xid) {
-        XidImple xidImple;
-        if(xid instanceof XidImple) {
-            xidImple = (XidImple)xid;
-        } else {
-            xidImple = new XidImple(xid);
-        }
-        return xidImple.getSubordinateNodeName();
+        return XATxConverter.getNodeName(xidImple.getXID());
 	}
 
 	private static final String ORACLE = "oracle";

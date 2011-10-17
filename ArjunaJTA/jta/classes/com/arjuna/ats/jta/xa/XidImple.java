@@ -185,18 +185,6 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 		return XATxConverter.getUid(_theXid);
 	}
 
-	public final int getNodeName() {
-		return XATxConverter.getNodeName(_theXid);
-	}
-
-	public final int getSubordinateNodeName() {
-		return XATxConverter.getSubordinateNodeName(_theXid);
-	}
-
-	public final int getParentNodeName() {
-		return XATxConverter.getParentNodeName(_theXid);
-	}
-
 	public final XID getXID() {
 		return _theXid;
 	}
