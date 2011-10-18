@@ -42,10 +42,10 @@ import javax.transaction.NotSupportedException;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class SimpleNestedTest
+public class SimpleNestedDisabledTest
 {
     @Test
-    public void testEnabled () throws Exception
+    public void testDisabled () throws Exception
     {
         ORB myORB = null;
         RootOA myOA = null;
@@ -61,15 +61,21 @@ public class SimpleNestedTest
 
         jtaPropertyManager.getJTAEnvironmentBean().setTransactionManagerClassName(com.arjuna.ats.internal.jta.transaction.jts.TransactionManagerImple.class.getName());
         jtaPropertyManager.getJTAEnvironmentBean().setUserTransactionClassName(com.arjuna.ats.internal.jta.transaction.jts.UserTransactionImple.class.getName());
-        jtaPropertyManager.getJTAEnvironmentBean().setSupportSubtransactions(true);
+        jtaPropertyManager.getJTAEnvironmentBean().setSupportSubtransactions(false);
 
         javax.transaction.TransactionManager transactionManager = com.arjuna.ats.jta.TransactionManager.transactionManager();
 
         transactionManager.begin();
 
-        transactionManager.begin();
+        try
+        {
+            transactionManager.begin();
 
-        transactionManager.commit();
+            fail();
+        }
+        catch (final NotSupportedException ex)
+        {
+        }
 
         transactionManager.commit();
 
@@ -77,6 +83,4 @@ public class SimpleNestedTest
         myORB.shutdown();
 
     }
-
-    // testDisabled moved to its own class, as it needs separate jvm to allow different property value in static init.
 }

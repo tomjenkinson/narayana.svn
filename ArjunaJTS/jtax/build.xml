@@ -56,11 +56,24 @@
                 <path refid="jacorb.classpath"/>
             </additional.classpath>
             <tests>
+                <!-- requires non-standard property value in static init block, hence own jvm -->
+                <fileset dir="tests/classes" includes="**/SimpleNestedDisabledTest.java">
+                </fileset>
+            </tests>
+        </run.tests.macro>
+
+
+        <run.tests.macro>
+            <additional.classpath>
+                <path refid="jacorb.classpath"/>
+            </additional.classpath>
+            <tests>
                 <fileset dir="tests/classes">
                     <exclude name="**/common/**"/>
                     <exclude name="**/ExampleXAResource.java"/>
                     <exclude name="**/JTSTestCase.java"/>
                     <exclude name="**/LastOnePhaseResource.java"/>
+                    <exclude name="**/SimpleNestedDisabledTest.java"/>
 
                     <exclude name="**/implicit/**"/>
                 </fileset>
@@ -68,7 +81,7 @@
         </run.tests.macro>
 
         <emma.report.macro/>
-        
+
     </target>
 
 </project>
