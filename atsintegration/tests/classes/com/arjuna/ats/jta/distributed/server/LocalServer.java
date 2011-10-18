@@ -43,4 +43,6 @@ public interface LocalServer {
 	public Xid extractXid(XAResource proxyXAResource);
 
 	public Xid getCurrentXid() throws SystemException;
+
+	public CompletionCounter getCompletionCounter();
 }

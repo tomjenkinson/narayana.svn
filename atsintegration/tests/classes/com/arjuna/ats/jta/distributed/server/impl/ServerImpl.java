@@ -38,12 +38,11 @@ import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 import com.arjuna.ats.jbossatx.jta.TransactionManagerService;
 import com.arjuna.ats.jta.common.JTAEnvironmentBean;
 import com.arjuna.ats.jta.distributed.TestResourceRecovery;
+import com.arjuna.ats.jta.distributed.server.CompletionCounter;
 import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 import com.arjuna.ats.jta.distributed.server.RemoteServer;
-import com.arjuna.ats.jta.xa.XATxConverter;
-import com.arjuna.ats.jta.xa.XidImple;
 
 public class ServerImpl implements LocalServer, RemoteServer {
 
@@ -54,19 +53,51 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	private LookupProvider lookupProvider;
 	private Map<SubordinateXidImple, TransactionImple> transactions = new HashMap<SubordinateXidImple, TransactionImple>();
 	private RecoveryManager _recoveryManager;
+	private CompletionCounter counter;
 
-	public void initialise(LookupProvider lookupProvider, Integer serverName) throws CoreEnvironmentBeanException, IOException, SecurityException,
+	public void initialise(LookupProvider lookupProvider, Integer nodeName) throws CoreEnvironmentBeanException, IOException, SecurityException,
 			NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
 		this.lookupProvider = lookupProvider;
-		this.nodeName = serverName;
+		this.nodeName = nodeName;
+		this.counter = new CompletionCounter() {
+			private int commitCount = 0;
+			private int rollbackCount = 0;
+
+			@Override
+			public void incrementCommit() {
+				commitCount++;
+
+			}
+
+			@Override
+			public void incrementRollback() {
+				rollbackCount++;
+			}
+
+			@Override
+			public int getCommitCount() {
+				return commitCount;
+			}
+
+			@Override
+			public int getRollbackCount() {
+				return rollbackCount;
+			}
+
+			@Override
+			public void resetCounters() {
+				commitCount = 0;
+				rollbackCount = 0;
+			}
+		};
 
 		RecoveryEnvironmentBean recoveryEnvironmentBean = com.arjuna.ats.arjuna.common.recoveryPropertyManager.getRecoveryEnvironmentBean();
 		recoveryEnvironmentBean.setRecoveryBackoffPeriod(1);
 
 		recoveryEnvironmentBean.setRecoveryInetAddress(InetAddress.getByName("localhost"));
-		recoveryEnvironmentBean.setRecoveryPort(4712 + serverName);
+		recoveryEnvironmentBean.setRecoveryPort(4712 + nodeName);
 		recoveryEnvironmentBean.setTransactionStatusManagerInetAddress(InetAddress.getByName("localhost"));
-		recoveryEnvironmentBean.setTransactionStatusManagerPort(4713 + serverName);
+		recoveryEnvironmentBean.setTransactionStatusManagerPort(4713 + nodeName);
 		List<String> recoveryModuleClassNames = new ArrayList<String>();
 
 		recoveryModuleClassNames.add("com.arjuna.ats.internal.arjuna.recovery.AtomicActionRecoveryModule");
@@ -79,8 +110,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		recoveryEnvironmentBean.setRecoveryActivators(null);
 
 		CoreEnvironmentBean coreEnvironmentBean = com.arjuna.ats.arjuna.common.arjPropertyManager.getCoreEnvironmentBean();
-		coreEnvironmentBean.setSocketProcessIdPort(4714 + serverName);
-		coreEnvironmentBean.setNodeIdentifier(serverName);
+		coreEnvironmentBean.setSocketProcessIdPort(4714 + nodeName);
+		coreEnvironmentBean.setNodeIdentifier(nodeName);
 		coreEnvironmentBean.setSocketProcessIdMaxPorts(1);
 
 		CoordinatorEnvironmentBean coordinatorEnvironmentBean = com.arjuna.ats.arjuna.common.arjPropertyManager.getCoordinatorEnvironmentBean();
@@ -91,15 +122,15 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 		ObjectStoreEnvironmentBean actionStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator.getNamedInstance(
 				com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "default");
-		actionStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + serverName);
+		actionStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + nodeName);
 
 		ObjectStoreEnvironmentBean stateStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator.getNamedInstance(
 				com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "stateStore");
-		stateStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + serverName);
+		stateStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + nodeName);
 
 		ObjectStoreEnvironmentBean communicationStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator
 				.getNamedInstance(com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "communicationStore");
-		communicationStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + serverName);
+		communicationStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + nodeName);
 
 		ObjStoreBrowser objStoreBrowser = new ObjStoreBrowser();
 		Map<String, String> types = new HashMap<String, String>();
@@ -113,7 +144,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		jTAEnvironmentBean
 				.setTransactionSynchronizationRegistryClassName("com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple");
 		List<Integer> xaRecoveryNodes = new ArrayList<Integer>();
-		xaRecoveryNodes.add(serverName);
+		xaRecoveryNodes.add(nodeName);
 		jTAEnvironmentBean.setXaRecoveryNodes(xaRecoveryNodes);
 
 		List<String> xaResourceOrphanFilterClassNames = new ArrayList<String>();
@@ -126,8 +157,9 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 		recoveryManagerService = new RecoveryManagerService();
 		recoveryManagerService.create();
-		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(lookupProvider, serverName));
-		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(serverName));
+		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(lookupProvider, nodeName));
+		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(counter, nodeName));
+		
 		// recoveryManagerService.start();
 		_recoveryManager = RecoveryManager.manager();
 		RecoveryManager.manager().initialize();
@@ -152,6 +184,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		ClassLoader serversClassLoader = this.getClass().getClassLoader();
 		Thread.currentThread().setContextClassLoader(serversClassLoader);
+
 		_recoveryManager.scan();
 		Thread.currentThread().setContextClassLoader(classLoader);
 	}
@@ -234,8 +267,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		if (offline) {
 			throw new DummyRemoteException("Connection refused to: " + nodeName);
 		}
-		SubordinateTransaction tx = SubordinationManager
-                .getTransactionImporter().getImportedTransaction(xid);
+		SubordinateTransaction tx = SubordinationManager.getTransactionImporter().getImportedTransaction(xid);
 		return SubordinationManager.getXATerminator().prepare(xid);
 	}
 
@@ -294,5 +326,10 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	public Xid extractXid(XAResource xaResource) {
 		ProxyXAResource proxyXAResource = (ProxyXAResource) xaResource;
 		return proxyXAResource.getXid();
+	}
+
+	@Override
+	public CompletionCounter getCompletionCounter() {
+		return counter;
 	}
 }
