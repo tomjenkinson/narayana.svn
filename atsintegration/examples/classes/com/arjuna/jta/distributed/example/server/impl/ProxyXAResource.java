@@ -160,15 +160,12 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		}
 	}
 
-	/**
-	 * The remote side will not accept a one phase optimization.
-	 */
 	@Override
 	public synchronized void commit(Xid xid, boolean onePhase) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
 
 		try {
-			lookupProvider.lookup(remoteServerName).propagateCommit(xid);
+			lookupProvider.lookup(remoteServerName).propagateCommit(xid, onePhase);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);

@@ -31,7 +31,7 @@ public interface RemoteServer {
 
 	public int propagatePrepare(Xid xid) throws XAException, DummyRemoteException;
 
-	public void propagateCommit(Xid xid) throws XAException, DummyRemoteException;
+	public void propagateCommit(Xid xid, boolean onePhase) throws XAException, DummyRemoteException;
 
 	public void propagateRollback(Xid xid) throws XAException, DummyRemoteException;
 

@@ -327,11 +327,11 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public void propagateCommit(Xid xid) throws XAException, DummyRemoteException {
+	public void propagateCommit(Xid xid, boolean onePhase) throws XAException, DummyRemoteException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			SubordinationManager.getXATerminator().commit(xid, false);
+			SubordinationManager.getXATerminator().commit(xid, onePhase);
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}

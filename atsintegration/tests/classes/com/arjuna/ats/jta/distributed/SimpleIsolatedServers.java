@@ -112,6 +112,8 @@ public class SimpleIsolatedServers {
 					transactionManager.resume(originalTransaction);
 					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 					originalTransaction.enlistResource(proxyXAResource);
+					// Needs a second resource to make sure we dont get the one
+					// phase optimization happening
 					originalTransaction.enlistResource(new TestResource(null, originalServer.getNodeName(), false));
 					originalServer.removeRootTransaction(currentXid);
 					transactionManager.commit();
@@ -227,6 +229,56 @@ public class SimpleIsolatedServers {
 		assertTrue(getLocalServer(3000).getCompletionCounter().getRollbackCount() == 0);
 		assertTrue(getLocalServer(2000).getCompletionCounter().getRollbackCount() == 0);
 		assertTrue(getLocalServer(1000).getCompletionCounter().getRollbackCount() == 0);
+	}
+
+	@Test
+	public void testOnePhaseCommit() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, InvalidTransactionException,
+			XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
+		int startingServer = 1000;
+		LocalServer originalServer = getLocalServer(startingServer);
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+		TransactionManager transactionManager = originalServer.getTransactionManager();
+		transactionManager.setTransactionTimeout(0);
+		transactionManager.begin();
+		Transaction originalTransaction = transactionManager.getTransaction();
+		int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
+		Xid currentXid = originalServer.getCurrentXid();
+		originalServer.storeRootTransaction();
+		transactionManager.suspend();
+		performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid);
+		transactionManager.resume(originalTransaction);
+		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
+		originalTransaction.enlistResource(proxyXAResource);
+		originalServer.removeRootTransaction(currentXid);
+		transactionManager.commit();
+		Thread.currentThread().setContextClassLoader(classLoader);
+	}
+
+	@Test
+	public void testUnPreparedRollback() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, InvalidTransactionException,
+			XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
+		int startingServer = 1000;
+		LocalServer originalServer = getLocalServer(startingServer);
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+		TransactionManager transactionManager = originalServer.getTransactionManager();
+		transactionManager.setTransactionTimeout(0);
+		transactionManager.begin();
+		Transaction originalTransaction = transactionManager.getTransaction();
+		int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
+		Xid currentXid = originalServer.getCurrentXid();
+		originalServer.storeRootTransaction();
+		transactionManager.suspend();
+		performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid);
+		transactionManager.resume(originalTransaction);
+		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
+		originalTransaction.enlistResource(proxyXAResource);
+		originalTransaction
+				.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, originalServer.getNodeName(), 2000, currentXid));
+		originalServer.removeRootTransaction(currentXid);
+		transactionManager.rollback();
+		Thread.currentThread().setContextClassLoader(classLoader);
 	}
 
 	@Test
