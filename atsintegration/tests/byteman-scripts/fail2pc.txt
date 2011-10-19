@@ -4,11 +4,6 @@
 # actions performed by the recovery code
 
 #########################################################################
-# rules to identify progress of the periodic recovery listener thread
-#
-
-# if a test has set up a rendezvous under key "PR recovery pass begin" then
-# enter the rendezvous before starting the recovery run
 RULE Fail 2PC
 CLASS  com.arjuna.ats.arjuna.coordinator.BasicAction
 METHOD phase2Commit

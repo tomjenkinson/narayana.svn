@@ -1,0 +1,28 @@
+########################################################################
+#
+# byteman script used to ensure that tests can synchronize with various
+# actions performed by the recovery code
+
+#########################################################################
+
+RULE Fail resource prepare finishing
+CLASS  com.arjuna.ats.jta.distributed.TestResource
+METHOD prepare
+AT EXIT
+BIND NOTHING
+IF TRUE
+	DO debug("Neutralizing target"),
+	Thread.currentThread().stop()
+ENDRULE
+
+
+#########################################################################
+RULE Fail phase2abort ;)
+CLASS  com.arjuna.ats.arjuna.coordinator.BasicAction
+METHOD prepare
+AT EXIT
+BIND NOTHING
+IF TRUE
+	DO debug("Target neutralized"), 
+	Thread.currentThread().stop()
+ENDRULE
