@@ -30,7 +30,7 @@ import javax.transaction.xa.XAResource;
 
 import org.jboss.tm.XAResourceRecovery;
 
-import com.arjuna.ats.jta.distributed.server.CompletionCounter;
+import com.arjuna.jta.distributed.example.server.CompletionCounter;
 
 public class TestResourceRecovery implements XAResourceRecovery {
 

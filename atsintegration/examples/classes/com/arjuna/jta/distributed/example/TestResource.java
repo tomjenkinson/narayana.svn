@@ -34,7 +34,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.arjuna.common.Uid;
-import com.arjuna.ats.jta.distributed.server.CompletionCounter;
+import com.arjuna.jta.distributed.example.server.CompletionCounter;
 
 public class TestResource implements XAResource {
 	private Xid xid;

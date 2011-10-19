@@ -19,26 +19,12 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package com.arjuna.ats.jta.distributed.server;
+package com.arjuna.jta.distributed.example.server;
 
-import javax.transaction.SystemException;
-import javax.transaction.xa.XAException;
-import javax.transaction.xa.Xid;
-
-public interface RemoteServer {
-
-	public void setOffline(boolean offline);
-
-	public int propagatePrepare(Xid xid) throws XAException, DummyRemoteException;
-
-	public void propagateCommit(Xid xid) throws XAException, DummyRemoteException;
-
-	public void propagateRollback(Xid xid) throws XAException, DummyRemoteException;
-
-	public Xid[] propagateRecover(int formatId, byte[] gtrid, int flag) throws XAException, DummyRemoteException;
-
-	public void propagateForget(Xid xid) throws XAException, DummyRemoteException;
-
-	public void propagateBeforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException;
-
+public interface CompletionCounter {
+	public void incrementCommit();
+	public void incrementRollback();
+	int getCommitCount();
+	int getRollbackCount();
+	void resetCounters();
 }

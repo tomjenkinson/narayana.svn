@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package com.arjuna.ats.jta.distributed.server.impl;
+package com.arjuna.jta.distributed.example.server.impl;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -36,8 +36,8 @@ import org.jboss.tm.XAResourceWrapper;
 
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.arjuna.coordinator.TwoPhaseOutcome;
-import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
-import com.arjuna.ats.jta.distributed.server.LookupProvider;
+import com.arjuna.jta.distributed.example.server.DummyRemoteException;
+import com.arjuna.jta.distributed.example.server.LookupProvider;
 
 public class ProxyXAResource implements XAResource, XAResourceWrapper {
 

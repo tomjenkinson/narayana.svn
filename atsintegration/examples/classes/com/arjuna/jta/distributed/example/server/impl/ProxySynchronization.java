@@ -19,15 +19,15 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package com.arjuna.ats.jta.distributed.server.impl;
+package com.arjuna.jta.distributed.example.server.impl;
 
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
-import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
-import com.arjuna.ats.jta.distributed.server.LookupProvider;
+import com.arjuna.jta.distributed.example.server.DummyRemoteException;
+import com.arjuna.jta.distributed.example.server.LookupProvider;
 
 public class ProxySynchronization implements Synchronization {
 
