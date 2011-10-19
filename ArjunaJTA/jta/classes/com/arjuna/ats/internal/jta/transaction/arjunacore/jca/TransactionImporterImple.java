@@ -169,7 +169,7 @@ public class TransactionImporterImple implements TransactionImporter
 		if (tx == null)
 			return null;
 		
-		// JBTM-917
+		// https://issues.jboss.org/browse/JBTM-927
 		try {
 			if (tx.getStatus() == javax.transaction.Status.STATUS_ROLLEDBACK) {
 				throw new XAException(XAException.XA_RBROLLBACK);
