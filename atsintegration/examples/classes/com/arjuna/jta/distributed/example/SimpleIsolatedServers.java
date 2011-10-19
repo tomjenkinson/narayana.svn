@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package com.arjuna.ats.jta.distributed;
+package com.arjuna.jta.distributed.example;
 
 import static org.junit.Assert.assertTrue;
 
@@ -61,8 +61,8 @@ public class SimpleIsolatedServers {
 			CoreEnvironmentBeanException, IOException, IllegalArgumentException, NoSuchFieldException {
 		for (int i = 0; i < localServers.length; i++) {
 			ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.ats.jta.distributed.server", contextClassLoader);
-			localServers[i] = (LocalServer) classLoader.loadClass("com.arjuna.ats.jta.distributed.server.impl.ServerImpl").newInstance();
+			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.jta.distributed.example.server", contextClassLoader);
+			localServers[i] = (LocalServer) classLoader.loadClass("com.arjuna.jta.distributed.example.server.impl.ServerImpl").newInstance();
 			Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
 			localServers[i].initialise(lookupProvider, (i + 1) * 1000);
 			remoteServers[i] = localServers[i].connectTo();

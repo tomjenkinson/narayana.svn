@@ -19,7 +19,7 @@
  * @author JBoss Inc.
  */
 
-package com.arjuna.ats.jta.distributed;
+package com.arjuna.jta.distributed.example;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

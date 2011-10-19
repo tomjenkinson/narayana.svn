@@ -58,12 +58,12 @@ import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.XATerminatorImple;
 import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 import com.arjuna.ats.jbossatx.jta.TransactionManagerService;
 import com.arjuna.ats.jta.common.JTAEnvironmentBean;
-import com.arjuna.ats.jta.distributed.TestResourceRecovery;
 import com.arjuna.ats.jta.distributed.server.CompletionCounter;
 import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 import com.arjuna.ats.jta.distributed.server.RemoteServer;
+import com.arjuna.jta.distributed.example.TestResourceRecovery;
 
 public class ServerImpl implements LocalServer, RemoteServer {
 
