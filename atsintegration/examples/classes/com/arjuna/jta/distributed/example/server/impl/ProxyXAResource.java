@@ -187,6 +187,13 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
+		} catch (XAException e) {
+			// We know the remote side must have done a JBTM-917
+			if (e.errorCode == XAException.XAER_INVAL) {
+				// We know that this means that the transaction is not known at
+				// the remote side
+				e.printStackTrace();
+			}
 		}
 
 		if (file != null) {
