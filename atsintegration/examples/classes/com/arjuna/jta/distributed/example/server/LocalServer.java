@@ -44,10 +44,6 @@ public interface LocalServer {
 
 	public TransactionManager getTransactionManager() throws NotSupportedException, SystemException;
 
-	public void doRecoveryManagerScan();
-
-	public long getTimeLeftBeforeTransactionTimeout() throws RollbackException;
-
 	public void storeRootTransaction() throws SystemException;
 
 	public void removeRootTransaction(Xid toMigrate);
@@ -64,6 +60,4 @@ public interface LocalServer {
 	public Xid extractXid(XAResource proxyXAResource);
 
 	public Xid getCurrentXid() throws SystemException;
-
-	public CompletionCounter getCompletionCounter();
 }

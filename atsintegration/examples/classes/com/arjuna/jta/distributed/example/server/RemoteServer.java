@@ -27,8 +27,6 @@ import javax.transaction.xa.Xid;
 
 public interface RemoteServer {
 
-	public void setOffline(boolean offline);
-
 	public int propagatePrepare(Xid xid) throws XAException, DummyRemoteException;
 
 	public void propagateCommit(Xid xid) throws XAException, DummyRemoteException;

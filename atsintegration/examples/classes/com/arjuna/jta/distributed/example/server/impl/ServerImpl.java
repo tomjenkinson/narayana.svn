@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.transaction.InvalidTransactionException;
-import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -38,8 +37,6 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-
-import org.jboss.tm.TransactionTimeoutConfiguration;
 
 import com.arjuna.ats.arjuna.common.CoordinatorEnvironmentBean;
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBean;
@@ -70,47 +67,13 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	private int nodeName;
 	private RecoveryManagerService recoveryManagerService;
 	private TransactionManagerService transactionManagerService;
-	private boolean offline;
-	private LookupProvider lookupProvider;
 	private Map<SubordinateXidImple, TransactionImple> transactions = new HashMap<SubordinateXidImple, TransactionImple>();
 	private RecoveryManager _recoveryManager;
 	private CompletionCounter counter;
 
 	public void initialise(LookupProvider lookupProvider, Integer nodeName) throws CoreEnvironmentBeanException, IOException, SecurityException,
 			NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
-		this.lookupProvider = lookupProvider;
 		this.nodeName = nodeName;
-		this.counter = new CompletionCounter() {
-			private int commitCount = 0;
-			private int rollbackCount = 0;
-
-			@Override
-			public void incrementCommit() {
-				commitCount++;
-
-			}
-
-			@Override
-			public void incrementRollback() {
-				rollbackCount++;
-			}
-
-			@Override
-			public int getCommitCount() {
-				return commitCount;
-			}
-
-			@Override
-			public int getRollbackCount() {
-				return rollbackCount;
-			}
-
-			@Override
-			public void resetCounters() {
-				commitCount = 0;
-				rollbackCount = 0;
-			}
-		};
 
 		RecoveryEnvironmentBean recoveryEnvironmentBean = com.arjuna.ats.arjuna.common.recoveryPropertyManager.getRecoveryEnvironmentBean();
 		recoveryEnvironmentBean.setRecoveryBackoffPeriod(1);
@@ -180,10 +143,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		recoveryManagerService.create();
 		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(lookupProvider, nodeName));
 		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(counter, nodeName));
-		
-		// recoveryManagerService.start();
-		_recoveryManager = RecoveryManager.manager();
-		RecoveryManager.manager().initialize();
+
+		recoveryManagerService.start();
 
 		transactionManagerService = new TransactionManagerService();
 		TxControl txControl = new com.arjuna.ats.arjuna.coordinator.TxControl();
@@ -191,23 +152,6 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		transactionManagerService
 				.setTransactionSynchronizationRegistry(new com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple());
 		transactionManagerService.create();
-
-		// Field safetyIntervalMillis =
-		// RecoveryXids.class.getDeclaredField("safetyIntervalMillis");
-		// safetyIntervalMillis.setAccessible(true);
-		// Field modifiersField = Field.class.getDeclaredField("modifiers");
-		// modifiersField.setAccessible(true);
-		// safetyIntervalMillis.set(null, 0);
-	}
-
-	@Override
-	public void doRecoveryManagerScan() {
-		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		ClassLoader serversClassLoader = this.getClass().getClassLoader();
-		Thread.currentThread().setContextClassLoader(serversClassLoader);
-
-		_recoveryManager.scan();
-		Thread.currentThread().setContextClassLoader(classLoader);
 	}
 
 	@Override
@@ -234,11 +178,6 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	@Override
 	public Integer getNodeName() {
 		return nodeName;
-	}
-
-	@Override
-	public long getTimeLeftBeforeTransactionTimeout() throws RollbackException {
-		return ((TransactionTimeoutConfiguration) transactionManagerService.getTransactionManager()).getTimeLeftBeforeTransactionTimeout(false);
 	}
 
 	@Override
@@ -270,23 +209,18 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public void setOffline(boolean offline) {
-		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		ClassLoader serversClassLoader = this.getClass().getClassLoader();
-		Thread.currentThread().setContextClassLoader(serversClassLoader);
-		this.offline = offline;
-		Thread.currentThread().setContextClassLoader(classLoader);
-	}
-
-	@Override
 	public RemoteServer connectTo() {
 		return this;
 	}
 
 	@Override
 	public int propagatePrepare(Xid xid) throws XAException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
 		SubordinateTransaction tx = SubordinationManager.getTransactionImporter().getImportedTransaction(xid);
 		return SubordinationManager.getXATerminator().prepare(xid);
@@ -294,63 +228,73 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public void propagateCommit(Xid xid) throws XAException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			SubordinationManager.getXATerminator().commit(xid, false);
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
-		SubordinationManager.getXATerminator().commit(xid, false);
 	}
 
 	@Override
 	public void propagateRollback(Xid xid) throws XAException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			SubordinationManager.getXATerminator().rollback(xid);			
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
-		SubordinationManager.getXATerminator().rollback(xid);
 	}
 
 	@Override
 	public Xid[] propagateRecover(int formatId, byte[] gtrid, int flag) throws XAException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
-		}
-		List<Xid> toReturn = new ArrayList<Xid>();
-		Xid[] recovered = SubordinationManager.getXATerminator().recover(flag);
-		if (recovered != null) {
-			for (int i = 0; i < recovered.length; i++) {
-				// Filter out the transactions that are not owned by this parent
-				if (recovered[i].getFormatId() == formatId && Arrays.equals(gtrid, recovered[i].getGlobalTransactionId())) {
-					toReturn.add(recovered[i]);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			List<Xid> toReturn = new ArrayList<Xid>();
+			Xid[] recovered = SubordinationManager.getXATerminator().recover(flag);
+			if (recovered != null) {
+				for (int i = 0; i < recovered.length; i++) {
+					// Filter out the transactions that are not owned by this parent
+					if (recovered[i].getFormatId() == formatId && Arrays.equals(gtrid, recovered[i].getGlobalTransactionId())) {
+						toReturn.add(recovered[i]);
+					}
 				}
 			}
+			return toReturn.toArray(new Xid[0]);
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
-		return toReturn.toArray(new Xid[0]);
 	}
 
 	@Override
 	public void propagateForget(Xid xid) throws XAException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			SubordinationManager.getXATerminator().forget(xid);
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
-		SubordinationManager.getXATerminator().forget(xid);
 
 	}
 
 	@Override
 	public void propagateBeforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			((XATerminatorImple) SubordinationManager.getXATerminator()).beforeCompletion(xid);
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
-		((XATerminatorImple) SubordinationManager.getXATerminator()).beforeCompletion(xid);
 	}
 
 	@Override
 	public Xid extractXid(XAResource xaResource) {
 		ProxyXAResource proxyXAResource = (ProxyXAResource) xaResource;
 		return proxyXAResource.getXid();
-	}
-
-	@Override
-	public CompletionCounter getCompletionCounter() {
-		return counter;
 	}
 }

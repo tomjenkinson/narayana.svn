@@ -41,6 +41,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
+import org.jboss.tm.TransactionTimeoutConfiguration;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -71,8 +72,8 @@ public class ExampleDistributedJTATestCase {
 	}
 
 	@Test
-	public void testMigrateTransaction() throws NotSupportedException, SystemException, IllegalStateException, RollbackException,
-			InvalidTransactionException, XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
+	public void testMigrateTransaction() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, InvalidTransactionException,
+			XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
 
 		File file = new File(System.getProperty("user.dir") + "/tmp/");
 		if (file.exists()) {
@@ -121,24 +122,23 @@ public class ExampleDistributedJTATestCase {
 		TransactionManager transactionManager = originalServer.getTransactionManager();
 		transactionManager.setTransactionTimeout(startingTimeout);
 		transactionManager.begin();
+
 		Transaction originalTransaction = transactionManager.getTransaction();
-		int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
-		Transaction transaction = transactionManager.getTransaction();
-		transaction.registerSynchronization(new TestSynchronization(originalServer.getNodeName()));
-		transaction.enlistResource(new TestResource(counter, originalServer.getNodeName(), false));
+		originalTransaction.registerSynchronization(new TestSynchronization(originalServer.getNodeName()));
+		originalTransaction.enlistResource(new TestResource(counter, originalServer.getNodeName(), false));
 
 		if (!nodesToFlowTo.isEmpty()) {
 			Integer nextServerNodeName = nodesToFlowTo.get(0);
 
 			// FLOW THE TRANSACTION
-			remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
+			int remainingTimeout = (int) (((TransactionTimeoutConfiguration) transactionManager).getTimeLeftBeforeTransactionTimeout(false) / 1000);
 
 			// SUSPEND THE TRANSACTION
 			Xid currentXid = originalServer.getCurrentXid();
 			originalServer.storeRootTransaction();
 			transactionManager.suspend();
 			boolean proxyRequired = performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid);
-			transactionManager.resume(transaction);
+			transactionManager.resume(originalTransaction);
 
 			// Create a proxy for the new server if necessary, this can orphan
 			// the remote server but XA recovery will handle that on the remote
@@ -148,8 +148,8 @@ public class ExampleDistributedJTATestCase {
 			// transactions and performance issues
 			if (proxyRequired) {
 				XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), nextServerNodeName);
-				transaction.enlistResource(proxyXAResource);
-				transaction.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, originalServer.getNodeName(),
+				originalTransaction.enlistResource(proxyXAResource);
+				originalTransaction.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, originalServer.getNodeName(),
 						nextServerNodeName, currentXid));
 			}
 			originalServer.removeRootTransaction(currentXid);
@@ -178,7 +178,7 @@ public class ExampleDistributedJTATestCase {
 			Integer nextServerNodeName = nodesToFlowTo.get(0);
 
 			// FLOW THE TRANSACTION
-			remainingTimeout = (int) (currentServer.getTimeLeftBeforeTransactionTimeout() / 1000);
+			remainingTimeout = (int) (((TransactionTimeoutConfiguration) transactionManager).getTimeLeftBeforeTransactionTimeout(false) / 1000);
 
 			// SUSPEND THE TRANSACTION
 			Xid currentXid = currentServer.getCurrentXid();
@@ -186,12 +186,6 @@ public class ExampleDistributedJTATestCase {
 			boolean proxyRequired = performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid);
 			transactionManager.resume(transaction);
 
-			// Create a proxy for the new server if necessary, this can orphan
-			// the remote server but XA recovery will handle that on the remote
-			// server
-			// The alternative is to always create a proxy but this is a
-			// performance drain and will result in multiple subordinate
-			// transactions and performance issues
 			if (proxyRequired) {
 				XAResource proxyXAResource = currentServer.generateProxyXAResource(lookupProvider, currentServer.getNodeName(), nextServerNodeName);
 				transaction.enlistResource(proxyXAResource);
