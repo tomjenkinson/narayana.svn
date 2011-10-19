@@ -72,10 +72,6 @@ public class ExampleDistributedJTATestCase {
 	public void testMigrateTransaction() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, InvalidTransactionException,
 			XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
 
-		File file = new File(System.getProperty("user.dir") + "/tmp/");
-		if (file.exists()) {
-			file.delete();
-		}
 		int startingTimeout = 0;
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
 
