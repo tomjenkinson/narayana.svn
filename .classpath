@@ -5,6 +5,7 @@
 	<classpathentry kind="src" path="atsintegration/examples/classes"/>
 	<classpathentry kind="src" path="antbuildsystem/classes"/>
 	<classpathentry kind="src" path="atsintegration/tests/classes"/>
+	<classpathentry kind="src" path="atsintegration/tests/byteman-scripts"/>
 	<classpathentry kind="src" path="common/classes"/>
 	<classpathentry kind="src" path="common/tests"/>
 	<classpathentry kind="src" path="ArjunaCore/arjuna/build/classes"/>
@@ -21,6 +22,7 @@
 	<classpathentry kind="src" path="ArjunaJTA/jta/classes"/>
 	<classpathentry kind="src" path="ArjunaJTA/jta/src/test/resources"/>
 	<classpathentry kind="src" path="ArjunaJTA/jta/tests/classes"/>
+	<classpathentry kind="src" path="ArjunaJTA/jta/tests/byteman-scripts"/>
 	<classpathentry kind="src" path="ArjunaJTS/jtax/build/classes"/>
 	<classpathentry kind="src" path="ArjunaJTS/jtax/build/tests/generatedclasses"/>
 	<classpathentry kind="src" path="ArjunaJTS/jtax/classes"/>
@@ -48,9 +50,10 @@
 	<classpathentry kind="var" path="M2_REPO/org/jboss/jbossas/jboss-server-manager/1.0.4.Final/jboss-server-manager-1.0.4.Final.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/byteman/byteman/1.6.0/byteman-1.6.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/byteman/byteman-bmunit/1.6.0/byteman-bmunit-1.6.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/jboss/byteman/byteman-install/1.6.0/byteman-install-1.6.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/byteman/byteman-submit/1.6.0/byteman-submit-1.6.0.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/jboss/integration/jboss-corba-ots-spi/6.0.0.CR1/jboss-corba-ots-spi-6.0.0.CR1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/byteman/byteman-dtest/1.6.0/byteman-dtest-1.6.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/jboss/integration/jboss-corba-ots-spi/6.0.0.CR1/jboss-corba-ots-spi-6.0.0.CR1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/log4j/log4j/1.2.16/log4j-1.2.16.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/spec/javax/ejb/jboss-ejb-api_3.1_spec/1.0.1.Final/jboss-ejb-api_3.1_spec-1.0.1.Final.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/remoting/jboss-remoting/2.5.3/jboss-remoting-2.5.3.jar"/>
