@@ -41,18 +41,15 @@ public class TestResource implements XAResource {
 
 	protected int timeout = 0;
 
-	private boolean readonly = false;
-
 	private File file;
 
 	private int serverId;
 
 	private CompletionCounter completionCounter;
 
-	public TestResource(CompletionCounter completionCounter, int serverId, boolean readonly) {
+	public TestResource(CompletionCounter completionCounter, int serverId) {
 		this.completionCounter = completionCounter;
 		this.serverId = serverId;
-		this.readonly = readonly;
 	}
 
 	public TestResource(CompletionCounter completionCounter, int serverId, File file) throws IOException {
@@ -89,32 +86,28 @@ public class TestResource implements XAResource {
 	public synchronized int prepare(Xid xid) throws XAException {
 		System.out.println("        TestResource (" + serverId + ")      XA_PREPARE [" + xid + "]");
 
-		if (readonly)
-			return XA_RDONLY;
-		else {
-			File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/TestResource/" + serverId + "/");
-			dir.mkdirs();
-			file = new File(dir, new Uid().fileStringForm() + "_");
-			try {
-				file.createNewFile();
-				final int formatId = xid.getFormatId();
-				final byte[] gtrid = xid.getGlobalTransactionId();
-				final int gtrid_length = gtrid.length;
-				final byte[] bqual = xid.getBranchQualifier();
-				final int bqual_length = bqual.length;
+		File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/TestResource/" + serverId + "/");
+		dir.mkdirs();
+		file = new File(dir, new Uid().fileStringForm() + "_");
+		try {
+			file.createNewFile();
+			final int formatId = xid.getFormatId();
+			final byte[] gtrid = xid.getGlobalTransactionId();
+			final int gtrid_length = gtrid.length;
+			final byte[] bqual = xid.getBranchQualifier();
+			final int bqual_length = bqual.length;
 
-				DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
-				fos.writeInt(formatId);
-				fos.writeInt(gtrid_length);
-				fos.write(gtrid, 0, gtrid_length);
-				fos.writeInt(bqual_length);
-				fos.write(bqual, 0, bqual_length);
-			} catch (IOException e) {
-				e.printStackTrace();
-				throw new XAException(XAException.XAER_RMERR);
-			}
-			return XA_OK;
+			DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
+			fos.writeInt(formatId);
+			fos.writeInt(gtrid_length);
+			fos.write(gtrid, 0, gtrid_length);
+			fos.writeInt(bqual_length);
+			fos.write(bqual, 0, bqual_length);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new XAException(XAException.XAER_RMERR);
 		}
+		return XA_OK;
 
 		// throw new XAException();
 	}

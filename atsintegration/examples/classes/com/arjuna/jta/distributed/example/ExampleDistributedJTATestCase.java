@@ -125,7 +125,7 @@ public class ExampleDistributedJTATestCase {
 
 		Transaction originalTransaction = transactionManager.getTransaction();
 		originalTransaction.registerSynchronization(new TestSynchronization(originalServer.getNodeName()));
-		originalTransaction.enlistResource(new TestResource(counter, originalServer.getNodeName(), false));
+		originalTransaction.enlistResource(new TestResource(counter, originalServer.getNodeName()));
 
 		if (!nodesToFlowTo.isEmpty()) {
 			Integer nextServerNodeName = nodesToFlowTo.get(0);
@@ -172,7 +172,7 @@ public class ExampleDistributedJTATestCase {
 		TransactionManager transactionManager = currentServer.getTransactionManager();
 		Transaction transaction = transactionManager.getTransaction();
 		transaction.registerSynchronization(new TestSynchronization(currentServer.getNodeName()));
-		transaction.enlistResource(new TestResource(counter, currentServer.getNodeName(), false));
+		transaction.enlistResource(new TestResource(counter, currentServer.getNodeName()));
 
 		if (!nodesToFlowTo.isEmpty()) {
 			Integer nextServerNodeName = nodesToFlowTo.get(0);
