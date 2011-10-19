@@ -106,15 +106,15 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 		ObjectStoreEnvironmentBean actionStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator.getNamedInstance(
 				com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "default");
-		actionStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + nodeName);
+		actionStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta-example/tx-object-store/" + nodeName);
 
 		ObjectStoreEnvironmentBean stateStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator.getNamedInstance(
 				com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "stateStore");
-		stateStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + nodeName);
+		stateStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta-example/tx-object-store/" + nodeName);
 
 		ObjectStoreEnvironmentBean communicationStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator
 				.getNamedInstance(com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "communicationStore");
-		communicationStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + nodeName);
+		communicationStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta-example/tx-object-store/" + nodeName);
 
 		ObjStoreBrowser objStoreBrowser = new ObjStoreBrowser();
 		Map<String, String> types = new HashMap<String, String>();

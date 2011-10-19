@@ -92,7 +92,7 @@ public class TestResource implements XAResource {
 		if (readonly)
 			return XA_RDONLY;
 		else {
-			File dir = new File(System.getProperty("user.dir") + "/tmp/TestResource/" + serverId + "/");
+			File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/TestResource/" + serverId + "/");
 			dir.mkdirs();
 			file = new File(dir, new Uid().fileStringForm() + "_");
 			try {

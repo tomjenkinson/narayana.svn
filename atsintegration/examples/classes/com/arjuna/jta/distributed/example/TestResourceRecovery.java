@@ -37,7 +37,7 @@ public class TestResourceRecovery implements XAResourceRecovery {
 	private List<TestResource> resources = new ArrayList<TestResource>();
 
 	public TestResourceRecovery(CompletionCounter counter, Integer nodeName) throws IOException {
-		File file = new File(System.getProperty("user.dir") + "/tmp/TestResource/" + nodeName + "/");
+		File file = new File(System.getProperty("user.dir") + "/distributedjta-example/TestResource/" + nodeName + "/");
 		if (file.exists() && file.isDirectory()) {
 			File[] listFiles = file.listFiles();
 			for (int i = 0; i < listFiles.length; i++) {
