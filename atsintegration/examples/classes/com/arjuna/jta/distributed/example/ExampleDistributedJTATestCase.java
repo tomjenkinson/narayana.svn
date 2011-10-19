@@ -21,7 +21,6 @@
  */
 package com.arjuna.jta.distributed.example;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -76,7 +75,6 @@ public class ExampleDistributedJTATestCase {
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
 
 		// Start out at the first server
-		int totalNodeCount = nodesToFlowTo.size();
 		int startingServer = nodesToFlowTo.remove(0);
 		LocalServer originalServer = getLocalServer(startingServer);
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();

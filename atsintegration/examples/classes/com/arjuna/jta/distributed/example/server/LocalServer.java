@@ -25,7 +25,6 @@ import java.io.IOException;
 
 import javax.transaction.InvalidTransactionException;
 import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
