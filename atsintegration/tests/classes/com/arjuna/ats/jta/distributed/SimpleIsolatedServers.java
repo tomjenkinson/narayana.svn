@@ -70,7 +70,7 @@ public class SimpleIsolatedServers {
 		}
 	}
 
-	@Test
+//	@Test
 	public void testRecovery() throws IOException {
 		assertTrue(getLocalServer(3000).getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 0);
