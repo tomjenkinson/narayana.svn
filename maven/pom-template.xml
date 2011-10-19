@@ -222,6 +222,7 @@
             <!-- JCA API -->
             <groupId>org.jboss.ironjacamar</groupId>
             <artifactId>ironjacamar-spec-api</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- unit tests use junit4 and some use byteman -->
@@ -397,6 +398,7 @@
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging-generator</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!--<dependency>-->
