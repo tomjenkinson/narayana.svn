@@ -285,8 +285,12 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public int propagatePrepare(Xid xid) throws XAException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
 		SubordinateTransaction tx = SubordinationManager.getTransactionImporter().getImportedTransaction(xid);
 		return SubordinationManager.getXATerminator().prepare(xid);
@@ -294,53 +298,68 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public void propagateCommit(Xid xid) throws XAException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			SubordinationManager.getXATerminator().commit(xid, false);
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
-		SubordinationManager.getXATerminator().commit(xid, false);
 	}
 
 	@Override
 	public void propagateRollback(Xid xid) throws XAException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			SubordinationManager.getXATerminator().rollback(xid);			
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
-		SubordinationManager.getXATerminator().rollback(xid);
 	}
 
 	@Override
 	public Xid[] propagateRecover(int formatId, byte[] gtrid, int flag) throws XAException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
-		}
-		List<Xid> toReturn = new ArrayList<Xid>();
-		Xid[] recovered = SubordinationManager.getXATerminator().recover(flag);
-		if (recovered != null) {
-			for (int i = 0; i < recovered.length; i++) {
-				// Filter out the transactions that are not owned by this parent
-				if (recovered[i].getFormatId() == formatId && Arrays.equals(gtrid, recovered[i].getGlobalTransactionId())) {
-					toReturn.add(recovered[i]);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			List<Xid> toReturn = new ArrayList<Xid>();
+			Xid[] recovered = SubordinationManager.getXATerminator().recover(flag);
+			if (recovered != null) {
+				for (int i = 0; i < recovered.length; i++) {
+					// Filter out the transactions that are not owned by this parent
+					if (recovered[i].getFormatId() == formatId && Arrays.equals(gtrid, recovered[i].getGlobalTransactionId())) {
+						toReturn.add(recovered[i]);
+					}
 				}
 			}
+			return toReturn.toArray(new Xid[0]);
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
-		return toReturn.toArray(new Xid[0]);
 	}
 
 	@Override
 	public void propagateForget(Xid xid) throws XAException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			SubordinationManager.getXATerminator().forget(xid);
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
-		SubordinationManager.getXATerminator().forget(xid);
 
 	}
 
 	@Override
 	public void propagateBeforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException {
-		if (offline) {
-			throw new DummyRemoteException("Connection refused to: " + nodeName);
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+			((XATerminatorImple) SubordinationManager.getXATerminator()).beforeCompletion(xid);
+		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);			
 		}
-		((XATerminatorImple) SubordinationManager.getXATerminator()).beforeCompletion(xid);
 	}
 
 	@Override

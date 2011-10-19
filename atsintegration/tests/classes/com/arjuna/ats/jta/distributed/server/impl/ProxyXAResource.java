@@ -35,10 +35,13 @@ import javax.transaction.xa.Xid;
 import org.jboss.tm.XAResourceWrapper;
 
 import com.arjuna.ats.arjuna.common.Uid;
-import com.arjuna.ats.arjuna.coordinator.TwoPhaseOutcome;
 import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 
+/**
+ * I chose for this class to implement XAResourceWrapper so that I can provide a
+ * name to the Transaction manager for it to store in its XID.
+ */
 public class ProxyXAResource implements XAResource, XAResourceWrapper {
 
 	private int transactionTimeout;
@@ -48,12 +51,27 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	private LookupProvider lookupProvider;
 	private Xid xid;
 
+	/**
+	 * Create a new proxy to the remote server.
+	 * 
+	 * @param lookupProvider
+	 * @param localServerName
+	 * @param remoteServerName
+	 */
 	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
 		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
 	}
 
+	/**
+	 * Used by recovery
+	 * 
+	 * @param lookupProvider
+	 * @param localServerName
+	 * @param file
+	 * @throws IOException
+	 */
 	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, File file) throws IOException {
 		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
@@ -85,21 +103,36 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		};
 	}
 
+	/**
+	 * Store the XID.
+	 */
 	@Override
 	public void start(Xid xid, int flags) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_START   [" + xid + "]");
 		this.xid = xid;
 	}
 
+	/**
+	 * Reference the XID.
+	 */
 	@Override
 	public void end(Xid xid, int flags) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_END     [" + xid + "]");
 		this.xid = null;
 	}
 
+	/**
+	 * Prepare the resource, save the XID locally first, the propagate the
+	 * prepare. This ensures that in recovery we know the XID to ask a remote
+	 * server about.
+	 */
 	@Override
 	public synchronized int prepare(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARE [" + xid + "]");
+
+		// Persist a proxy for the remote server this can mean we try to recover
+		// a transaction at a remote server that did not get chance to
+		// prepare but the alternative is to orphan a prepared server
 
 		try {
 			File dir = new File(System.getProperty("user.dir") + "/tmp/ProxyXAResource/" + localServerName + "/");
@@ -118,18 +151,13 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			throw new XAException(XAException.XAER_RMERR);
 		}
 
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
-			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			int propagatePrepare = lookupProvider.lookup(remoteServerName).propagatePrepare(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARED");
 			return propagatePrepare;
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
-
 	}
 
 	/**
@@ -139,15 +167,11 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	public synchronized void commit(Xid xid, boolean onePhase) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
 
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
-			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			lookupProvider.lookup(remoteServerName).propagateCommit(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 
 		if (file != null) {
@@ -158,15 +182,11 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	@Override
 	public synchronized void rollback(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
-			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			lookupProvider.lookup(remoteServerName).propagateRollback(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 
 		if (file != null) {
@@ -174,6 +194,16 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		}
 	}
 
+	/**
+	 * This will ensure that the remote server has loaded the subordinate
+	 * transaction.
+	 * 
+	 * @return It returns the proxies view of the XID state, returning the
+	 *         remote servers view of the XID would present an XID to the local
+	 *         server that it knows nothing about and indeed potentially the
+	 *         remote server does not have a corresponding record of the XID in
+	 *         case of failure during prepare.
+	 */
 	@Override
 	public Xid[] recover(int flag) throws XAException {
 		Xid[] recovered = null;
@@ -187,14 +217,10 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		}
 
 		if (this.xid != null) {
-			ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 			try {
-				Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 				recovered = lookupProvider.lookup(remoteServerName).propagateRecover(xid.getFormatId(), xid.getGlobalTransactionId(), flag);
 			} catch (DummyRemoteException ce) {
 				throw new XAException(XAException.XA_RETRY);
-			} finally {
-				Thread.currentThread().setContextClassLoader(contextClassLoader);
 			}
 		}
 
@@ -218,15 +244,11 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	@Override
 	public void forget(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGET  [" + xid + "]");
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
-			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			lookupProvider.lookup(remoteServerName).propagateForget(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGETED[" + xid + "]");
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 
@@ -253,7 +275,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	}
 
 	/**
-	 * I don't think this is used by TM.
+	 * Not used by the TM.
 	 */
 	@Override
 	public XAResource getResource() {
@@ -261,7 +283,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	}
 
 	/**
-	 * I don't think this is used by TM.
+	 * Not used by the TM.
 	 */
 	@Override
 	public String getProductName() {
@@ -269,16 +291,20 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	}
 
 	/**
-	 * I don't think this is used by TM.
+	 * Not used by the TM.
 	 */
 	@Override
 	public String getProductVersion() {
 		return null;
 	}
 
+	/**
+	 * This allows the proxy to contain meaningful information in the XID in
+	 * case of failure to recover.
+	 */
 	@Override
 	public String getJndiName() {
-		return "ProxyXAResource";
+		return "ProxyXAResource: " + localServerName + " " + remoteServerName;
 	}
 
 	public Xid getXid() {
