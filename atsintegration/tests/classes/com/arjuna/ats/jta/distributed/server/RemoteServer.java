@@ -35,7 +35,7 @@ public interface RemoteServer {
 
 	public void propagateRollback(Xid xid) throws XAException, DummyRemoteException;
 
-	public Xid[] propagateRecover(int formatId, byte[] gtrid) throws XAException, DummyRemoteException;
+	public Xid[] propagateRecover(Integer parentNodeName) throws XAException, DummyRemoteException;
 
 	public void propagateForget(Xid xid) throws XAException, DummyRemoteException;
 

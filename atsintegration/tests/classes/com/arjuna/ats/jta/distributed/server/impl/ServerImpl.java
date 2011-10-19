@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +36,6 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
-import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.jboss.tm.TransactionTimeoutConfiguration;
@@ -68,6 +66,8 @@ import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 import com.arjuna.ats.jta.distributed.server.RemoteServer;
+import com.arjuna.ats.jta.xa.XATxConverter;
+import com.arjuna.ats.jta.xa.XidImple;
 
 public class ServerImpl implements LocalServer, RemoteServer {
 
@@ -349,7 +349,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public Xid[] propagateRecover(int formatId, byte[] gtrid) throws XAException, DummyRemoteException {
+	public Xid[] propagateRecover(Integer parentNodeName) throws XAException, DummyRemoteException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
@@ -359,7 +359,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 				for (int i = 0; i < recovered.length; i++) {
 					// Filter out the transactions that are not owned by this
 					// parent
-					if (recovered[i].getFormatId() == formatId && Arrays.equals(gtrid, recovered[i].getGlobalTransactionId())) {
+					if ((recovered[i].getFormatId() == XATxConverter.FORMAT_ID && parentNodeName == XATxConverter.getParentNodeName(((XidImple) recovered[i])
+							.getXID()))) {
 						toReturn.add(recovered[i]);
 					}
 				}
@@ -391,12 +392,6 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
-	}
-
-	@Override
-	public Xid extractXid(XAResource xaResource) {
-		ProxyXAResource proxyXAResource = (ProxyXAResource) xaResource;
-		return proxyXAResource.getXid();
 	}
 
 	@Override

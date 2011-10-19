@@ -130,26 +130,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	public synchronized int prepare(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARE [" + xid + "]");
 
-		// Persist a proxy for the remote server this can mean we try to recover
-		// a transaction at a remote server that did not get chance to
-		// prepare but the alternative is to orphan a prepared server
-
-		try {
-			File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/ProxyXAResource/" + localServerName + "/");
-			dir.mkdirs();
-			file = new File(dir, new Uid().fileStringForm());
-			file.createNewFile();
-			DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
-			fos.writeInt(remoteServerName);
-			fos.writeInt(xid.getFormatId());
-			fos.writeInt(xid.getGlobalTransactionId().length);
-			fos.write(xid.getGlobalTransactionId());
-			fos.writeInt(xid.getBranchQualifier().length);
-			fos.write(xid.getBranchQualifier());
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new XAException(XAException.XAER_RMERR);
-		}
+		persistProxy(xid);
 
 		try {
 			int propagatePrepare = lookupProvider.lookup(remoteServerName).propagatePrepare(xid);
@@ -163,6 +144,8 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	@Override
 	public synchronized void commit(Xid xid, boolean onePhase) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
+
+		persistProxy(xid);
 
 		try {
 			lookupProvider.lookup(remoteServerName).propagateCommit(xid, onePhase);
@@ -179,6 +162,9 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	@Override
 	public synchronized void rollback(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
+
+		persistProxy(xid);
+
 		try {
 			lookupProvider.lookup(remoteServerName).propagateRollback(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
@@ -311,7 +297,29 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		return "ProxyXAResource: " + localServerName + " " + remoteServerName;
 	}
 
-	public Xid getXid() {
-		return xid;
+	private void persistProxy(Xid xid) throws XAException {
+		// Persist a proxy for the remote server this can mean we try to recover
+		// a transaction at a remote server that did not get chance to
+		// prepare but the alternative is to orphan a prepared server
+
+		if (this.file == null) {
+			try {
+				File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + localServerName + "/");
+				dir.mkdirs();
+				File file = new File(dir, new Uid().fileStringForm());
+				file.createNewFile();
+				DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
+				fos.writeInt(remoteServerName);
+				fos.writeInt(xid.getFormatId());
+				fos.writeInt(xid.getGlobalTransactionId().length);
+				fos.write(xid.getGlobalTransactionId());
+				fos.writeInt(xid.getBranchQualifier().length);
+				fos.write(xid.getBranchQualifier());
+				this.file = file;
+			} catch (IOException e) {
+				e.printStackTrace();
+				throw new XAException(XAException.XAER_RMERR);
+			}
+		}
 	}
 }

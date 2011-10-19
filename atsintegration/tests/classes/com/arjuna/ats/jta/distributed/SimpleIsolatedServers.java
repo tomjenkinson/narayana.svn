@@ -100,11 +100,11 @@ public class SimpleIsolatedServers {
 		// same server
 		{
 			RemoteServer server = lookupProvider.lookup(2000);
-			server.propagateRecover(0, null);
+			server.propagateRecover(1000);
 		}
 		{
 			RemoteServer server = lookupProvider.lookup(2000);
-			server.propagateRecover(0, null);
+			server.propagateRecover(3000);
 		}
 	}
 
@@ -259,8 +259,79 @@ public class SimpleIsolatedServers {
 			assertTrue(server.getCompletionCounter().getRollbackCount() == 0);
 			server.doRecoveryManagerScan(true);
 			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
-			assertTrue(server.getCompletionCounter().getRollbackCount() == 0);
+			assertTrue(server.getCompletionCounter().getRollbackCount() == 1);
 		}
+	}
+
+	@Test
+	@BMScript("leave-subordinate-orphan")
+	public void testOnePhaseSubordinateOrphan() throws Exception {
+		assertTrue(getLocalServer(3000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 0);
+		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
+		Thread thread = new Thread(new Runnable() {
+			public void run() {
+				int startingTimeout = 0;
+				try {
+					int startingServer = 1000;
+					LocalServer originalServer = getLocalServer(startingServer);
+					ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+					Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+					TransactionManager transactionManager = originalServer.getTransactionManager();
+					transactionManager.setTransactionTimeout(startingTimeout);
+					transactionManager.begin();
+					Transaction originalTransaction = transactionManager.getTransaction();
+					int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
+					Xid currentXid = originalServer.getCurrentXid();
+					originalServer.storeRootTransaction();
+					transactionManager.suspend();
+					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 2, false);
+					transactionManager.resume(originalTransaction);
+					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
+					originalTransaction.enlistResource(proxyXAResource);
+					originalServer.removeRootTransaction(currentXid);
+					transactionManager.commit();
+					Thread.currentThread().setContextClassLoader(classLoader);
+				} catch (ExecuteException e) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				} catch (LinkageError t) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				} catch (Throwable t) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				}
+			}
+		}, "Orphan-creator");
+		thread.start();
+		synchronized (phase2CommitAborted) {
+			if (!phase2CommitAborted.isPhase2CommitAborted()) {
+				phase2CommitAborted.wait();
+			}
+		}
+		tearDown();
+		setup();
+		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getRollbackCount() == 0);
+		getLocalServer(1000).doRecoveryManagerScan(true);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getRollbackCount() == 1);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getRollbackCount() == 2);
+
 	}
 
 	@Test

@@ -289,10 +289,4 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
-
-	@Override
-	public Xid extractXid(XAResource xaResource) {
-		ProxyXAResource proxyXAResource = (ProxyXAResource) xaResource;
-		return proxyXAResource.getXid();
-	}
 }

@@ -56,7 +56,5 @@ public interface LocalServer {
 
 	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst);
 
-	public Xid extractXid(XAResource proxyXAResource);
-
 	public Xid getCurrentXid() throws SystemException;
 }
