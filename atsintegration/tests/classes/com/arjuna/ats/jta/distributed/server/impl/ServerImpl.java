@@ -22,6 +22,7 @@
 package com.arjuna.ats.jta.distributed.server.impl;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +53,7 @@ import com.arjuna.ats.arjuna.recovery.RecoveryManager;
 import com.arjuna.ats.arjuna.tools.osb.mbean.ObjStoreBrowser;
 import com.arjuna.ats.internal.arjuna.utils.ManualProcessId;
 import com.arjuna.ats.internal.jbossatx.jta.XAResourceRecordWrappingPluginImpl;
+import com.arjuna.ats.internal.jta.recovery.arjunacore.RecoveryXids;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateTransaction;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateXidImple;
@@ -133,9 +135,9 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		recoveryEnvironmentBean.setRecoveryActivators(null);
 
 		CoreEnvironmentBean coreEnvironmentBean = com.arjuna.ats.arjuna.common.arjPropertyManager.getCoreEnvironmentBean();
-//		coreEnvironmentBean.setSocketProcessIdPort(4714 + nodeName);
+		// coreEnvironmentBean.setSocketProcessIdPort(4714 + nodeName);
 		coreEnvironmentBean.setNodeIdentifier(nodeName);
-//		coreEnvironmentBean.setSocketProcessIdMaxPorts(1);
+		// coreEnvironmentBean.setSocketProcessIdMaxPorts(1);
 		coreEnvironmentBean.setProcessImplementationClassName(ManualProcessId.class.getName());
 		coreEnvironmentBean.setPid(coreEnvironmentBean.getNodeIdentifier());
 
@@ -182,7 +184,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 		recoveryManagerService = new RecoveryManagerService();
 		recoveryManagerService.create();
-		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(lookupProvider, nodeName));
+		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(counter, lookupProvider, nodeName));
 		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(counter, nodeName));
 
 		// recoveryManagerService.start();
@@ -195,13 +197,6 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		transactionManagerService
 				.setTransactionSynchronizationRegistry(new com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple());
 		transactionManagerService.create();
-
-		// Field safetyIntervalMillis =
-		// RecoveryXids.class.getDeclaredField("safetyIntervalMillis");
-		// safetyIntervalMillis.setAccessible(true);
-		// Field modifiersField = Field.class.getDeclaredField("modifiers");
-		// modifiersField.setAccessible(true);
-		// safetyIntervalMillis.set(null, 0);
 	}
 
 	@Override
@@ -211,12 +206,38 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public void doRecoveryManagerScan() {
+	public void doRecoveryManagerScan(boolean hackSafetyInterval) {
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		ClassLoader serversClassLoader = this.getClass().getClassLoader();
 		Thread.currentThread().setContextClassLoader(serversClassLoader);
+		int originalSafetyInterval = -1;
+
+		if (hackSafetyInterval) {
+			try {
+				Field safetyIntervalMillis = RecoveryXids.class.getDeclaredField("safetyIntervalMillis");
+				safetyIntervalMillis.setAccessible(true);
+				originalSafetyInterval = (Integer) safetyIntervalMillis.get(null);
+				Field modifiersField = Field.class.getDeclaredField("modifiers");
+				modifiersField.setAccessible(true);
+				safetyIntervalMillis.set(null, 0);
+			} catch (Throwable t) {
+				t.printStackTrace();
+			}
+		}
 
 		_recoveryManager.scan();
+
+		if (hackSafetyInterval) {
+			try {
+				Field safetyIntervalMillis = RecoveryXids.class.getDeclaredField("safetyIntervalMillis");
+				safetyIntervalMillis.setAccessible(true);
+				Field modifiersField = Field.class.getDeclaredField("modifiers");
+				modifiersField.setAccessible(true);
+				safetyIntervalMillis.set(null, originalSafetyInterval);
+			} catch (Throwable t) {
+				t.printStackTrace();
+			}
+		}
 		Thread.currentThread().setContextClassLoader(classLoader);
 	}
 
@@ -271,7 +292,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
-		return new ProxyXAResource(lookupProvider, localServerName, remoteServerName);
+		return new ProxyXAResource(counter, lookupProvider, localServerName, remoteServerName);
 	}
 
 	@Override

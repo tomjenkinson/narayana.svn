@@ -44,7 +44,7 @@ public interface LocalServer {
 
 	public TransactionManager getTransactionManager() throws NotSupportedException, SystemException;
 
-	public void doRecoveryManagerScan();
+	public void doRecoveryManagerScan(boolean hackSafetyInterval);
 
 	public long getTimeLeftBeforeTransactionTimeout() throws RollbackException;
 

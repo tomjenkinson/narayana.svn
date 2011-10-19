@@ -30,19 +30,20 @@ import javax.transaction.xa.XAResource;
 
 import org.jboss.tm.XAResourceRecovery;
 
+import com.arjuna.ats.jta.distributed.server.CompletionCounter;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 
 public class ProxyXAResourceRecovery implements XAResourceRecovery {
 
 	private List<ProxyXAResource> resources = new ArrayList<ProxyXAResource>();
 
-	public ProxyXAResourceRecovery(LookupProvider lookupProvider, Integer id) throws IOException {
+	public ProxyXAResourceRecovery(CompletionCounter counter, LookupProvider lookupProvider, Integer id) throws IOException {
 		File file = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + id + "/");
 		if (file.exists() && file.isDirectory()) {
 			File[] listFiles = file.listFiles();
 			for (int i = 0; i < listFiles.length; i++) {
 				File currentFile = listFiles[i];
-				resources.add(new ProxyXAResource(lookupProvider, id, currentFile));
+				resources.add(new ProxyXAResource(counter, lookupProvider, id, currentFile));
 			}
 		}
 	}

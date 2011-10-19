@@ -35,6 +35,7 @@ import javax.transaction.xa.Xid;
 import org.jboss.tm.XAResourceWrapper;
 
 import com.arjuna.ats.arjuna.common.Uid;
+import com.arjuna.ats.jta.distributed.server.CompletionCounter;
 import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 
@@ -50,6 +51,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	private Integer localServerName;
 	private LookupProvider lookupProvider;
 	private Xid xid;
+	private CompletionCounter completionCounter;
 
 	/**
 	 * Create a new proxy to the remote server.
@@ -58,7 +60,8 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	 * @param localServerName
 	 * @param remoteServerName
 	 */
-	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
+	public ProxyXAResource(CompletionCounter completionCounter, LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
+		this.completionCounter = completionCounter;
 		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
@@ -72,7 +75,8 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	 * @param file
 	 * @throws IOException
 	 */
-	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, File file) throws IOException {
+	public ProxyXAResource(CompletionCounter completionCounter, LookupProvider lookupProvider, Integer localServerName, File file) throws IOException {
+		this.completionCounter = completionCounter;
 		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
 		this.file = file;
@@ -177,20 +181,33 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		if (file != null) {
 			file.delete();
 		}
+		if (completionCounter != null) {
+			completionCounter.incrementCommit();
+		}
 	}
 
 	@Override
 	public synchronized void rollback(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
+
 		try {
 			lookupProvider.lookup(remoteServerName).propagateRollback(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
+		} catch (XAException e) {
+			if (e.errorCode == XAException.XAER_INVAL) {
+				// We know that this means that the transaction is not known at
+				// the remote side
+				e.printStackTrace();
+			}
 		}
 
 		if (file != null) {
 			file.delete();
+		}
+		if (completionCounter != null) {
+			completionCounter.incrementRollback();
 		}
 	}
 

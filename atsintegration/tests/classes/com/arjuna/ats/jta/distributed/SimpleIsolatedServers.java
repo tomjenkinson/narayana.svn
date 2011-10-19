@@ -23,7 +23,6 @@ package com.arjuna.ats.jta.distributed;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -87,18 +86,88 @@ public class SimpleIsolatedServers {
 	}
 
 	@Test
-	@BMScript("fail2pc")
-	public void testRecovery() throws Exception {
+	@BMScript("leaveorphan")
+	public void testCreateOrphan() throws Exception {
 		assertTrue(getLocalServer(3000).getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 0);
 		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
-				File file = new File(System.getProperty("user.dir") + "/tmp/");
-				if (file.exists()) {
-					file.delete();
+				int startingTimeout = 0;
+				try {
+					int startingServer = 1000;
+					LocalServer originalServer = getLocalServer(startingServer);
+					ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+					Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+					TransactionManager transactionManager = originalServer.getTransactionManager();
+					transactionManager.setTransactionTimeout(startingTimeout);
+					transactionManager.begin();
+					Transaction originalTransaction = transactionManager.getTransaction();
+					int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
+					Xid currentXid = originalServer.getCurrentXid();
+					originalServer.storeRootTransaction();
+					transactionManager.suspend();
+					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid);
+					transactionManager.resume(originalTransaction);
+					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
+					originalTransaction.enlistResource(proxyXAResource);
+					originalTransaction.enlistResource(new TestResource(null, originalServer.getNodeName(), false));
+					originalServer.removeRootTransaction(currentXid);
+					transactionManager.commit();
+					Thread.currentThread().setContextClassLoader(classLoader);
+				} catch (ExecuteException e) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				} catch (Throwable t) {
+					t.printStackTrace();
 				}
+			}
+		}, "Orphan-creator");
+		thread.start();
+		synchronized (phase2CommitAborted) {
+			if (!phase2CommitAborted.isPhase2CommitAborted()) {
+				phase2CommitAborted.wait();
+			}
+		}
+		tearDown();
+		setup();
+		{
+
+			LocalServer server = getLocalServer(2000);
+			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
+			assertTrue(server.getCompletionCounter().getRollbackCount() == 0);
+			server.doRecoveryManagerScan(true);
+			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
+			assertTrue(server.getCompletionCounter().getRollbackCount() == 1);
+		}
+		{
+			LocalServer server = getLocalServer(1000);
+			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
+			assertTrue(server.getCompletionCounter().getRollbackCount() == 0);
+			server.doRecoveryManagerScan(true);
+			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
+			assertTrue(server.getCompletionCounter().getRollbackCount() == 1);
+		}
+	}
+
+	@Test
+	@BMScript("fail2pc")
+	public void testRecovery() throws Exception {
+		tearDown();
+		setup();
+		assertTrue(getLocalServer(3000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(3000).getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getRollbackCount() == 0);
+		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
+		Thread thread = new Thread(new Runnable() {
+			public void run() {
 				int startingTimeout = 0;
 				List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
 				try {
@@ -150,21 +219,19 @@ public class SimpleIsolatedServers {
 		// Start out at the first server
 		// getLocalServer(3000).doRecoveryManagerScan();
 		// getLocalServer(2000).doRecoveryManagerScan();
-		getLocalServer(1000).doRecoveryManagerScan();
+		getLocalServer(1000).doRecoveryManagerScan(false);
 
-		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 3);
-		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 3);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 4);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 4);
 		assertTrue(getLocalServer(3000).getCompletionCounter().getCommitCount() == 3);
+		assertTrue(getLocalServer(3000).getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getRollbackCount() == 0);
 	}
 
 	@Test
 	public void testMigrateTransactionCommit() throws NotSupportedException, SystemException, IllegalStateException, RollbackException,
 			InvalidTransactionException, XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
-
-		File file = new File(System.getProperty("user.dir") + "/tmp/");
-		if (file.exists()) {
-			file.delete();
-		}
 		int startingTimeout = 0;
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
 		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, true);
@@ -174,10 +241,6 @@ public class SimpleIsolatedServers {
 	public void testMigrateTransactionCommitDiamond() throws NotSupportedException, SystemException, IllegalStateException, RollbackException,
 			InvalidTransactionException, XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
 
-		File file = new File(System.getProperty("user.dir") + "/tmp/");
-		if (file.exists()) {
-			file.delete();
-		}
 		int startingTimeout = 0;
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 1000, 3000, 1000, 2000, 3000 }));
 		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, true);
@@ -186,11 +249,6 @@ public class SimpleIsolatedServers {
 	@Test
 	public void testMigrateTransactionRollback() throws NotSupportedException, SystemException, IllegalStateException, RollbackException,
 			InvalidTransactionException, XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
-
-		File file = new File(System.getProperty("user.dir") + "/tmp/");
-		if (file.exists()) {
-			file.delete();
-		}
 		int startingTimeout = 0;
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
 		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, false);
@@ -199,11 +257,6 @@ public class SimpleIsolatedServers {
 	@Test
 	public void testMigrateTransactionRollbackDiamond() throws NotSupportedException, SystemException, IllegalStateException, RollbackException,
 			InvalidTransactionException, XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
-
-		File file = new File(System.getProperty("user.dir") + "/tmp/");
-		if (file.exists()) {
-			file.delete();
-		}
 		int startingTimeout = 0;
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 1000, 3000, 1000, 2000, 3000 }));
 		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, false);
@@ -212,11 +265,6 @@ public class SimpleIsolatedServers {
 	@Test
 	public void testMigrateTransactionSubordinateTimeout() throws NotSupportedException, SystemException, IllegalStateException, RollbackException,
 			InvalidTransactionException, XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException, InterruptedException {
-
-		File file = new File(System.getProperty("user.dir") + "/tmp/");
-		if (file.exists()) {
-			file.delete();
-		}
 		int rootTimeout = 10000;
 		int subordinateTimeout = 1;
 
