@@ -2,7 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="atsintegration/build/classes"/>
 	<classpathentry kind="src" path="atsintegration/classes"/>
-	<classpathentry kind="src" path="atsintegration/tests/classes"/>
+	<classpathentry kind="src" path="atsintegration/examples/classes"/>
 	<classpathentry kind="src" path="antbuildsystem/classes"/>
 	<classpathentry kind="src" path="common/classes"/>
 	<classpathentry kind="src" path="common/tests"/>
