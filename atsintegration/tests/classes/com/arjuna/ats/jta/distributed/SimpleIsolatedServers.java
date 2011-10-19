@@ -41,8 +41,13 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
+import org.jboss.byteman.contrib.bmunit.BMScript;
+import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
+import org.jboss.byteman.rule.exception.ExecuteException;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.jta.distributed.server.CompletionCounter;
@@ -51,6 +56,7 @@ import com.arjuna.ats.jta.distributed.server.LocalServer;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 import com.arjuna.ats.jta.distributed.server.RemoteServer;
 
+@RunWith(BMUnitRunner.class)
 public class SimpleIsolatedServers {
 	private static LookupProvider lookupProvider = new MyLookupProvider();
 	private static LocalServer[] localServers = new LocalServer[3];
@@ -70,11 +76,77 @@ public class SimpleIsolatedServers {
 		}
 	}
 
-//	@Test
-	public void testRecovery() throws IOException {
+	@AfterClass
+	public static void tearDown() throws Exception {
+		for (int i = 0; i < localServers.length; i++) {
+			ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+			Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
+			localServers[i].shutdown();
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
+		}
+	}
+
+	@Test
+	@BMScript("fail2pc")
+	public void testRecovery() throws Exception {
 		assertTrue(getLocalServer(3000).getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 0);
+		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
+		Thread thread = new Thread(new Runnable() {
+			public void run() {
+				File file = new File(System.getProperty("user.dir") + "/tmp/");
+				if (file.exists()) {
+					file.delete();
+				}
+				int startingTimeout = 0;
+				List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
+				try {
+					doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, true);
+				} catch (InvalidTransactionException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IllegalStateException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (SecurityException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (NotSupportedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (SystemException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (RollbackException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (XAException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (HeuristicMixedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (HeuristicRollbackException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ExecuteException e) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				}
+			}
+		});
+		thread.start();
+		synchronized (phase2CommitAborted) {
+			if (!phase2CommitAborted.isPhase2CommitAborted()) {
+				phase2CommitAborted.wait();
+			}
+		}
+		tearDown();
+		setup();
 		// Start out at the first server
 		// getLocalServer(3000).doRecoveryManagerScan();
 		// getLocalServer(2000).doRecoveryManagerScan();
@@ -340,5 +412,17 @@ public class SimpleIsolatedServers {
 			return remoteServers[index];
 		}
 
+	}
+
+	private class Phase2CommitAborted {
+		private boolean phase2CommitAborted;
+
+		public boolean isPhase2CommitAborted() {
+			return phase2CommitAborted;
+		}
+
+		public void setPhase2CommitAborted(boolean phase2CommitAborted) {
+			this.phase2CommitAborted = phase2CommitAborted;
+		}
 	}
 }

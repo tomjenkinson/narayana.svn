@@ -46,9 +46,11 @@ import com.arjuna.ats.arjuna.common.CoreEnvironmentBean;
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
 import com.arjuna.ats.arjuna.common.RecoveryEnvironmentBean;
+import com.arjuna.ats.arjuna.coordinator.TransactionReaper;
 import com.arjuna.ats.arjuna.coordinator.TxControl;
 import com.arjuna.ats.arjuna.recovery.RecoveryManager;
 import com.arjuna.ats.arjuna.tools.osb.mbean.ObjStoreBrowser;
+import com.arjuna.ats.internal.arjuna.utils.ManualProcessId;
 import com.arjuna.ats.internal.jbossatx.jta.XAResourceRecordWrappingPluginImpl;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateTransaction;
@@ -131,9 +133,11 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		recoveryEnvironmentBean.setRecoveryActivators(null);
 
 		CoreEnvironmentBean coreEnvironmentBean = com.arjuna.ats.arjuna.common.arjPropertyManager.getCoreEnvironmentBean();
-		coreEnvironmentBean.setSocketProcessIdPort(4714 + nodeName);
+//		coreEnvironmentBean.setSocketProcessIdPort(4714 + nodeName);
 		coreEnvironmentBean.setNodeIdentifier(nodeName);
-		coreEnvironmentBean.setSocketProcessIdMaxPorts(1);
+//		coreEnvironmentBean.setSocketProcessIdMaxPorts(1);
+		coreEnvironmentBean.setProcessImplementationClassName(ManualProcessId.class.getName());
+		coreEnvironmentBean.setPid(coreEnvironmentBean.getNodeIdentifier());
 
 		CoordinatorEnvironmentBean coordinatorEnvironmentBean = com.arjuna.ats.arjuna.common.arjPropertyManager.getCoordinatorEnvironmentBean();
 		coordinatorEnvironmentBean.setEnableStatistics(false);
@@ -143,15 +147,15 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 		ObjectStoreEnvironmentBean actionStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator.getNamedInstance(
 				com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "default");
-		actionStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + nodeName);
+		actionStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta/tx-object-store/" + nodeName);
 
 		ObjectStoreEnvironmentBean stateStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator.getNamedInstance(
 				com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "stateStore");
-		stateStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + nodeName);
+		stateStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta/tx-object-store/" + nodeName);
 
 		ObjectStoreEnvironmentBean communicationStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator
 				.getNamedInstance(com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "communicationStore");
-		communicationStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/tmp/tx-object-store/" + nodeName);
+		communicationStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta/tx-object-store/" + nodeName);
 
 		ObjStoreBrowser objStoreBrowser = new ObjStoreBrowser();
 		Map<String, String> types = new HashMap<String, String>();
@@ -180,7 +184,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		recoveryManagerService.create();
 		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(lookupProvider, nodeName));
 		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(counter, nodeName));
-		
+
 		// recoveryManagerService.start();
 		_recoveryManager = RecoveryManager.manager();
 		RecoveryManager.manager().initialize();
@@ -198,6 +202,12 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		// Field modifiersField = Field.class.getDeclaredField("modifiers");
 		// modifiersField.setAccessible(true);
 		// safetyIntervalMillis.set(null, 0);
+	}
+
+	@Override
+	public void shutdown() throws Exception {
+		recoveryManagerService.stop();
+		TransactionReaper.transactionReaper().terminate(false);
 	}
 
 	@Override
@@ -288,9 +298,9 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			
+
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 		SubordinateTransaction tx = SubordinationManager.getTransactionImporter().getImportedTransaction(xid);
 		return SubordinationManager.getXATerminator().prepare(xid);
@@ -303,7 +313,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			SubordinationManager.getXATerminator().commit(xid, false);
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 
@@ -312,9 +322,9 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			SubordinationManager.getXATerminator().rollback(xid);			
+			SubordinationManager.getXATerminator().rollback(xid);
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 
@@ -327,7 +337,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			Xid[] recovered = SubordinationManager.getXATerminator().recover(flag);
 			if (recovered != null) {
 				for (int i = 0; i < recovered.length; i++) {
-					// Filter out the transactions that are not owned by this parent
+					// Filter out the transactions that are not owned by this
+					// parent
 					if (recovered[i].getFormatId() == formatId && Arrays.equals(gtrid, recovered[i].getGlobalTransactionId())) {
 						toReturn.add(recovered[i]);
 					}
@@ -335,7 +346,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			}
 			return toReturn.toArray(new Xid[0]);
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 
@@ -346,7 +357,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			SubordinationManager.getXATerminator().forget(xid);
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 
 	}
@@ -358,7 +369,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			((XATerminatorImple) SubordinationManager.getXATerminator()).beforeCompletion(xid);
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 

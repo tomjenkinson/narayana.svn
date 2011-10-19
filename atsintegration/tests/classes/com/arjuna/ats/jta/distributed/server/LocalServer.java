@@ -66,4 +66,6 @@ public interface LocalServer {
 	public Xid getCurrentXid() throws SystemException;
 
 	public CompletionCounter getCompletionCounter();
+
+	public void shutdown() throws Exception;
 }

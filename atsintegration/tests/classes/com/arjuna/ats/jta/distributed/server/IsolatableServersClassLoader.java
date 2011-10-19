@@ -39,9 +39,7 @@ public class IsolatableServersClassLoader extends ClassLoader {
 	public IsolatableServersClassLoader(String ignoredPackage, ClassLoader parent) throws SecurityException, NoSuchMethodException, MalformedURLException {
 		super(parent);
 		this.ignoredPackage = ignoredPackage;
-		System.out.println(Thread.currentThread().getContextClassLoader());
 		String property = System.getProperty("java.class.path");
-		System.out.println(property);
 		String[] split = property.split(":");
 		URL[] urls = new URL[split.length];
 		for (int i = 0; i < urls.length; i++) {
@@ -51,7 +49,6 @@ public class IsolatableServersClassLoader extends ClassLoader {
 			} else {
 				urls[i] = new URL("file:" + url + "/");
 			}
-			System.out.println(urls[i]);
 		}
 		this.ucp = new URLClassPath(urls);
 	}
