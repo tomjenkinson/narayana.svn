@@ -56,7 +56,6 @@ import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 import com.arjuna.ats.jbossatx.jta.TransactionManagerService;
 import com.arjuna.ats.jta.common.JTAEnvironmentBean;
 import com.arjuna.jta.distributed.example.TestResourceRecovery;
-import com.arjuna.jta.distributed.example.server.CompletionCounter;
 import com.arjuna.jta.distributed.example.server.DummyRemoteException;
 import com.arjuna.jta.distributed.example.server.LocalServer;
 import com.arjuna.jta.distributed.example.server.LookupProvider;
@@ -69,7 +68,6 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	private TransactionManagerService transactionManagerService;
 	private Map<SubordinateXidImple, TransactionImple> transactions = new HashMap<SubordinateXidImple, TransactionImple>();
 	private RecoveryManager _recoveryManager;
-	private CompletionCounter counter;
 
 	public void initialise(LookupProvider lookupProvider, Integer nodeName) throws CoreEnvironmentBeanException, IOException, SecurityException,
 			NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
@@ -142,7 +140,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		recoveryManagerService = new RecoveryManagerService();
 		recoveryManagerService.create();
 		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(lookupProvider, nodeName));
-		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(counter, nodeName));
+		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(nodeName));
 
 		recoveryManagerService.start();
 
@@ -219,9 +217,9 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			SubordinateTransaction tx = SubordinationManager.getTransactionImporter().getImportedTransaction(xid);
-			return SubordinationManager.getXATerminator().prepare(xid);			
+			return SubordinationManager.getXATerminator().prepare(xid);
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 
@@ -232,7 +230,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			SubordinationManager.getXATerminator().commit(xid, false);
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 
@@ -241,9 +239,9 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			SubordinationManager.getXATerminator().rollback(xid);			
+			SubordinationManager.getXATerminator().rollback(xid);
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 
@@ -256,7 +254,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			Xid[] recovered = SubordinationManager.getXATerminator().recover(flag);
 			if (recovered != null) {
 				for (int i = 0; i < recovered.length; i++) {
-					// Filter out the transactions that are not owned by this parent
+					// Filter out the transactions that are not owned by this
+					// parent
 					if (recovered[i].getFormatId() == formatId && Arrays.equals(gtrid, recovered[i].getGlobalTransactionId())) {
 						toReturn.add(recovered[i]);
 					}
@@ -264,7 +263,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			}
 			return toReturn.toArray(new Xid[0]);
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 
@@ -275,7 +274,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			SubordinationManager.getXATerminator().forget(xid);
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 
 	}
@@ -287,7 +286,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			((XATerminatorImple) SubordinationManager.getXATerminator()).beforeCompletion(xid);
 		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);			
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 

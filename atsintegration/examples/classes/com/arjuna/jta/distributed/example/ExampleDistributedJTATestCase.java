@@ -21,8 +21,6 @@
  */
 package com.arjuna.jta.distributed.example;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -46,7 +44,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
-import com.arjuna.jta.distributed.example.server.CompletionCounter;
 import com.arjuna.jta.distributed.example.server.IsolatableServersClassLoader;
 import com.arjuna.jta.distributed.example.server.LocalServer;
 import com.arjuna.jta.distributed.example.server.LookupProvider;
@@ -83,37 +80,6 @@ public class ExampleDistributedJTATestCase {
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
 
 		// Start out at the first server
-		CompletionCounter counter = new CompletionCounter() {
-			private int commitCount = 0;
-			private int rollbackCount = 0;
-
-			@Override
-			public void incrementCommit() {
-				commitCount++;
-
-			}
-
-			@Override
-			public void incrementRollback() {
-				rollbackCount++;
-			}
-
-			@Override
-			public int getCommitCount() {
-				return commitCount;
-			}
-
-			@Override
-			public int getRollbackCount() {
-				return rollbackCount;
-			}
-
-			@Override
-			public void resetCounters() {
-				commitCount = 0;
-				rollbackCount = 0;
-			}
-		};
 		int totalNodeCount = nodesToFlowTo.size();
 		int startingServer = nodesToFlowTo.remove(0);
 		LocalServer originalServer = getLocalServer(startingServer);
@@ -125,7 +91,7 @@ public class ExampleDistributedJTATestCase {
 
 		Transaction originalTransaction = transactionManager.getTransaction();
 		originalTransaction.registerSynchronization(new TestSynchronization(originalServer.getNodeName()));
-		originalTransaction.enlistResource(new TestResource(counter, originalServer.getNodeName()));
+		originalTransaction.enlistResource(new TestResource(originalServer.getNodeName()));
 
 		if (!nodesToFlowTo.isEmpty()) {
 			Integer nextServerNodeName = nodesToFlowTo.get(0);
@@ -137,7 +103,7 @@ public class ExampleDistributedJTATestCase {
 			Xid currentXid = originalServer.getCurrentXid();
 			originalServer.storeRootTransaction();
 			transactionManager.suspend();
-			boolean proxyRequired = performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid);
+			boolean proxyRequired = performTransactionalWork(nodesToFlowTo, remainingTimeout, currentXid);
 			transactionManager.resume(originalTransaction);
 
 			// Create a proxy for the new server if necessary, this can orphan
@@ -155,12 +121,11 @@ public class ExampleDistributedJTATestCase {
 			originalServer.removeRootTransaction(currentXid);
 		}
 		transactionManager.commit();
-		assertTrue(counter.getCommitCount() == totalNodeCount);
 		Thread.currentThread().setContextClassLoader(classLoader);
 	}
 
-	private boolean performTransactionalWork(CompletionCounter counter, List<Integer> nodesToFlowTo, int remainingTimeout, Xid toMigrate)
-			throws RollbackException, InvalidTransactionException, IllegalStateException, XAException, SystemException, NotSupportedException {
+	private boolean performTransactionalWork(List<Integer> nodesToFlowTo, int remainingTimeout, Xid toMigrate) throws RollbackException,
+			InvalidTransactionException, IllegalStateException, XAException, SystemException, NotSupportedException {
 		Integer currentServerName = nodesToFlowTo.remove(0);
 		LocalServer currentServer = getLocalServer(currentServerName);
 
@@ -172,7 +137,7 @@ public class ExampleDistributedJTATestCase {
 		TransactionManager transactionManager = currentServer.getTransactionManager();
 		Transaction transaction = transactionManager.getTransaction();
 		transaction.registerSynchronization(new TestSynchronization(currentServer.getNodeName()));
-		transaction.enlistResource(new TestResource(counter, currentServer.getNodeName()));
+		transaction.enlistResource(new TestResource(currentServer.getNodeName()));
 
 		if (!nodesToFlowTo.isEmpty()) {
 			Integer nextServerNodeName = nodesToFlowTo.get(0);
@@ -183,7 +148,7 @@ public class ExampleDistributedJTATestCase {
 			// SUSPEND THE TRANSACTION
 			Xid currentXid = currentServer.getCurrentXid();
 			transactionManager.suspend();
-			boolean proxyRequired = performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid);
+			boolean proxyRequired = performTransactionalWork(nodesToFlowTo, remainingTimeout, currentXid);
 			transactionManager.resume(transaction);
 
 			if (proxyRequired) {

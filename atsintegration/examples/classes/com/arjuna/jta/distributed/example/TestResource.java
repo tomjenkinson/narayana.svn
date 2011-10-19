@@ -34,7 +34,6 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.arjuna.common.Uid;
-import com.arjuna.jta.distributed.example.server.CompletionCounter;
 
 public class TestResource implements XAResource {
 	private Xid xid;
@@ -45,15 +44,11 @@ public class TestResource implements XAResource {
 
 	private int serverId;
 
-	private CompletionCounter completionCounter;
-
-	public TestResource(CompletionCounter completionCounter, int serverId) {
-		this.completionCounter = completionCounter;
+	public TestResource(int serverId) {
 		this.serverId = serverId;
 	}
 
-	public TestResource(CompletionCounter completionCounter, int serverId, File file) throws IOException {
-		this.completionCounter = completionCounter;
+	public TestResource(int serverId, File file) throws IOException {
 		this.serverId = serverId;
 		this.file = file;
 		DataInputStream fis = new DataInputStream(new FileInputStream(file));
@@ -114,15 +109,13 @@ public class TestResource implements XAResource {
 
 	public synchronized void commit(Xid id, boolean onePhase) throws XAException {
 		System.out.println("        TestResource (" + serverId + ")      XA_COMMIT  [" + id + "]");
-		if (completionCounter != null) {
-			completionCounter.incrementCommit();
-		}
-		// String absoluteFile = file.getAbsolutePath();
-		// String newName = absoluteFile.substring(0, absoluteFile.length() -
-		// 1);
-		// File file2 = new File(newName);
-		// file.renameTo(file2);
 		if (file != null) {
+			// String absoluteFile = file.getAbsolutePath();
+			// String newName = absoluteFile.substring(0, absoluteFile.length()
+			// -
+			// 1);
+			// File file2 = new File(newName);
+			// file.renameTo(file2);
 			file.delete();
 		}
 		this.xid = null;
@@ -130,9 +123,6 @@ public class TestResource implements XAResource {
 
 	public synchronized void rollback(Xid xid) throws XAException {
 		System.out.println("        TestResource (" + serverId + ")      XA_ROLLBACK[" + xid + "]");
-		if (completionCounter != null) {
-			completionCounter.incrementRollback();
-		}
 		if (file != null) {
 			file.delete();
 		}

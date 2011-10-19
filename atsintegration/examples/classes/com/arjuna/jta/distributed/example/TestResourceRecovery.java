@@ -30,20 +30,18 @@ import javax.transaction.xa.XAResource;
 
 import org.jboss.tm.XAResourceRecovery;
 
-import com.arjuna.jta.distributed.example.server.CompletionCounter;
-
 public class TestResourceRecovery implements XAResourceRecovery {
 
 	private List<TestResource> resources = new ArrayList<TestResource>();
 
-	public TestResourceRecovery(CompletionCounter counter, Integer nodeName) throws IOException {
+	public TestResourceRecovery(Integer nodeName) throws IOException {
 		File file = new File(System.getProperty("user.dir") + "/distributedjta-example/TestResource/" + nodeName + "/");
 		if (file.exists() && file.isDirectory()) {
 			File[] listFiles = file.listFiles();
 			for (int i = 0; i < listFiles.length; i++) {
 				File currentFile = listFiles[i];
 				if (currentFile.getAbsolutePath().endsWith("_")) {
-					resources.add(new TestResource(counter, nodeName, currentFile));
+					resources.add(new TestResource(nodeName, currentFile));
 				}
 			}
 		}
