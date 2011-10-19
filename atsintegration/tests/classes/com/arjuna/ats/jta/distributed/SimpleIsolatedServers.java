@@ -131,7 +131,7 @@ public class SimpleIsolatedServers {
 					Xid currentXid = originalServer.getCurrentXid();
 					originalServer.storeRootTransaction();
 					transactionManager.suspend();
-					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid);
+					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 1, false);
 					transactionManager.resume(originalTransaction);
 					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 					originalTransaction.enlistResource(proxyXAResource);
@@ -142,6 +142,12 @@ public class SimpleIsolatedServers {
 					transactionManager.commit();
 					Thread.currentThread().setContextClassLoader(classLoader);
 				} catch (ExecuteException e) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				} catch (LinkageError t) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
 						phase2CommitAborted.setPhase2CommitAborted(true);
@@ -176,6 +182,84 @@ public class SimpleIsolatedServers {
 			server.doRecoveryManagerScan(true);
 			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
 			assertTrue(server.getCompletionCounter().getRollbackCount() == 1);
+		}
+	}
+
+	@Test
+	@BMScript("leaveorphan")
+	public void testOnePhaseOrphan() throws Exception {
+		assertTrue(getLocalServer(3000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 0);
+		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
+		Thread thread = new Thread(new Runnable() {
+			public void run() {
+				int startingTimeout = 0;
+				try {
+					int startingServer = 1000;
+					LocalServer originalServer = getLocalServer(startingServer);
+					ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+					Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+					TransactionManager transactionManager = originalServer.getTransactionManager();
+					transactionManager.setTransactionTimeout(startingTimeout);
+					transactionManager.begin();
+					Transaction originalTransaction = transactionManager.getTransaction();
+					int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
+					Xid currentXid = originalServer.getCurrentXid();
+					originalServer.storeRootTransaction();
+					transactionManager.suspend();
+					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 2, false);
+					transactionManager.resume(originalTransaction);
+					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
+					originalTransaction.enlistResource(proxyXAResource);
+					originalServer.removeRootTransaction(currentXid);
+					transactionManager.commit();
+					Thread.currentThread().setContextClassLoader(classLoader);
+				} catch (ExecuteException e) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				} catch (LinkageError t) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				} catch (Throwable t) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				}
+			}
+		}, "Orphan-creator");
+		thread.start();
+		synchronized (phase2CommitAborted) {
+			if (!phase2CommitAborted.isPhase2CommitAborted()) {
+				phase2CommitAborted.wait();
+			}
+		}
+		tearDown();
+		setup();
+		{
+
+			LocalServer server = getLocalServer(2000);
+			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
+			assertTrue(server.getCompletionCounter().getRollbackCount() == 0);
+			server.doRecoveryManagerScan(true);
+			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
+			assertTrue(server.getCompletionCounter().getRollbackCount() == 1);
+		}
+		{
+			LocalServer server = getLocalServer(1000);
+			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
+			assertTrue(server.getCompletionCounter().getRollbackCount() == 0);
+			server.doRecoveryManagerScan(true);
+			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
+			assertTrue(server.getCompletionCounter().getRollbackCount() == 0);
 		}
 	}
 
@@ -266,7 +350,7 @@ public class SimpleIsolatedServers {
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
 		transactionManager.suspend();
-		performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid);
+		performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 1, false);
 		transactionManager.resume(originalTransaction);
 		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 		originalTransaction.enlistResource(proxyXAResource);
@@ -290,7 +374,7 @@ public class SimpleIsolatedServers {
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
 		transactionManager.suspend();
-		performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid);
+		performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 1, false);
 		transactionManager.resume(originalTransaction);
 		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 		originalTransaction.enlistResource(proxyXAResource);
@@ -458,7 +542,7 @@ public class SimpleIsolatedServers {
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
 		transactionManager.suspend();
-		performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid);
+		performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid, 1, true);
 		transactionManager.resume(originalTransaction);
 		originalServer.removeRootTransaction(currentXid);
 		if (commit) {
@@ -471,8 +555,9 @@ public class SimpleIsolatedServers {
 		Thread.currentThread().setContextClassLoader(classLoader);
 	}
 
-	private boolean performTransactionalWork(CompletionCounter counter, List<Integer> nodesToFlowTo, int remainingTimeout, Xid toMigrate)
-			throws RollbackException, InvalidTransactionException, IllegalStateException, XAException, SystemException, NotSupportedException {
+	private boolean performTransactionalWork(CompletionCounter counter, List<Integer> nodesToFlowTo, int remainingTimeout, Xid toMigrate,
+			int numberOfResourcesToRegister, boolean addSynchronization) throws RollbackException, InvalidTransactionException, IllegalStateException,
+			XAException, SystemException, NotSupportedException {
 		Integer currentServerName = nodesToFlowTo.remove(0);
 		LocalServer currentServer = getLocalServer(currentServerName);
 
@@ -483,8 +568,12 @@ public class SimpleIsolatedServers {
 		// Perform work on the migrated transaction
 		TransactionManager transactionManager = currentServer.getTransactionManager();
 		Transaction transaction = transactionManager.getTransaction();
-		transaction.registerSynchronization(new TestSynchronization(currentServer.getNodeName()));
-		transaction.enlistResource(new TestResource(counter, currentServer.getNodeName(), false));
+		if (addSynchronization) {
+			transaction.registerSynchronization(new TestSynchronization(currentServer.getNodeName()));
+		}
+		for (int i = 0; i < numberOfResourcesToRegister; i++) {
+			transaction.enlistResource(new TestResource(counter, currentServer.getNodeName(), false));
+		}
 
 		if (!nodesToFlowTo.isEmpty()) {
 			Integer nextServerNodeName = nodesToFlowTo.get(0);
@@ -495,7 +584,8 @@ public class SimpleIsolatedServers {
 			// SUSPEND THE TRANSACTION
 			Xid currentXid = currentServer.getCurrentXid();
 			transactionManager.suspend();
-			boolean proxyRequired = performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid);
+			boolean proxyRequired = performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid, numberOfResourcesToRegister,
+					addSynchronization);
 			transactionManager.resume(transaction);
 
 			// Create a proxy for the new server if necessary, this can orphan

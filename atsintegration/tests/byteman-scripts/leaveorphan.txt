@@ -26,3 +26,48 @@ IF TRUE
 	DO debug("Target neutralized"), 
 	Thread.currentThread().stop()
 ENDRULE
+
+#########################################################################
+RULE Fail insertRecord
+CLASS  com.arjuna.ats.arjuna.coordinator.BasicAction
+METHOD insertRecord
+AT ENTRY
+BIND NOTHING
+IF TRUE
+	DO debug("Target neutralized"), 
+	Thread.currentThread().stop()
+ENDRULE
+
+#########################################################################
+RULE Fail topLevelPrepare
+CLASS  com.arjuna.ats.internal.jta.resources.arjunacore.XAResourceRecord
+METHOD topLevelPrepare
+AT EXIT
+BIND NOTHING
+IF TRUE
+	DO debug("Target neutralized"), 
+	Thread.currentThread().stop()
+ENDRULE
+
+#########################################################################
+RULE Fail topLevelPrepare
+CLASS  com.arjuna.ats.internal.jta.resources.arjunacore.XAResourceRecord
+METHOD topLevelOnePhaseCommit
+AT EXIT
+BIND NOTHING
+IF TRUE
+	DO debug("Target neutralized"), 
+	Thread.currentThread().stop()
+ENDRULE
+
+#########################################################################
+RULE Fail phase2Commit - die die die
+CLASS  com.arjuna.ats.arjuna.coordinator.BasicAction
+METHOD phase2Commit
+AT ENTRY
+BIND NOTHING
+IF TRUE
+	DO debug("Assassinated"),
+	incrementCounter("phase2commit");
+   	Thread.currentThread().stop()
+ENDRULE
