@@ -246,12 +246,12 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public Xid[] propagateRecover(int formatId, byte[] gtrid, int flag) throws XAException, DummyRemoteException {
+	public Xid[] propagateRecover(int formatId, byte[] gtrid) throws XAException, DummyRemoteException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			List<Xid> toReturn = new ArrayList<Xid>();
-			Xid[] recovered = SubordinationManager.getXATerminator().recover(flag);
+			Xid[] recovered = ((XATerminatorImple) SubordinationManager.getXATerminator()).recover();
 			if (recovered != null) {
 				for (int i = 0; i < recovered.length; i++) {
 					// Filter out the transactions that are not owned by this

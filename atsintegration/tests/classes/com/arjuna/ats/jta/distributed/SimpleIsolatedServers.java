@@ -50,6 +50,7 @@ import org.junit.runner.RunWith;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.jta.distributed.server.CompletionCounter;
+import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 import com.arjuna.ats.jta.distributed.server.IsolatableServersClassLoader;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
@@ -82,6 +83,28 @@ public class SimpleIsolatedServers {
 			Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
 			localServers[i].shutdown();
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
+		}
+	}
+
+	/**
+	 * The JCA XATerminator call wont allow intermediary calls to
+	 * XATerminator::recover between TMSTARTSCAN and TMENDSCAN. This is fine for
+	 * distributed JTA.
+	 * 
+	 * @throws XAException
+	 * @throws DummyRemoteException
+	 */
+	@Test
+	public void testSimultaneousRecover() throws XAException, DummyRemoteException {
+		// Simulates different servers attempting to recover the XIDs from the
+		// same server
+		{
+			RemoteServer server = lookupProvider.lookup(2000);
+			server.propagateRecover(0, null);
+		}
+		{
+			RemoteServer server = lookupProvider.lookup(2000);
+			server.propagateRecover(0, null);
 		}
 	}
 
@@ -218,9 +241,6 @@ public class SimpleIsolatedServers {
 		}
 		tearDown();
 		setup();
-		// Start out at the first server
-		// getLocalServer(3000).doRecoveryManagerScan();
-		// getLocalServer(2000).doRecoveryManagerScan();
 		getLocalServer(1000).doRecoveryManagerScan(false);
 
 		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 4);

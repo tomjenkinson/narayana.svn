@@ -233,7 +233,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 
 		if (this.xid != null) {
 			try {
-				recovered = lookupProvider.lookup(remoteServerName).propagateRecover(xid.getFormatId(), xid.getGlobalTransactionId(), flag);
+				recovered = lookupProvider.lookup(remoteServerName).propagateRecover(xid.getFormatId(), xid.getGlobalTransactionId());
 			} catch (DummyRemoteException ce) {
 				throw new XAException(XAException.XA_RETRY);
 			}

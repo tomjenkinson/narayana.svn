@@ -322,6 +322,30 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
         }
 
         // if we are here, then check the object store
+        return recover();
+    }
+    
+    /**
+     * Return a list of indoubt transactions. This may include those
+     * transactions that are currently in-flight and running 2PC and do not need
+     * recovery invoked on them.
+     * 
+     * @param flag
+     *            either XAResource.TMSTARTRSCAN to indicate the start of a
+     *            recovery scan, or XAResource.TMENDRSCAN to indicate the end of
+     *            the recovery scan.
+     * @throws XAException
+     *             thrown if any error occurs.
+     * @return a list of potentially indoubt transactions or <code>null</code>.
+     */
+
+    public synchronized Xid[] recover () throws XAException
+    {
+        /*
+         * Requires going through the objectstore for the states of imported
+         * transactions. Our own crash recovery takes care of transactions
+         * imported via CORBA, Web Services etc.
+         */
 
         Xid[] indoubt = null;
 
