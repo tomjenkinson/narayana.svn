@@ -168,12 +168,13 @@
 # (the number and order of entries depends upon how many and which type of participants
 # are enlisted)
 #
-#   prepare sent for participant XXXXXX
+#   prepare sent for Coordinator engine XXXXXX
 #   prepare received for participant XXXXXX
 #   prepared sent for participant XXXXXX
-#   prepared received for participant XXXXXX
-#   prepare sent for participant XXXXXX
+#   prepare sent for Coordinator engine XXXXXX
 #   prepare received for participant XXXXXX
+#   prepared sent for participant XXXXXX
+#   prepare sent for Coordinator engine XXXXXX
 #   prepare called for pseudo participant XXXXXX
 #   prepare sent for participant XXXXXX
 #   prepare received for participant XXXXXX
@@ -192,12 +193,13 @@
 # After reboot the JVM should exit leaving output in the following format in file
 # testlog.
 #
-#   prepare sent for participant XXXXXX
+#   prepare sent for Coordinator engine XXXXXX
 #   prepare received for participant XXXXXX
 #   prepared sent for participant XXXXXX
-#   prepared received for participant XXXXXX
-#   prepare sent for participant XXXXXX
+#   prepare sent for Coordinator engine XXXXXX
 #   prepare received for participant XXXXXX
+#   prepared sent for participant XXXXXX
+#   prepare sent for Coordinator engine XXXXXX
 #   prepare called for pseudo participant XXXXXX
 #   prepare sent for participant XXXXXX
 #   prepare received for participant XXXXXX
@@ -207,34 +209,33 @@
 #   saved to disk transaction XXXXXX
 #   prepare returned for pseudo participant XXXXXX
 #   JVM exit
-#   created recovered participant engine XXXXXX
-#   created recovered participant engine XXXXXX
-#   created recovered participant engine XXXXXX
-#   created recovered coordinator engine XXXXXX
-#   created recovered coordinator engine XXXXXX
+#   created recovered Participant engine XXXXXX
+#   created recovered Participant engine XXXXXX
+#   created recovered Participant engine XXXXXX
+#   created recovered Coordinator engine XXXXXX
+#   created recovered Coordinator engine XXXXXX
 #   reinstated prepared subordinate transaction XXXXXX
 #
-#   (parallel -- optional and may be repeated depending upon timing)
-#   completed sent for participant P2/P3
-#   completed received for participant P2/P3
 #   (parallel)
-#   completed sent for participant P1
-#   completed received for participant P1
-#   rollback sent for participant P1
-#   rollback received for participant P1
+#   prepared sent for Participant P1
+#   prepared received for Coordinator engine P1'
+#   rollback sent for Coordinator engine P1
+#   rollback received for Participant P1
 #   (parallel)
-#   rollback called for pseudo participant XXXXXX
-#   rollback called for subordinate transaction XXX
-#   rollback sent for Participant XXXXXX
+
+#   rollback called for pseudo-participant XXXXXX
+#   rollback called for subordinate coordinator XXX
+#   rollback sent for Coordinator engine XXXXXX
 #   rollback received for Participant XXXXXX
 #   aborted sent for Participant XXXXXX
-#   aborted received for Participant XXXXXX
-#   rollback sent for Participant XXXXXX
+#   aborted received for Coordinator engine XXXXXX
+#   rollback sent for Coordinator engine XXXXXX
 #   rollback received for Participant XXXXXX
 #   aborted sent for Participant XXXXXX
-#   aborted received for Participant XXXXXX
-#   rollback returned for subordinate transaction XXX
-#   rollback completed for pseudo participant XXXXXX
+#   aborted received for Coordinator engine XXXXXX
+#   rollback returned for subordinate coordinator XXX
+#   rollback completed for pseudo-participant XXXXXX
+
 #   removed transaction XXXXXX
 #   (end parallel)
 #
@@ -301,7 +302,7 @@ ENDRULE
 
 RULE trace receive participant prepared
 CLASS com.arjuna.wst11.messaging.engines.CoordinatorEngine
-METHOD prepared(Notification, MAP, ArjunaContext)
+METHOD prepared(Notification, AddressingProperties, ArjunaContext)
 AT ENTRY
 BIND engine:CoordinatorEngine = $0,
      identifier:String = engine.getId()
@@ -364,7 +365,7 @@ ENDRULE
 
 RULE trace receive Participant aborted
 CLASS com.arjuna.wst11.messaging.engines.CoordinatorEngine
-METHOD aborted(Notification, MAP, ArjunaContext)
+METHOD aborted(Notification, AddressingProperties, ArjunaContext)
 AT ENTRY
 BIND engine:CoordinatorEngine = $0,
      identifier:String = engine.getId()
@@ -396,7 +397,7 @@ ENDRULE
 
 RULE trace send Participant aborted
 CLASS com.arjuna.wst11.messaging.engines.ParticipantEngine
-METHOD sendAborted(boolean)
+METHOD sendAborted()
 AT INVOKE sendAborted
 BIND engine:ParticipantEngine = $0,
      identifier:String = engine.getId()
@@ -481,7 +482,7 @@ ENDRULE
 
 RULE trace Participant send rollback
 CLASS com.arjuna.wst11.messaging.CoordinatorProcessorImpl
-METHOD prepared(Notification, MAP, ArjunaContext)
+METHOD prepared(Notification, AddressingProperties, ArjunaContext)
 AT CALL sendRollback
 BIND identifier:String = $3.getInstanceIdentifier().getInstanceIdentifier()
 IF TRUE
@@ -588,7 +589,7 @@ ENDRULE
 # traces the call.
 
 RULE trace subordinate coordinator close
-CLASS com.arjuna.mwlabs.wscf.model.twophase.arjunacore.subordinate.SubordinateATCoordinator
+CLASS com.arjuna.mwlabs.wscf.model.twophase.arjunacore.subordinate.SubordinateCoordinator
 METHOD rollback
 AT ENTRY
 BIND NOTHING
@@ -603,7 +604,7 @@ ENDRULE
 # traces the call.
 
 RULE trace subordinate coordinator rollback 2
-CLASS com.arjuna.mwlabs.wscf.model.twophase.arjunacore.subordinate.SubordinateATCoordinator
+CLASS com.arjuna.mwlabs.wscf.model.twophase.arjunacore.subordinate.SubordinateCoordinator
 METHOD rollback
 AT EXIT
 BIND NOTHING
@@ -672,18 +673,18 @@ ENDRULE
 # ensures that the JVM exits but only after we have seen all the
 # necessary aborted messages
 
-RULE trace remove committed state and exit JVM
-CLASS com.arjuna.ats.arjuna.coordinator.BasicAction
-METHOD updateState
-AFTER CALL remove_committed
-BIND action : BasicAction = $0,
-     uid  = action.get_uid(),
-     dummy = flag("tx removed")
-IF readCounter("participant deletes") == 3
-DO traceln("log", "JVM exit"),
-   debug("JVM exit"),
-   killJVM()
-ENDRULE
+# RULE trace remove committed state and exit JVM
+# CLASS com.arjuna.ats.arjuna.coordinator.BasicAction
+# METHOD updateState
+# AFTER CALL remove_committed
+# BIND action : BasicAction = $0,
+#      uid  = action.get_uid(),
+#      dummy = flag("tx removed")
+# IF readCounter("participant deletes") == 3
+# DO traceln("log", "JVM exit"),
+#    debug("JVM exit"),
+#    killJVM()
+# ENDRULE
 
 #######################################################################
 # This rule is called when deleting a participant record from the log.
