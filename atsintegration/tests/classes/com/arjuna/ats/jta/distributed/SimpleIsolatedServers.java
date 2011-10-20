@@ -128,12 +128,10 @@ public class SimpleIsolatedServers {
 		// 	lookupProvider.lookup(2000).propagateRecover(1000, TMENDSCAN);
 		// That second call to TMSTARTSCAN would fail
 		{
-			RemoteServer server = lookupProvider.lookup(2000);
-			server.propagateRecover(1000);
+			lookupProvider.lookup(2000).propagateRecover(1000);
 		}
 		{
-			RemoteServer server = lookupProvider.lookup(2000);
-			server.propagateRecover(3000);
+			lookupProvider.lookup(2000).propagateRecover(3000);
 		}
 	}
 
