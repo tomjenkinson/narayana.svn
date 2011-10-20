@@ -29,16 +29,16 @@ public interface RemoteServer {
 
 	public void setOffline(boolean offline);
 
-	public int propagatePrepare(Xid xid) throws XAException, DummyRemoteException;
+	public int prepare(Xid xid) throws XAException, DummyRemoteException;
 
-	public void propagateCommit(Xid xid, boolean onePhase) throws XAException, DummyRemoteException;
+	public void commit(Xid xid, boolean onePhase) throws XAException, DummyRemoteException;
 
-	public void propagateRollback(Xid xid) throws XAException, DummyRemoteException;
+	public void rollback(Xid xid) throws XAException, DummyRemoteException;
 
-	public Xid[] propagateRecover(Integer parentNodeName) throws XAException, DummyRemoteException;
+	public Xid[] recoverFor(Integer parentNodeName) throws XAException, DummyRemoteException;
 
-	public void propagateForget(Xid xid) throws XAException, DummyRemoteException;
+	public void forget(Xid xid) throws XAException, DummyRemoteException;
 
-	public void propagateBeforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException;
+	public void beforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException;
 
 }

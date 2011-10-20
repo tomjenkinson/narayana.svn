@@ -122,18 +122,18 @@ public class SimpleIsolatedServers {
 		// transactions so we pass in our node name instead and call recover in
 		// a single scan
 		// to put it another way, the test used to say:
-		// 	lookupProvider.lookup(2000).propagateRecover(1000, TMSTARTSCAN);
-		// 	lookupProvider.lookup(2000).propagateRecover(3000, TMSTARTSCAN);
-		// 	lookupProvider.lookup(2000).propagateRecover(3000, TMENDSCAN);
-		// 	lookupProvider.lookup(2000).propagateRecover(1000, TMENDSCAN);
+		// 	lookupProvider.lookup(2000).recoverFor(1000, TMSTARTSCAN);
+		// 	lookupProvider.lookup(2000).recoverFor(3000, TMSTARTSCAN);
+		// 	lookupProvider.lookup(2000).recoverFor(3000, TMENDSCAN);
+		// 	lookupProvider.lookup(2000).recoverFor(1000, TMENDSCAN);
 		// That second call to TMSTARTSCAN would fail
 		{
 			// Simulates a remote call *from* node 1000 *to* node 2000
-			lookupProvider.lookup(2000).propagateRecover(1000);
+			lookupProvider.lookup(2000).recoverFor(1000);
 		}
 		{
 			// Simulates a remote call *from* node 3000 *to* node 2000
-			lookupProvider.lookup(2000).propagateRecover(3000);
+			lookupProvider.lookup(2000).recoverFor(3000);
 		}
 	}
 

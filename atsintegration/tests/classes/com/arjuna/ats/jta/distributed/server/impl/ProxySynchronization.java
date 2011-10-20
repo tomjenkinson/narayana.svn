@@ -47,7 +47,7 @@ public class ProxySynchronization implements Synchronization {
 	public void beforeCompletion() {
 		System.out.println("ProxySynchronization (" + localServerName + ":" + remoteServerName + ") beforeCompletion");
 		try {
-			lookupProvider.lookup(remoteServerName).propagateBeforeCompletion(toRegisterAgainst);
+			lookupProvider.lookup(remoteServerName).beforeCompletion(toRegisterAgainst);
 		} catch (XAException e) {
 			e.printStackTrace();
 		} catch (SystemException e) {
