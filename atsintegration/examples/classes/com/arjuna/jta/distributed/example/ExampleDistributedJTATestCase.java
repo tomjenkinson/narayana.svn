@@ -28,7 +28,6 @@ import java.util.List;
 
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
-import javax.transaction.InvalidTransactionException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
@@ -68,8 +67,8 @@ public class ExampleDistributedJTATestCase {
 	}
 
 	@Test
-	public void testMigrateTransaction() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, InvalidTransactionException,
-			XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException {
+	public void testMigrateTransaction() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, XAException,
+			SecurityException, HeuristicMixedException, HeuristicRollbackException, IOException {
 
 		int startingTimeout = 0;
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
@@ -96,30 +95,23 @@ public class ExampleDistributedJTATestCase {
 			// SUSPEND THE TRANSACTION
 			Xid currentXid = originalServer.getCurrentXid();
 			originalServer.storeRootTransaction();
+			XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, nextServerNodeName);
 			transactionManager.suspend();
-			boolean proxyRequired = performTransactionalWork(nodesToFlowTo, remainingTimeout, currentXid);
+			performTransactionalWork(nodesToFlowTo, remainingTimeout, currentXid);
 			transactionManager.resume(originalTransaction);
 
-			// Create a proxy for the new server if necessary, this can orphan
-			// the remote server but XA recovery will handle that on the remote
-			// server
-			// The alternative is to always create a proxy but this is a
-			// performance drain and will result in multiple subordinate
-			// transactions and performance issues
-			if (proxyRequired) {
-				XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), nextServerNodeName);
-				originalTransaction.enlistResource(proxyXAResource);
-				originalTransaction.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, originalServer.getNodeName(),
-						nextServerNodeName, currentXid));
-			}
+			originalTransaction.enlistResource(proxyXAResource);
+			originalTransaction.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, originalServer.getNodeName(),
+					nextServerNodeName, currentXid));
+
 			originalServer.removeRootTransaction(currentXid);
 		}
 		transactionManager.commit();
 		Thread.currentThread().setContextClassLoader(classLoader);
 	}
 
-	private boolean performTransactionalWork(List<Integer> nodesToFlowTo, int remainingTimeout, Xid toMigrate) throws RollbackException,
-			InvalidTransactionException, IllegalStateException, XAException, SystemException, NotSupportedException {
+	private boolean performTransactionalWork(List<Integer> nodesToFlowTo, int remainingTimeout, Xid toMigrate) throws RollbackException, IllegalStateException,
+			XAException, SystemException, NotSupportedException, IOException {
 		Integer currentServerName = nodesToFlowTo.remove(0);
 		LocalServer currentServer = getLocalServer(currentServerName);
 
@@ -141,15 +133,17 @@ public class ExampleDistributedJTATestCase {
 
 			// SUSPEND THE TRANSACTION
 			Xid currentXid = currentServer.getCurrentXid();
+			XAResource proxyXAResource = currentServer.generateProxyXAResource(lookupProvider, nextServerNodeName);
 			transactionManager.suspend();
 			boolean proxyRequired = performTransactionalWork(nodesToFlowTo, remainingTimeout, currentXid);
 			transactionManager.resume(transaction);
 
 			if (proxyRequired) {
-				XAResource proxyXAResource = currentServer.generateProxyXAResource(lookupProvider, currentServer.getNodeName(), nextServerNodeName);
 				transaction.enlistResource(proxyXAResource);
 				transaction.registerSynchronization(currentServer.generateProxySynchronization(lookupProvider, currentServer.getNodeName(), nextServerNodeName,
 						toMigrate));
+			} else {
+				currentServer.cleanupProxyXAResource(proxyXAResource);
 			}
 		}
 

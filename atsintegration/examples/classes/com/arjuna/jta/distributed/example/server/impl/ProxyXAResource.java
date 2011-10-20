@@ -21,12 +21,16 @@
  */
 package com.arjuna.jta.distributed.example.server.impl;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -46,10 +50,10 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 
 	private int transactionTimeout;
 	private Integer remoteServerName = -1;
-	private File file;
+	private Map<Xid, File> map;
 	private Integer localServerName;
 	private LookupProvider lookupProvider;
-	private Xid xid;
+	private File file;
 
 	/**
 	 * Create a new proxy to the remote server.
@@ -58,10 +62,12 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	 * @param localServerName
 	 * @param remoteServerName
 	 */
-	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
+	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, File file) {
 		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
+		this.file = file;
+		map = new HashMap<Xid, File>();
 	}
 
 	/**
@@ -69,38 +75,20 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	 * 
 	 * @param lookupProvider
 	 * @param localServerName
+	 * @param map
+	 * @param remoteServerName
 	 * @param file
 	 * @throws IOException
 	 */
-	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, File file) throws IOException {
+	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, Map<Xid, File> map) throws IOException {
 		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
-		this.file = file;
-		DataInputStream fis = new DataInputStream(new FileInputStream(file));
-		this.remoteServerName = fis.readInt();
-		final int formatId = fis.readInt();
-		int gtrid_length = fis.readInt();
-		final byte[] gtrid = new byte[gtrid_length];
-		fis.read(gtrid, 0, gtrid_length);
-		int bqual_length = fis.readInt();
-		final byte[] bqual = new byte[bqual_length];
-		fis.read(bqual, 0, bqual_length);
-		this.xid = new Xid() {
-			@Override
-			public byte[] getBranchQualifier() {
-				return bqual;
-			}
+		this.remoteServerName = remoteServerName;
+		this.map = map;
+	}
 
-			@Override
-			public int getFormatId() {
-				return formatId;
-			}
-
-			@Override
-			public byte[] getGlobalTransactionId() {
-				return gtrid;
-			}
-		};
+	public void deleteTemporaryFile() {
+		this.file.delete();
 	}
 
 	/**
@@ -109,7 +97,6 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	@Override
 	public void start(Xid xid, int flags) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_START   [" + xid + "]");
-		this.xid = xid;
 	}
 
 	/**
@@ -118,7 +105,6 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	@Override
 	public void end(Xid xid, int flags) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_END     [" + xid + "]");
-		this.xid = null;
 	}
 
 	/**
@@ -130,7 +116,36 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	public synchronized int prepare(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARE [" + xid + "]");
 
-		persistProxy(xid);
+		// Persist a proxy for the remote server this can mean we try to recover
+		// a transaction at a remote server that did not get chance to
+		// prepare but the alternative is to orphan a prepared server
+
+		try {
+			File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + localServerName + "/");
+			dir.mkdirs();
+			File file = new File(dir, new Uid().fileStringForm());
+			file.createNewFile();
+			DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
+			fos.writeInt(remoteServerName);
+			fos.writeInt(xid.getFormatId());
+			fos.writeInt(xid.getGlobalTransactionId().length);
+			fos.write(xid.getGlobalTransactionId());
+			fos.writeInt(xid.getBranchQualifier().length);
+			fos.write(xid.getBranchQualifier());
+
+			if (map.containsKey(xid)) {
+				System.out.println(map.get(xid));
+				map.remove(xid).delete();
+			}
+			if (this.file != null) {
+				this.file.delete();
+			}
+
+			map.put(xid, file);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new XAException(XAException.XAER_RMERR);
+		}
 
 		try {
 			int propagatePrepare = lookupProvider.lookup(remoteServerName).propagatePrepare(xid);
@@ -145,8 +160,6 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	public synchronized void commit(Xid xid, boolean onePhase) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
 
-		persistProxy(xid);
-
 		try {
 			lookupProvider.lookup(remoteServerName).propagateCommit(xid, onePhase);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
@@ -154,6 +167,12 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			throw new XAException(XAException.XA_RETRY);
 		}
 
+		if (map.get(xid) != null) {
+			map.get(xid).delete();
+			map.remove(xid);
+		}
+
+		// THIS CAN ONLY HAPPEN IN 1PC OR ROLLBACK
 		if (file != null) {
 			file.delete();
 		}
@@ -162,8 +181,6 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	@Override
 	public synchronized void rollback(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
-
-		persistProxy(xid);
 
 		try {
 			lookupProvider.lookup(remoteServerName).propagateRollback(xid);
@@ -179,6 +196,12 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			}
 		}
 
+		if (map.get(xid) != null) {
+			map.get(xid).delete();
+			map.remove(xid);
+		}
+
+		// THIS CAN ONLY HAPPEN IN 1PC OR ROLLBACK
 		if (file != null) {
 			file.delete();
 		}
@@ -196,7 +219,6 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	 */
 	@Override
 	public Xid[] recover(int flag) throws XAException {
-		Xid[] recovered = null;
 		if ((flag & XAResource.TMSTARTRSCAN) == XAResource.TMSTARTRSCAN) {
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMSTARTRSCAN]: "
 					+ remoteServerName);
@@ -206,29 +228,50 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 					+ remoteServerName);
 		}
 
-		if (this.xid != null) {
-			try {
-				recovered = lookupProvider.lookup(remoteServerName).propagateRecover(xid.getFormatId(), xid.getGlobalTransactionId());
-			} catch (DummyRemoteException ce) {
-				throw new XAException(XAException.XA_RETRY);
+		List<Xid> toReturn = new ArrayList<Xid>();
+		Xid[] recovered = null;
+		try {
+			recovered = lookupProvider.lookup(remoteServerName).propagateRecover(localServerName);
+		} catch (DummyRemoteException ce) {
+			throw new XAException(XAException.XA_RETRY);
+		}
+
+		List<Xid> arrayList = new ArrayList<Xid>();
+		arrayList.addAll(map.keySet());
+		if (recovered != null) {
+			for (int i = 0; i < recovered.length; i++) {
+				System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") recovered: " + recovered[i]);
+				Iterator<Xid> iterator = map.keySet().iterator();
+				while (iterator.hasNext()) {
+					Xid next = iterator.next();
+					if (Arrays.equals(next.getGlobalTransactionId(), recovered[i].getGlobalTransactionId())) {
+						toReturn.add(next);
+					} else if (!iterator.hasNext()) {
+						toReturn.add(recovered[i]);
+					}
+					arrayList.remove(next);
+				}
+				System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") added: " + toReturn.get(toReturn.size() - 1));
 			}
 		}
 
-		for (int i = 0; i < recovered.length; i++) {
-			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") recovered: " + recovered[i]);
+		// We now know the remote server didn't know about these Xids
+		List<Xid> knownNoneKnownXids = new ArrayList<Xid>();
+		knownNoneKnownXids.addAll(arrayList);
+		Iterator<Xid> iterator = knownNoneKnownXids.iterator();
+		while (iterator.hasNext()) {
+			Xid next = iterator.next();
+			map.remove(next).delete();
 		}
-
-		Xid[] toReturn = null;
 		if ((flag & XAResource.TMSTARTRSCAN) == XAResource.TMSTARTRSCAN) {
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMSTARTRSCAN]: "
 					+ remoteServerName);
-			toReturn = new Xid[] { xid };
 		}
 		if ((flag & XAResource.TMENDRSCAN) == XAResource.TMENDRSCAN) {
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMENDRSCAN]: "
 					+ remoteServerName);
 		}
-		return toReturn;
+		return toReturn.toArray(new Xid[0]);
 	}
 
 	@Override
@@ -295,31 +338,5 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	@Override
 	public String getJndiName() {
 		return "ProxyXAResource: " + localServerName + " " + remoteServerName;
-	}
-
-	private void persistProxy(Xid xid) throws XAException {
-		// Persist a proxy for the remote server this can mean we try to recover
-		// a transaction at a remote server that did not get chance to
-		// prepare but the alternative is to orphan a prepared server
-
-		if (this.file == null) {
-			try {
-				File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + localServerName + "/");
-				dir.mkdirs();
-				File file = new File(dir, new Uid().fileStringForm());
-				file.createNewFile();
-				DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
-				fos.writeInt(remoteServerName);
-				fos.writeInt(xid.getFormatId());
-				fos.writeInt(xid.getGlobalTransactionId().length);
-				fos.write(xid.getGlobalTransactionId());
-				fos.writeInt(xid.getBranchQualifier().length);
-				fos.write(xid.getBranchQualifier());
-				this.file = file;
-			} catch (IOException e) {
-				e.printStackTrace();
-				throw new XAException(XAException.XAER_RMERR);
-			}
-		}
 	}
 }

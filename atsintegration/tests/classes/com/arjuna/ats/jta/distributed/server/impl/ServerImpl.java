@@ -21,7 +21,9 @@
  */
 package com.arjuna.ats.jta.distributed.server.impl;
 
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
@@ -47,6 +49,7 @@ import com.arjuna.ats.arjuna.common.CoreEnvironmentBean;
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
 import com.arjuna.ats.arjuna.common.RecoveryEnvironmentBean;
+import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.arjuna.coordinator.TransactionReaper;
 import com.arjuna.ats.arjuna.coordinator.TxControl;
 import com.arjuna.ats.arjuna.recovery.RecoveryManager;
@@ -296,13 +299,31 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, File file) {
-		return new ProxyXAResource(counter, lookupProvider, localServerName, remoteServerName, file);
+	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, Integer remoteServerName) throws SystemException, IOException {
+
+		// Persist a proxy for the remote server this can mean we try to recover
+		// transactions at a remote server that did not get chance to
+		// prepare but the alternative is to orphan a prepared server
+
+		Xid currentXid = getCurrentXid();
+		File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + getNodeName());
+		dir.mkdirs();
+		File file = new File(dir, new Uid().fileStringForm());
+		file.createNewFile();
+		DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
+		fos.writeInt(remoteServerName);
+		fos.writeInt(currentXid.getFormatId());
+		fos.writeInt(currentXid.getGlobalTransactionId().length);
+		fos.write(currentXid.getGlobalTransactionId());
+		fos.writeInt(currentXid.getBranchQualifier().length);
+		fos.write(currentXid.getBranchQualifier());
+
+		return new ProxyXAResource(counter, lookupProvider, getNodeName(), remoteServerName, file);
 	}
 
 	@Override
-	public void cleanupProxy(XAResource proxyXAResource) {
-		((ProxyXAResource)proxyXAResource).deleteTemporaryFile();
+	public void cleanupProxyXAResource(XAResource proxyXAResource) {
+		((ProxyXAResource) proxyXAResource).deleteTemporaryFile();
 	}
 
 	@Override

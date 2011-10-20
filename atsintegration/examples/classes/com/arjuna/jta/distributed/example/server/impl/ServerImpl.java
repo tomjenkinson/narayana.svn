@@ -21,10 +21,12 @@
  */
 package com.arjuna.jta.distributed.example.server.impl;
 
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,7 @@ import com.arjuna.ats.arjuna.common.CoreEnvironmentBean;
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
 import com.arjuna.ats.arjuna.common.RecoveryEnvironmentBean;
+import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.arjuna.coordinator.TxControl;
 import com.arjuna.ats.arjuna.recovery.RecoveryManager;
 import com.arjuna.ats.arjuna.tools.osb.mbean.ObjStoreBrowser;
@@ -197,8 +200,30 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
-		return new ProxyXAResource(lookupProvider, localServerName, remoteServerName);
+	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, Integer remoteServerName) throws IOException, SystemException {
+		// Persist a proxy for the remote server this can mean we try to recover
+		// transactions at a remote server that did not get chance to
+		// prepare but the alternative is to orphan a prepared server
+
+		Xid currentXid = getCurrentXid();
+		File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + getNodeName());
+		dir.mkdirs();
+		File file = new File(dir, new Uid().fileStringForm());
+		file.createNewFile();
+		DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
+		fos.writeInt(remoteServerName);
+		fos.writeInt(currentXid.getFormatId());
+		fos.writeInt(currentXid.getGlobalTransactionId().length);
+		fos.write(currentXid.getGlobalTransactionId());
+		fos.writeInt(currentXid.getBranchQualifier().length);
+		fos.write(currentXid.getBranchQualifier());
+		
+		return new ProxyXAResource(lookupProvider, nodeName, remoteServerName, file);
+	}
+
+	@Override
+	public void cleanupProxyXAResource(XAResource proxyXAResource) {
+		((ProxyXAResource) proxyXAResource).deleteTemporaryFile();
 	}
 
 	@Override
@@ -246,22 +271,12 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public Xid[] propagateRecover(int formatId, byte[] gtrid) throws XAException, DummyRemoteException {
+	public Xid[] propagateRecover(Integer parentNodeName) throws XAException, DummyRemoteException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			List<Xid> toReturn = new ArrayList<Xid>();
-			Xid[] recovered = ((XATerminatorImple) SubordinationManager.getXATerminator()).recover();
-			if (recovered != null) {
-				for (int i = 0; i < recovered.length; i++) {
-					// Filter out the transactions that are not owned by this
-					// parent
-					if (recovered[i].getFormatId() == formatId && Arrays.equals(gtrid, recovered[i].getGlobalTransactionId())) {
-						toReturn.add(recovered[i]);
-					}
-				}
-			}
-			return toReturn.toArray(new Xid[0]);
+			Xid[] recovered = ((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(parentNodeName);
+			return recovered;
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}

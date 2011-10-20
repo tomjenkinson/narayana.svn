@@ -58,7 +58,9 @@ public interface LocalServer {
 
 	public RemoteServer connectTo();
 
-	public XAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, File file);
+	public XAResource generateProxyXAResource(LookupProvider lookupProvider, Integer remoteServerName) throws SystemException, IOException;
+
+	public void cleanupProxyXAResource(XAResource proxyXAResource);
 
 	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst);
 
@@ -67,6 +69,4 @@ public interface LocalServer {
 	public CompletionCounter getCompletionCounter();
 
 	public void shutdown() throws Exception;
-
-	public void cleanupProxy(XAResource proxyXAResource);
 }
