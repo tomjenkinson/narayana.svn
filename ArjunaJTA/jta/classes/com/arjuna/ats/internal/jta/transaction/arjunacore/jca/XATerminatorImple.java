@@ -43,9 +43,13 @@ import com.arjuna.ats.arjuna.objectstore.RecoveryStore;
 import com.arjuna.ats.arjuna.objectstore.StoreManager;
 import com.arjuna.ats.arjuna.state.InputObjectState;
 import com.arjuna.ats.internal.arjuna.common.UidHelper;
+import com.arjuna.ats.internal.jta.recovery.arjunacore.NodeNameXAResourceOrphanFilter;
 import com.arjuna.ats.internal.jta.resources.spi.XATerminatorExtensions;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.SubordinateAtomicAction;
 import com.arjuna.ats.jta.exceptions.UnexpectedConditionException;
+import com.arjuna.ats.jta.logging.jtaLogger;
+import com.arjuna.ats.jta.xa.XATxConverter;
+import com.arjuna.ats.jta.xa.XidImple;
 
 /**
  * The XATerminator implementation.
@@ -322,7 +326,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
         }
 
         // if we are here, then check the object store
-        return recover();
+        return recover(0);
     }
     
     /**
@@ -330,16 +334,14 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
      * transactions that are currently in-flight and running 2PC and do not need
      * recovery invoked on them.
      * 
-     * @param flag
-     *            either XAResource.TMSTARTRSCAN to indicate the start of a
-     *            recovery scan, or XAResource.TMENDRSCAN to indicate the end of
-     *            the recovery scan.
+     * @param nodeName
+     * 				Only recover transactions for this node (unless set to NodeNameXAResourceOrphanFilter.RECOVER_ALL_NODES)
      * @throws XAException
      *             thrown if any error occurs.
      * @return a list of potentially indoubt transactions or <code>null</code>.
      */
 
-    public synchronized Xid[] recover () throws XAException
+    public synchronized Xid[] doRecover (Integer parentNodeName) throws XAException
     {
         /*
          * Requires going through the objectstore for the states of imported
@@ -379,12 +381,18 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
 
                     if (uid.notEquals(Uid.nullUid()))
                     {
-                        Transaction tx = SubordinationManager
-                                .getTransactionImporter().recoverTransaction(
-                                        uid);
+                    	
+                    	SubordinateAtomicAction saa = new SubordinateAtomicAction(uid, true);
+						if (parentNodeName.equals(NodeNameXAResourceOrphanFilter.RECOVER_ALL_NODES)
+								|| parentNodeName.equals(XATxConverter.getParentNodeName(((XidImple) saa.getXid()).getXID()))) {
+							if (jtaLogger.logger.isDebugEnabled()) {
+								jtaLogger.logger.debug("Found record for " + saa);
+							}
+							Transaction tx = SubordinationManager.getTransactionImporter().recoverTransaction(uid);
 
-                        if (tx != null)
-                            values.push(tx);
+							if (tx != null)
+								values.push(tx);
+						}
                     }
                     else
                         finished = true;
