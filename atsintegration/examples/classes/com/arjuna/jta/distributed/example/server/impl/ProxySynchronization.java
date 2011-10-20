@@ -29,14 +29,19 @@ import javax.transaction.xa.Xid;
 import com.arjuna.jta.distributed.example.server.DummyRemoteException;
 import com.arjuna.jta.distributed.example.server.LookupProvider;
 
+/**
+ * Proxy the before completion call to the remote servers. Unusual for a
+ * synchronization it must be created with a reference to an Xid in order to be
+ * able to propate this information to a remote server.
+ */
 public class ProxySynchronization implements Synchronization {
 
 	private int localServerName;
-	private int remoteServerName;
+	private String remoteServerName;
 	private Xid toRegisterAgainst;
 	private LookupProvider lookupProvider;
 
-	public ProxySynchronization(LookupProvider lookupProvider, int localServerName, int remoteServerName, Xid toRegisterAgainst) {
+	public ProxySynchronization(LookupProvider lookupProvider, Integer localServerName, String remoteServerName, Xid toRegisterAgainst) {
 		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;

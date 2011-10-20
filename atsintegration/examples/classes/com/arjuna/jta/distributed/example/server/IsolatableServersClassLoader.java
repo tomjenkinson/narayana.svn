@@ -30,12 +30,29 @@ import java.util.Map;
 import sun.misc.Resource;
 import sun.misc.URLClassPath;
 
+/**
+ * This classloader will reload copies of classes (except a package that is
+ * configured for ignoring - the interfaces that the root example requires
+ * basically).
+ */
 public class IsolatableServersClassLoader extends ClassLoader {
 
 	private Map<String, Class<?>> clazzMap = new HashMap<String, Class<?>>();
 	private URLClassPath ucp;
 	private String ignoredPackage;
 
+	/**
+	 * Create the classloader.
+	 * 
+	 * @param ignoredPackage
+	 *            This package will be ignored by this classloader and delegated
+	 *            to its parent so that the example testcase can access required
+	 *            interfaces of its test.
+	 * @param parent
+	 * @throws SecurityException
+	 * @throws NoSuchMethodException
+	 * @throws MalformedURLException
+	 */
 	public IsolatableServersClassLoader(String ignoredPackage, ClassLoader parent) throws SecurityException, NoSuchMethodException, MalformedURLException {
 		super(parent);
 		this.ignoredPackage = ignoredPackage;

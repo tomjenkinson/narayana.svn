@@ -25,18 +25,79 @@ import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
+/**
+ * This interface is to simulate most remote calls to a server (except where
+ * classloader separation is used in
+ * <class>ExampelDistributedJTATestCase</class>
+ * 
+ * Most of the calls are fairly innocuous, however two need special explanation.
+ * 
+ * Firstly the before completion takes an XID, check out
+ * <class>ProxySynchronization</class> for more details on that.
+ * 
+ * More interesting is the propagate recover call - see it's Javadoc for
+ * details.
+ */
 public interface RemoteServer {
 
+	/**
+	 * Atypical for a recover call we need to pass over the node name of the
+	 * caller. This will ensure that all Xids for the caller coordinated
+	 * Subordinates are returned.
+	 * 
+	 * @param callingServerNodeName
+	 * @return
+	 * @throws XAException
+	 * @throws DummyRemoteException
+	 */
+	public Xid[] propagateRecover(Integer callingServerNodeName) throws XAException, DummyRemoteException;
+
+	/**
+	 * Relay the propagate completion.
+	 * 
+	 * @param xid
+	 * @throws XAException
+	 * @throws SystemException
+	 * @throws DummyRemoteException
+	 */
+	public void propagateBeforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException;
+
+	/**
+	 * Relay a prepare to the remote side for a specific Xid.
+	 * 
+	 * @param xid
+	 * @return
+	 * @throws XAException
+	 * @throws DummyRemoteException
+	 */
 	public int propagatePrepare(Xid xid) throws XAException, DummyRemoteException;
 
+	/**
+	 * Relay the commit.
+	 * 
+	 * @param xid
+	 * @param onePhase
+	 * @throws XAException
+	 * @throws DummyRemoteException
+	 */
 	public void propagateCommit(Xid xid, boolean onePhase) throws XAException, DummyRemoteException;
 
+	/**
+	 * Relay the rollback
+	 * 
+	 * @param xid
+	 * @throws XAException
+	 * @throws DummyRemoteException
+	 */
 	public void propagateRollback(Xid xid) throws XAException, DummyRemoteException;
 
-	public Xid[] propagateRecover(Integer nodeName) throws XAException, DummyRemoteException;
-
+	/**
+	 * Relay the forget.
+	 * 
+	 * @param xid
+	 * @throws XAException
+	 * @throws DummyRemoteException
+	 */
 	public void propagateForget(Xid xid) throws XAException, DummyRemoteException;
-
-	public void propagateBeforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException;
 
 }

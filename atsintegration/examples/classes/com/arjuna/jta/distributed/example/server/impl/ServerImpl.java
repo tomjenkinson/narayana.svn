@@ -182,10 +182,10 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public void storeRootTransaction() throws SystemException {
-		TransactionImple transaction = ((TransactionImple) transactionManagerService.getTransactionManager().getTransaction());
-		Xid txId = transaction.getTxId();
-		transactions.put(new SubordinateXidImple(txId), transaction);
+	public void storeRootTransaction(Transaction transaction) throws SystemException {
+		TransactionImple transactionI = ((TransactionImple) transaction);
+		Xid txId = transactionI.getTxId();
+		transactions.put(new SubordinateXidImple(txId), transactionI);
 	}
 
 	@Override
@@ -200,24 +200,25 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, Integer remoteServerName) throws IOException, SystemException {
+	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName) throws IOException, SystemException {
 		// Persist a proxy for the remote server this can mean we try to recover
 		// transactions at a remote server that did not get chance to
 		// prepare but the alternative is to orphan a prepared server
 
 		Xid currentXid = getCurrentXid();
-		File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + getNodeName());
+		File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + nodeName);
 		dir.mkdirs();
 		File file = new File(dir, new Uid().fileStringForm());
 		file.createNewFile();
 		DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
-		fos.writeInt(remoteServerName);
+		fos.writeInt(remoteServerName.length());
+		fos.writeBytes(remoteServerName);
 		fos.writeInt(currentXid.getFormatId());
 		fos.writeInt(currentXid.getGlobalTransactionId().length);
 		fos.write(currentXid.getGlobalTransactionId());
 		fos.writeInt(currentXid.getBranchQualifier().length);
 		fos.write(currentXid.getBranchQualifier());
-		
+
 		return new ProxyXAResource(lookupProvider, nodeName, remoteServerName, file);
 	}
 
@@ -227,8 +228,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst) {
-		return new ProxySynchronization(lookupProvider, localServerName, remoteServerName, toRegisterAgainst);
+	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, String remoteServerName, Xid toRegisterAgainst) {
+		return new ProxySynchronization(lookupProvider, nodeName, remoteServerName, toRegisterAgainst);
 	}
 
 	@Override

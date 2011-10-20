@@ -35,6 +35,10 @@ import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.arjuna.common.Uid;
 
+/**
+ * This is a simple TestResource, any knowledge it has of the rest of the
+ * example is purely for debugging. It should be considered a black box.
+ */
 public class TestResource implements XAResource {
 	private Xid xid;
 
@@ -42,14 +46,14 @@ public class TestResource implements XAResource {
 
 	private File file;
 
-	private int serverId;
+	private Integer localServerName;
 
-	public TestResource(int serverId) {
-		this.serverId = serverId;
+	public TestResource(Integer localServerName) {
+		this.localServerName = localServerName;
 	}
 
-	public TestResource(int serverId, File file) throws IOException {
-		this.serverId = serverId;
+	public TestResource(Integer localServerName, File file) throws IOException {
+		this.localServerName = localServerName;
 		this.file = file;
 		DataInputStream fis = new DataInputStream(new FileInputStream(file));
 		final int formatId = fis.readInt();
@@ -79,9 +83,9 @@ public class TestResource implements XAResource {
 	}
 
 	public synchronized int prepare(Xid xid) throws XAException {
-		System.out.println("        TestResource (" + serverId + ")      XA_PREPARE [" + xid + "]");
+		System.out.println("        TestResource (" + localServerName + ")      XA_PREPARE [" + xid + "]");
 
-		File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/TestResource/" + serverId + "/");
+		File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/TestResource/" + localServerName + "/");
 		dir.mkdirs();
 		file = new File(dir, new Uid().fileStringForm() + "_");
 		try {
@@ -108,7 +112,7 @@ public class TestResource implements XAResource {
 	}
 
 	public synchronized void commit(Xid id, boolean onePhase) throws XAException {
-		System.out.println("        TestResource (" + serverId + ")      XA_COMMIT  [" + id + "]");
+		System.out.println("        TestResource (" + localServerName + ")      XA_COMMIT  [" + id + "]");
 		if (file != null) {
 			// String absoluteFile = file.getAbsolutePath();
 			// String newName = absoluteFile.substring(0, absoluteFile.length()
@@ -122,7 +126,7 @@ public class TestResource implements XAResource {
 	}
 
 	public synchronized void rollback(Xid xid) throws XAException {
-		System.out.println("        TestResource (" + serverId + ")      XA_ROLLBACK[" + xid + "]");
+		System.out.println("        TestResource (" + localServerName + ")      XA_ROLLBACK[" + xid + "]");
 		if (file != null) {
 			file.delete();
 		}
@@ -130,11 +134,11 @@ public class TestResource implements XAResource {
 	}
 
 	public void end(Xid xid, int flags) throws XAException {
-		System.out.println("        TestResource (" + serverId + ")      XA_END     [" + xid + "] Flags=" + flags);
+		System.out.println("        TestResource (" + localServerName + ")      XA_END     [" + xid + "] Flags=" + flags);
 	}
 
 	public void forget(Xid xid) throws XAException {
-		System.out.println("        TestResource (" + serverId + ")      XA_FORGET[" + xid + "]");
+		System.out.println("        TestResource (" + localServerName + ")      XA_FORGET[" + xid + "]");
 	}
 
 	public int getTransactionTimeout() throws XAException {
@@ -160,16 +164,16 @@ public class TestResource implements XAResource {
 	public Xid[] recover(int flag) throws XAException {
 		Xid[] toReturn = null;
 		if ((flag & XAResource.TMSTARTRSCAN) == XAResource.TMSTARTRSCAN) {
-			System.out.println("        TestResource (" + serverId + ")      RECOVER[XAResource.TMSTARTRSCAN]: " + serverId);
+			System.out.println("        TestResource (" + localServerName + ")      RECOVER[XAResource.TMSTARTRSCAN]: " + localServerName);
 			if (xid != null) {
 				toReturn = new Xid[] { xid };
 			}
 		}
 		if ((flag & XAResource.TMENDRSCAN) == XAResource.TMENDRSCAN) {
-			System.out.println("        TestResource (" + serverId + ")      RECOVER[XAResource.TMENDRSCAN]: " + serverId);
+			System.out.println("        TestResource (" + localServerName + ")      RECOVER[XAResource.TMENDRSCAN]: " + localServerName);
 		}
 		if (flag == XAResource.TMNOFLAGS) {
-			System.out.println("        TestResource (" + serverId + ")      RECOVER[XAResource.TMENDRSCAN]: " + serverId);
+			System.out.println("        TestResource (" + localServerName + ")      RECOVER[XAResource.TMENDRSCAN]: " + localServerName);
 		}
 		return toReturn;
 	}
@@ -180,6 +184,6 @@ public class TestResource implements XAResource {
 	}
 
 	public void start(Xid xid, int flags) throws XAException {
-		System.out.println("        TestResource (" + serverId + ")      XA_START   [" + xid + "] Flags=" + flags);
+		System.out.println("        TestResource (" + localServerName + ")      XA_START   [" + xid + "] Flags=" + flags);
 	}
 }

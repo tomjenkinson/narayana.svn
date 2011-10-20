@@ -36,20 +36,18 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import org.jboss.tm.XAResourceWrapper;
-
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.jta.distributed.example.server.DummyRemoteException;
 import com.arjuna.jta.distributed.example.server.LookupProvider;
 
 /**
- * I chose for this class to implement XAResourceWrapper so that I can provide a
- * name to the Transaction manager for it to store in its XID.
+ * The XA resource that the transport must provide inorder to proxy directives
+ * from the root transaction coordinator.
  */
-public class ProxyXAResource implements XAResource, XAResourceWrapper {
+public class ProxyXAResource implements XAResource {
 
 	private int transactionTimeout;
-	private Integer remoteServerName = -1;
+	private String remoteServerName = null;
 	private Map<Xid, File> map;
 	private Integer localServerName;
 	private LookupProvider lookupProvider;
@@ -62,7 +60,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	 * @param localServerName
 	 * @param remoteServerName
 	 */
-	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, File file) {
+	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, String remoteServerName, File file) {
 		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
@@ -80,7 +78,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	 * @param file
 	 * @throws IOException
 	 */
-	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, Map<Xid, File> map) throws IOException {
+	public ProxyXAResource(LookupProvider lookupProvider, Integer localServerName, String remoteServerName, Map<Xid, File> map) throws IOException {
 		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
@@ -126,7 +124,9 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			File file = new File(dir, new Uid().fileStringForm());
 			file.createNewFile();
 			DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
-			fos.writeInt(remoteServerName);
+
+			fos.writeInt(remoteServerName.length());
+			fos.writeBytes(remoteServerName);
 			fos.writeInt(xid.getFormatId());
 			fos.writeInt(xid.getGlobalTransactionId().length);
 			fos.write(xid.getGlobalTransactionId());
@@ -305,38 +305,5 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			}
 		}
 		return toReturn;
-	}
-
-	/**
-	 * Not used by the TM.
-	 */
-	@Override
-	public XAResource getResource() {
-		return null;
-	}
-
-	/**
-	 * Not used by the TM.
-	 */
-	@Override
-	public String getProductName() {
-		return null;
-	}
-
-	/**
-	 * Not used by the TM.
-	 */
-	@Override
-	public String getProductVersion() {
-		return null;
-	}
-
-	/**
-	 * This allows the proxy to contain meaningful information in the XID in
-	 * case of failure to recover.
-	 */
-	@Override
-	public String getJndiName() {
-		return "ProxyXAResource: " + localServerName + " " + remoteServerName;
 	}
 }

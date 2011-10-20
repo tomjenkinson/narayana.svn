@@ -30,6 +30,11 @@ import javax.transaction.xa.XAResource;
 
 import org.jboss.tm.XAResourceRecovery;
 
+/**
+ * This is a simple TestResource XAResourceRecovery helper, any knowledge it has
+ * of the rest of the example is purely for debugging. It should be considered a
+ * black box.
+ */
 public class TestResourceRecovery implements XAResourceRecovery {
 
 	private List<TestResource> resources = new ArrayList<TestResource>();

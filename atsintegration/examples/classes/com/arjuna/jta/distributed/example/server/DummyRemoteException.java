@@ -21,8 +21,9 @@
  */
 package com.arjuna.jta.distributed.example.server;
 
+/**
+ * This is a dummy exception - it is not used in the example but is to reinforce
+ * the idea that this example can be considered a simulation of a transport.
+ */
 public class DummyRemoteException extends Exception {
-	public DummyRemoteException(String message) {
-		super(message);
-	}
 }

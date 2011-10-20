@@ -45,13 +45,16 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 
 	public ProxyXAResourceRecovery(LookupProvider lookupProvider, Integer id) throws IOException {
 		File directory = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + id + "/");
-		Map<Integer, Map<Xid, File>> savedData = new HashMap<Integer, Map<Xid, File>>();
+		Map<String, Map<Xid, File>> savedData = new HashMap<String, Map<Xid, File>>();
 		if (directory.exists() && directory.isDirectory()) {
 			File[] listFiles = directory.listFiles();
 			for (int i = 0; i < listFiles.length; i++) {
 				File file = listFiles[i];
 				DataInputStream fis = new DataInputStream(new FileInputStream(file));
-				int remoteServerName = fis.readInt();
+				int read = fis.read();
+				byte[] nameB = new byte[read];
+				fis.read(nameB, 0, read);
+				String remoteServerName = new String(nameB);
 
 				Map<Xid, File> map = savedData.get(remoteServerName);
 				if (map == null) {
@@ -85,9 +88,9 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 				map.put(xid, file);
 			}
 		}
-		Iterator<Integer> iterator = savedData.keySet().iterator();
+		Iterator<String> iterator = savedData.keySet().iterator();
 		while (iterator.hasNext()) {
-			Integer remoteServerName = iterator.next();
+			String remoteServerName = iterator.next();
 			Map<Xid, File> map = savedData.get(remoteServerName);
 			resources.add(new ProxyXAResource(lookupProvider, id, remoteServerName, map));
 		}
