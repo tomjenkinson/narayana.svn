@@ -158,7 +158,7 @@ public class XATxConverter
         return tx;
     }
 
-	public static int getNodeName(XID xid) {
+	public static Integer getNodeName(XID xid) {
 		// Arjuna.XID()
 		// don't check the formatId - it may differ e.g. JTA vs. JTS.
 		if (xid.formatID != FORMAT_ID && xid.formatID != 131072
@@ -176,14 +176,14 @@ public class XATxConverter
 				+ (xid.data[offset + 3] & 0xFF);
 	}
 
-	public static void setSubordinateNodeName(XID theXid, int xaNodeName) {
+	public static void setSubordinateNodeName(XID theXid, Integer xaNodeName) {
 		int offset = theXid.gtrid_length + Uid.UID_SIZE;
 		theXid.data[offset + 0] = (byte) (xaNodeName >>> 24);
 		theXid.data[offset + 1] = (byte) (xaNodeName >>> 16);
 		theXid.data[offset + 2] = (byte) (xaNodeName >>> 8);
 		theXid.data[offset + 3] = (byte) (xaNodeName >>> 0);
 	}
-	public static int getSubordinateNodeName(XID xid) {
+	public static Integer getSubordinateNodeName(XID xid) {
 		// Arjuna.XID()
 		// don't check the formatId - it may differ e.g. JTA vs. JTS.
 		if (xid.formatID != FORMAT_ID && xid.formatID != 131072
@@ -203,7 +203,7 @@ public class XATxConverter
 
 
 
-	public static void setParentNodeName(XID theXid, int parentNodeName) {
+	public static void setParentNodeName(XID theXid, Integer parentNodeName) {
 		int offset = theXid.gtrid_length + Uid.UID_SIZE + 4;
 		theXid.data[offset + 0] = (byte) (parentNodeName >>> 24);
 		theXid.data[offset + 1] = (byte) (parentNodeName >>> 16);
@@ -211,7 +211,7 @@ public class XATxConverter
 		theXid.data[offset + 3] = (byte) (parentNodeName >>> 0);
 		
 	}
-	public static int getParentNodeName(XID xid) {
+	public static Integer getParentNodeName(XID xid) {
 		// Arjuna.XID()
 		// don't check the formatId - it may differ e.g. JTA vs. JTS.
 		if (xid.formatID != FORMAT_ID && xid.formatID != 131072

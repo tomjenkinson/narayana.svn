@@ -22,19 +22,19 @@ public class XATxConverterTest {
 
 		XidImple rootXid = new XidImple(uid, branch, eisName);
 		{
-			assertEquals(XATxConverter.getNodeName(rootXid.getXID()), 1);
+			assertEquals(XATxConverter.getNodeName(rootXid.getXID()), new Integer(1));
 			assertEquals(XATxConverter.getEISName(rootXid.getXID()), eisName);
-			assertEquals(XATxConverter.getSubordinateNodeName(rootXid.getXID()), 0);
-			assertEquals(XATxConverter.getParentNodeName(rootXid.getXID()), 0);
+			assertEquals(XATxConverter.getSubordinateNodeName(rootXid.getXID()), new Integer(0));
+			assertEquals(XATxConverter.getParentNodeName(rootXid.getXID()), new Integer(0));
 		}
 
 		TxControl.setXANodeName(2);
 		XidImple subordinateXid = new XidImple(rootXid, true);
 		{
-			assertEquals(XATxConverter.getNodeName(subordinateXid.getXID()), 1);
+			assertEquals(XATxConverter.getNodeName(subordinateXid.getXID()), new Integer(1));
 			assertEquals(XATxConverter.getEISName(subordinateXid.getXID()), eisName);
-			assertEquals(XATxConverter.getSubordinateNodeName(subordinateXid.getXID()), 2);
-			assertEquals(XATxConverter.getParentNodeName(subordinateXid.getXID()), 1);
+			assertEquals(XATxConverter.getSubordinateNodeName(subordinateXid.getXID()), new Integer(2));
+			assertEquals(XATxConverter.getParentNodeName(subordinateXid.getXID()), new Integer(1));
 		}
 	}
 
@@ -42,10 +42,10 @@ public class XATxConverterTest {
 	public void testForeignXID() {
 		XidImple foreignXidImple = new XidImple(new MyForeignXID());
 
-		assertEquals(XATxConverter.getNodeName(foreignXidImple.getXID()), -1);
+		assertEquals(XATxConverter.getNodeName(foreignXidImple.getXID()), new Integer(-1));
 		assertEquals(XATxConverter.getEISName(foreignXidImple.getXID()), "unknown eis name");
-		assertEquals(XATxConverter.getSubordinateNodeName(foreignXidImple.getXID()), -1);
-		assertEquals(XATxConverter.getParentNodeName(foreignXidImple.getXID()), -1);
+		assertEquals(XATxConverter.getSubordinateNodeName(foreignXidImple.getXID()), new Integer(-1));
+		assertEquals(XATxConverter.getParentNodeName(foreignXidImple.getXID()), new Integer(-1));
 	}
 
 	private class MyForeignXID implements Xid {
