@@ -87,6 +87,21 @@ public class SimpleIsolatedServers {
 		}
 	}
 
+	private static void reboot(Integer serverName) throws Exception {
+		int index = (serverName / 1000) - 1;
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(localServers[index].getClass().getClassLoader());
+		localServers[index].shutdown();
+		Thread.currentThread().setContextClassLoader(contextClassLoader);
+
+		IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.ats.jta.distributed.server", contextClassLoader);
+		localServers[index] = (LocalServer) classLoader.loadClass("com.arjuna.ats.jta.distributed.server.impl.ServerImpl").newInstance();
+		Thread.currentThread().setContextClassLoader(localServers[index].getClass().getClassLoader());
+		localServers[index].initialise(lookupProvider, (index + 1) * 1000);
+		remoteServers[index] = localServers[index].connectTo();
+		Thread.currentThread().setContextClassLoader(contextClassLoader);
+	}
+
 	/**
 	 * The JCA XATerminator call wont allow intermediary calls to
 	 * XATerminator::recover between TMSTARTSCAN and TMENDSCAN. This is fine for
@@ -333,6 +348,107 @@ public class SimpleIsolatedServers {
 		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer(2000).getCompletionCounter().getRollbackCount() == 2);
 
+	}
+
+	@Test
+	@BMScript("leaverunningorphan")
+	public void testRecoverInflightTransaction() throws Exception {
+		final CompletionCounter counter = new CompletionCounter() {
+			private int commitCount = 0;
+			private int rollbackCount = 0;
+
+			@Override
+			public void incrementCommit() {
+				commitCount++;
+
+			}
+
+			@Override
+			public void incrementRollback() {
+				rollbackCount++;
+			}
+
+			@Override
+			public int getCommitCount() {
+				return commitCount;
+			}
+
+			@Override
+			public int getRollbackCount() {
+				return rollbackCount;
+			}
+
+			@Override
+			public void resetCounters() {
+				commitCount = 0;
+				rollbackCount = 0;
+			}
+		};
+
+		assertTrue(getLocalServer(3000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 0);
+		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
+		Thread thread = new Thread(new Runnable() {
+			public void run() {
+				int startingTimeout = 0;
+				try {
+					int startingServer = 1000;
+					LocalServer originalServer = getLocalServer(startingServer);
+					ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+					Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+					TransactionManager transactionManager = originalServer.getTransactionManager();
+					transactionManager.setTransactionTimeout(startingTimeout);
+					transactionManager.begin();
+					Transaction originalTransaction = transactionManager.getTransaction();
+					int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
+					Xid currentXid = originalServer.getCurrentXid();
+					originalServer.storeRootTransaction();
+					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, 2000);
+					transactionManager.suspend();
+					performTransactionalWork(counter, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 2, false);
+					transactionManager.resume(originalTransaction);
+					originalTransaction.enlistResource(proxyXAResource);
+					originalServer.removeRootTransaction(currentXid);
+					transactionManager.commit();
+					Thread.currentThread().setContextClassLoader(classLoader);
+				} catch (ExecuteException e) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				} catch (LinkageError t) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				} catch (Throwable t) {
+					System.err.println("Should be a thread death but cest la vie");
+					synchronized (phase2CommitAborted) {
+						phase2CommitAborted.setPhase2CommitAborted(true);
+						phase2CommitAborted.notify();
+					}
+				}
+			}
+		}, "Orphan-creator");
+		thread.start();
+		synchronized (phase2CommitAborted) {
+			if (!phase2CommitAborted.isPhase2CommitAborted()) {
+				phase2CommitAborted.wait();
+			}
+		}
+		reboot(1000);
+		assertTrue(counter.getCommitCount() == 0);
+		assertTrue(counter.getRollbackCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getRollbackCount() == 0);
+		getLocalServer(1000).doRecoveryManagerScan(true);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getRollbackCount() == 1);
+		assertTrue(counter.getCommitCount() == 0);
+		assertTrue(counter.getRollbackCount() == 2);
 	}
 
 	@Test

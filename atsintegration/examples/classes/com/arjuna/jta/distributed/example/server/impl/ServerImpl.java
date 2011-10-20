@@ -276,7 +276,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			Xid[] recovered = ((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(parentNodeName);
+			// Pass in true so we can recover the inflight transactions for this node
+			Xid[] recovered = ((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(parentNodeName, true);
 			return recovered;
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);

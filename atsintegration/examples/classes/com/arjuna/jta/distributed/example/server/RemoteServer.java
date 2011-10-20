@@ -43,7 +43,9 @@ public interface RemoteServer {
 	/**
 	 * Atypical for a recover call we need to pass over the node name of the
 	 * caller. This will ensure that all Xids for the caller coordinated
-	 * Subordinates are returned.
+	 * Subordinates are returned. Also this method should pass true to the
+	 * XATerminator::recover method so that it will recover the inflight
+	 * transactions for this node
 	 * 
 	 * @param callingServerNodeName
 	 * @return
