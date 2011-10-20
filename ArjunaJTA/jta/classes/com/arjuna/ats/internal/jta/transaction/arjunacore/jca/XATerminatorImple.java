@@ -326,7 +326,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
         }
 
         // if we are here, then check the object store
-        return recover(0);
+        return doRecover(0);
     }
     
     /**
