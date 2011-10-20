@@ -117,15 +117,15 @@ public class SimpleIsolatedServers {
 		// at once this used to fail, but after I changed XATerminatorImple, it
 		// can't fail now doesn't matter if there are Xids or not you see it
 		// used to be done in two passes with a different flag
-		// 	recover(TMSTARTSCAN)/recover(TMENDSCAN)
+		// recover(TMSTARTSCAN)/recover(TMENDSCAN)
 		// but that is for JCA, not us, we have some knowledge of the state of
 		// transactions so we pass in our node name instead and call recover in
 		// a single scan
 		// to put it another way, the test used to say:
-		// 	lookupProvider.lookup(2000).recoverFor(1000, TMSTARTSCAN);
-		// 	lookupProvider.lookup(2000).recoverFor(3000, TMSTARTSCAN);
-		// 	lookupProvider.lookup(2000).recoverFor(3000, TMENDSCAN);
-		// 	lookupProvider.lookup(2000).recoverFor(1000, TMENDSCAN);
+		// lookupProvider.lookup(2000).recoverFor(1000, TMSTARTSCAN);
+		// lookupProvider.lookup(2000).recoverFor(3000, TMSTARTSCAN);
+		// lookupProvider.lookup(2000).recoverFor(3000, TMENDSCAN);
+		// lookupProvider.lookup(2000).recoverFor(1000, TMENDSCAN);
 		// That second call to TMSTARTSCAN would fail
 		{
 			// Simulates a remote call *from* node 1000 *to* node 2000
@@ -363,6 +363,17 @@ public class SimpleIsolatedServers {
 
 	}
 
+	/**
+	 * recoverFor (as it is now known) it first greps the logs for any
+	 * subordinates that are owned by "parentNodeName" then it greps the list of
+	 * currently running transactions to see if any of them are owned by
+	 * "parentNodeName" this is covered by testRecoverInflightTransaction
+	 * basically what can happen is:
+	 * 
+	 * 1. TM1 starts tx 2. propagate to TM2 3. TM1 crashes 4. we need to
+	 * rollback TM2 as it is now orphaned the detail being that as TM2 hasn't
+	 * prepared we cant just grep the logs at TM2 as there wont be one
+	 */
 	@Test
 	@BMScript("leaverunningorphan")
 	public void testRecoverInflightTransaction() throws Exception {
