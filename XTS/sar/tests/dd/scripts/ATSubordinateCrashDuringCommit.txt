@@ -133,7 +133,7 @@
 #    org.jboss.jbossts.xts.servicetests.ServiceURL1
 # if this is not set the value used defaults to
 #    http://localhost:8080/xtstest/xtsservicetest1
-# the test forwards a recursive request for registration in the subordinate tarnsaction
+# the test forwards a recursive request for registration in the subordinate transaction
 # to a second web service whose location is defined by defining a system property:
 #    org.jboss.jbossts.xts.servicetests.ServiceURL2
 # if this is not set the value used defaults to
@@ -145,12 +145,12 @@
 #
 #   prepare received for participant XXXXXX
 #   prepared sent for participant XXXXXX
-#   prepare received for pseudo participant XXXXXX
+#   prepare called for pseudo-participant XXXXXX
+#   prepare completed for pseudo-participant XXXXXX
 #   prepare received for participant XXXXXX
 #   prepare received for participant XXXXXX
-#   prepared sent for participant XXXXXX
-#   prepared sent for participant XXXXXX
-#   prepared sent for pseudo participant XXXXXX
+#   prepared sent for coordinator engine XXXXXX
+#   prepared sent for coordinator engine XXXXXX
 #   JVM exit
 #
 # n.b. there should be at least one prepared message received for each participant
@@ -159,23 +159,14 @@
 # After reboot the JVM should exit leaving output in the following format in file
 # testlog.
 #
-#   prepare sent for participant engine XXXXXX
 #   prepare received for participant XXXXXX
 #   prepared sent for participant XXXXXX
-#   prepared received for participant engine XXXXXX
-#   prepare sent for participant engine XXXXXX
+#   prepare called for pseudo-participant XXXXXX
+#   prepare completed for pseudo-participant XXXXXX
 #   prepare received for participant XXXXXX
-#   prepare called for pseudo participant XXXXXX
-#   prepare sent for participant engine XXXXXX
 #   prepare received for participant XXXXXX
-#   prepared sent for participant XXXXXX
-#   prepared received for participant engine XXXXXX
-#   prepare sent for participant engine XXXXXX
-#   prepare received for participant XXXXXX
-#   prepared sent for participant XXXXXX
-#   prepared received for participant engine XXXXXX
-#   prepare completed for pseudo participant XXXXXX
-#   prepare received for participant XXXXXX
+#   prepared sent for coordinator engine XXXXXX
+#   prepared sent for coordinator engine XXXXXX
 #   JVM exit
 #   created recovered participant engine XXXXXX
 #   created recovered participant engine XXXXXX
@@ -185,24 +176,16 @@
 #   created recovered coordinator engine XXXXXX
 #   created recovered coordinator engine XXXXXX
 #   created recovered coordinator engine XXXXXX
-#   commit sent for participant engine XXXXXX
-#   commit received for participant XXXXXX
-#   committed sent for participant XXXXXX
-#   committed received for participant engine XXXXXX
-#   commit sent for participant engine XXXXXX
-#   commit received for participant XXXXXX
-#   commit called for pseudo participant XXXXXX
-#   commit sent for participant engine XXXXXX
-#   commit received for participant XXXXXX
-#   committed sent for participant XXXXXX
-#   committed received for participant engine XXXXXX
-#   commit sent for participant engine XXXXXX
-#   commit received for participant XXXXXX
-#   committed sent for participant XXXXXX
-#   committed received for participant engine XXXXXX
-#   commit completed for pseudo participant XXXXXX
-#   committed sent for participant XXXXXX
-#   committed received for participant engine XXXXXX
+#   received commit for recovered participant engine XXXXXX
+#   send committed for recovered participant engine XXXXXX
+#   received commit for recovered participant engine XXXXXX
+#   commit called for pseudo-participant XXXXXX
+#   received commit for recovered participant engine XXXXXX
+#   send committed for recovered participant engine XXXXXX
+#   received commit for recovered participant engine XXXXXX
+#   send committed for recovered participant engine XXXXXX
+#   commit completed for pseudo-participant XXXXXX
+#   send committed for recovered participant engine XXXXXX
 #   removed committed transaction XXXXXX
 #   JVM exit
 #
@@ -311,10 +294,10 @@ ENDRULE
 
 #######################################################################
 # This rule is triggered when a subordinate pseudo participant
-# (SubordinateDurable2PCStub) is requested to send a prepared message. It
+# (SubordinateDurable2PCStub) is requested to send a prepare message. It
 # traces the call.
 
-RULE trace subordinate participant stub prepare
+RULE trace subordinate participant stub prepare before
 CLASS com.arjuna.wst11.stub.SubordinateDurable2PCStub
 METHOD prepare
 AT ENTRY
@@ -326,10 +309,10 @@ ENDRULE
 
 #######################################################################
 # This rule is triggered when a subordinate pseudo participant
-# (SubordinateDurable2PCStub) is requested to send a prepared message. It
+# (SubordinateDurable2PCStub) is requested to send a prepare message. It
 # traces the call.
 
-RULE trace subordinate participant stub prepare
+RULE trace subordinate participant stub prepare after
 CLASS com.arjuna.wst11.stub.SubordinateDurable2PCStub
 METHOD prepare
 AFTER INVOKE prepare
@@ -430,7 +413,7 @@ DO debug("send committed for recovered participant engine " + identifier),
 ENDRULE
 
 #######################################################################
-# This rule is triggered when a recovered coordinator engine
+# This rule is triggered when a recovered participant engine
 # (ParticipantEngine) receives a commit message. This
 # happens during replay of a prepared TX from
 # the log. It traces the call.
@@ -527,11 +510,11 @@ ENDRULE
 
 #######################################################################
 # This rule is triggered when a subordinate coordinator
-# (SubordinateCoordinator) is requested to perform a commit. It
+# (SubordinateATCoordinator) is requested to perform a commit. It
 # traces the call.
 
 RULE trace subordinate coordinator commit
-CLASS com.arjuna.mwlabs.wscf.model.twophase.arjunacore.subordinate.SubordinateCoordinator
+CLASS com.arjuna.mwlabs.wscf.model.twophase.arjunacore.subordinate.SubordinateATCoordinator
 METHOD commit
 AT ENTRY
 BIND NOTHING
@@ -542,11 +525,11 @@ ENDRULE
 
 #######################################################################
 # This rule is triggered when a subordinate coordinator
-# (SubordinateCoordinator) is requested to perform a commit. It
+# (SubordinateATCoordinator) is requested to perform a commit. It
 # traces the call.
 
-RULE trace subordinate coordinator commit
-CLASS com.arjuna.mwlabs.wscf.model.twophase.arjunacore.subordinate.SubordinateCoordinator
+RULE trace subordinate coordinator commit 2
+CLASS com.arjuna.mwlabs.wscf.model.twophase.arjunacore.subordinate.SubordinateATCoordinator
 METHOD commit
 AT EXIT
 BIND NOTHING
@@ -583,8 +566,8 @@ ENDRULE
 # It prints a message which can be used to verify that the test has
 # progressed as expected
 
-RULE trace prepared replay
-CLASS org.jboss.jbossts.xts.recovery.coordinator.at.RecoverSubordinateCoordinator
+RULE trace subordinate prepared replay
+CLASS org.jboss.jbossts.xts.recovery.coordinator.at.RecoverySubordinateATCoordinator
 METHOD replayPhase2
 AT INVOKE removeRecoveredCoordinator
 BIND coordinator = $0,
@@ -614,6 +597,7 @@ DO traceln("log", "removed committed transaction " + uid),
 ENDRULE
 
 #######################################################################
+# This rule is triggered when the recovery system deletes the COMMITTED
 # activity from the log for the second time. It ensures that the JVM
 # exits. n.b. it waits for the second delete because both the subordinate
 # tx and the parent tx need to be deleted.
