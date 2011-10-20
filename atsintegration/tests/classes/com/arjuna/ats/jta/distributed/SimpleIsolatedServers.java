@@ -135,10 +135,9 @@ public class SimpleIsolatedServers {
 					Xid currentXid = originalServer.getCurrentXid();
 					originalServer.storeRootTransaction();
 					transactionManager.suspend();
-					persistProxy(originalServer.getNodeName(), 2000, currentXid);
+					XAResource proxyXAResource = initializeProxy(originalServer, 2000, currentXid);
 					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 1, false);
 					transactionManager.resume(originalTransaction);
-					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 					originalTransaction.enlistResource(proxyXAResource);
 					// Needs a second resource to make sure we dont get the one
 					// phase optimization happening
@@ -213,10 +212,9 @@ public class SimpleIsolatedServers {
 					Xid currentXid = originalServer.getCurrentXid();
 					originalServer.storeRootTransaction();
 					transactionManager.suspend();
-					persistProxy(originalServer.getNodeName(), 2000, currentXid);
+					XAResource proxyXAResource = initializeProxy(originalServer, 2000, currentXid);
 					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 2, false);
 					transactionManager.resume(originalTransaction);
-					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 					originalTransaction.enlistResource(proxyXAResource);
 					originalServer.removeRootTransaction(currentXid);
 					transactionManager.commit();
@@ -292,10 +290,9 @@ public class SimpleIsolatedServers {
 					Xid currentXid = originalServer.getCurrentXid();
 					originalServer.storeRootTransaction();
 					transactionManager.suspend();
-					persistProxy(originalServer.getNodeName(), 2000, currentXid);
+					XAResource proxyXAResource = initializeProxy(originalServer, 2000, currentXid);
 					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 2, false);
 					transactionManager.resume(originalTransaction);
-					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 					originalTransaction.enlistResource(proxyXAResource);
 					originalServer.removeRootTransaction(currentXid);
 					transactionManager.commit();
@@ -431,10 +428,9 @@ public class SimpleIsolatedServers {
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
 		transactionManager.suspend();
-		persistProxy(originalServer.getNodeName(), 2000, currentXid);
+		XAResource proxyXAResource = initializeProxy(originalServer, 2000, currentXid);
 		performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 1, false);
 		transactionManager.resume(originalTransaction);
-		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 		originalTransaction.enlistResource(proxyXAResource);
 		originalServer.removeRootTransaction(currentXid);
 		transactionManager.commit();
@@ -456,10 +452,9 @@ public class SimpleIsolatedServers {
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
 		transactionManager.suspend();
-		persistProxy(originalServer.getNodeName(), 2000, currentXid);
+		XAResource proxyXAResource = initializeProxy(originalServer, 2000, currentXid);
 		performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 1, false);
 		transactionManager.resume(originalTransaction);
-		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 		originalTransaction.enlistResource(proxyXAResource);
 		originalTransaction
 				.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, originalServer.getNodeName(), 2000, currentXid));
@@ -550,7 +545,7 @@ public class SimpleIsolatedServers {
 		originalServer.storeRootTransaction();
 		originalTransaction.enlistResource(new TestResource(counter, originalServer.getNodeName(), false));
 		transactionManager.suspend();
-		persistProxy(originalServer.getNodeName(), 2000, currentXid);
+		XAResource proxyXAResource = initializeProxy(originalServer, 2000, currentXid);
 
 		// Migrate a transaction
 		LocalServer currentServer = getLocalServer(2000);
@@ -563,7 +558,6 @@ public class SimpleIsolatedServers {
 
 		// Complete the transaction at the original server
 		transactionManager.resume(originalTransaction);
-		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, originalServer.getNodeName(), 2000);
 		originalTransaction.enlistResource(proxyXAResource);
 		originalServer.removeRootTransaction(currentXid);
 		Thread.currentThread().sleep((subordinateTimeout + 1) * 1000);
@@ -668,7 +662,7 @@ public class SimpleIsolatedServers {
 			Xid currentXid = currentServer.getCurrentXid();
 			transactionManager.suspend();
 
-			persistProxy(currentServer.getNodeName(), nodesToFlowTo.get(0), currentXid);
+			XAResource proxyXAResource = initializeProxy(currentServer, nodesToFlowTo.get(0), currentXid);
 
 			boolean proxyRequired = performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid, numberOfResourcesToRegister,
 					addSynchronization);
@@ -681,10 +675,11 @@ public class SimpleIsolatedServers {
 			// performance drain and will result in multiple subordinate
 			// transactions and performance issues
 			if (proxyRequired) {
-				XAResource proxyXAResource = currentServer.generateProxyXAResource(lookupProvider, currentServer.getNodeName(), nextServerNodeName);
 				transaction.enlistResource(proxyXAResource);
 				transaction.registerSynchronization(currentServer.generateProxySynchronization(lookupProvider, currentServer.getNodeName(), nextServerNodeName,
 						toMigrate));
+			} else {
+				currentServer.cleanupProxy(proxyXAResource);
 			}
 		}
 
@@ -700,24 +695,26 @@ public class SimpleIsolatedServers {
 		return localServers[index];
 	}
 
-	private synchronized void persistProxy(Integer localServerName, Integer remoteServerName, Xid xid) throws IOException {
+	private synchronized XAResource initializeProxy(LocalServer server, Integer remoteServerName, Xid xid) throws IOException {
 		// Persist a proxy for the remote server this can mean we try to recover
 		// transactions at a remote server that did not get chance to
 		// prepare but the alternative is to orphan a prepared server
 
-		File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + localServerName);
+		File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + server.getNodeName());
 		dir.mkdirs();
 		File file = new File(dir, new Uid().fileStringForm());
-		if (!file.exists()) {
-			file.createNewFile();
-			DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
-			fos.writeInt(remoteServerName);
-			fos.writeInt(xid.getFormatId());
-			fos.writeInt(xid.getGlobalTransactionId().length);
-			fos.write(xid.getGlobalTransactionId());
-			fos.writeInt(xid.getBranchQualifier().length);
-			fos.write(xid.getBranchQualifier());
-		}
+		file.createNewFile();
+		DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
+		fos.writeInt(remoteServerName);
+		fos.writeInt(xid.getFormatId());
+		fos.writeInt(xid.getGlobalTransactionId().length);
+		fos.write(xid.getGlobalTransactionId());
+		fos.writeInt(xid.getBranchQualifier().length);
+		fos.write(xid.getBranchQualifier());
+
+		XAResource proxyXAResource = server.generateProxyXAResource(lookupProvider, server.getNodeName(), remoteServerName, file);
+
+		return proxyXAResource;
 	}
 
 	private static class MyLookupProvider implements LookupProvider {

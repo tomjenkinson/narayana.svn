@@ -55,6 +55,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	private Integer localServerName;
 	private LookupProvider lookupProvider;
 	private CompletionCounter completionCounter;
+	private File file;
 
 	/**
 	 * Create a new proxy to the remote server.
@@ -63,11 +64,12 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	 * @param localServerName
 	 * @param remoteServerName
 	 */
-	public ProxyXAResource(CompletionCounter completionCounter, LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
+	public ProxyXAResource(CompletionCounter completionCounter, LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, File file) {
 		this.completionCounter = completionCounter;
 		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
+		this.file = file;
 		map = new HashMap<Xid, File>();
 	}
 
@@ -88,6 +90,10 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
 		this.map = map;
+	}
+
+	public void deleteTemporaryFile() {
+		this.file.delete();
 	}
 
 	/**
@@ -136,6 +142,9 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 				System.out.println(map.get(xid));
 				map.remove(xid).delete();
 			}
+			if (this.file != null) {
+				this.file.delete();
+			}
 
 			map.put(xid, file);
 		} catch (IOException e) {
@@ -167,6 +176,11 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			map.get(xid).delete();
 			map.remove(xid);
 		}
+
+		// THIS CAN ONLY HAPPEN IN 1PC OR ROLLBACK
+		if (file != null) {
+			file.delete();
+		}
 		if (completionCounter != null) {
 			completionCounter.incrementCommit();
 		}
@@ -193,6 +207,11 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 		if (map.get(xid) != null) {
 			map.get(xid).delete();
 			map.remove(xid);
+		}
+
+		// THIS CAN ONLY HAPPEN IN 1PC OR ROLLBACK
+		if (file != null) {
+			file.delete();
 		}
 		if (completionCounter != null) {
 			completionCounter.incrementRollback();

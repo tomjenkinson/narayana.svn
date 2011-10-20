@@ -21,6 +21,7 @@
  */
 package com.arjuna.ats.jta.distributed.server.impl;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
@@ -36,6 +37,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
+import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.jboss.tm.TransactionTimeoutConfiguration;
@@ -289,8 +291,18 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName) {
-		return new ProxyXAResource(counter, lookupProvider, localServerName, remoteServerName);
+	public CompletionCounter getCompletionCounter() {
+		return counter;
+	}
+
+	@Override
+	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, File file) {
+		return new ProxyXAResource(counter, lookupProvider, localServerName, remoteServerName, file);
+	}
+
+	@Override
+	public void cleanupProxy(XAResource proxyXAResource) {
+		((ProxyXAResource)proxyXAResource).deleteTemporaryFile();
 	}
 
 	@Override
@@ -379,10 +391,5 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
-	}
-
-	@Override
-	public CompletionCounter getCompletionCounter() {
-		return counter;
 	}
 }

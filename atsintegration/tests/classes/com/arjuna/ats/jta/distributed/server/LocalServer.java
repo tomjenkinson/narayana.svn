@@ -21,6 +21,7 @@
  */
 package com.arjuna.ats.jta.distributed.server;
 
+import java.io.File;
 import java.io.IOException;
 
 import javax.transaction.InvalidTransactionException;
@@ -57,7 +58,7 @@ public interface LocalServer {
 
 	public RemoteServer connectTo();
 
-	public XAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName);
+	public XAResource generateProxyXAResource(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, File file);
 
 	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst);
 
@@ -66,4 +67,6 @@ public interface LocalServer {
 	public CompletionCounter getCompletionCounter();
 
 	public void shutdown() throws Exception;
+
+	public void cleanupProxy(XAResource proxyXAResource);
 }
