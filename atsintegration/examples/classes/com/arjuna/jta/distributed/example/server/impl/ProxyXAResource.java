@@ -43,6 +43,43 @@ import com.arjuna.jta.distributed.example.server.LookupProvider;
 /**
  * The XA resource that the transport must provide inorder to proxy directives
  * from the root transaction coordinator.
+ * 
+ * One of the key features of the pattern is the Proxy. It will adapt the XID of
+ * the subordinate (which the local transaction manager does not know about) to
+ * an XID that is allocated by the local transaction manager for this spoof XA
+ * resource.
+ * 
+ * This manifests itself in several ways, however most crucially when recover is
+ * called. RemoteServer::recover returns the list of Xids to the proxy and the
+ * proxy presents these to the coordinator (they are filtered at the remote
+ * server so we know this server is responsible for the transaction). Before
+ * they are returned however, the proxy gets them and replaces the remote view
+ * of the XID for a locally known one.
+ * 
+ * During recover, the proxy is checking through the list and replacing ones it
+ * knows about with XIDs the local transaction manager knows about, any it
+ * doesn't know about (due to failure) will not be replaced and therefore get
+ * rolled back - as is right.
+ * 
+ * This is actually one of the key points to be fair basically, the XID that the
+ * remote server knows about, isn't directly one that the local server knows
+ * about, the job of the proxy xa resource is to map the XIDs from the remote
+ * back to locally known ones.
+ * 
+ * As an example, an XID that this proxy might have been allocated would be:
+ * <p>
+ * gtrid UID, rootservernodename
+ * <p>
+ * bqual UID, parentservernodename, thisservernodename
+ * 
+ * The remote view of this would be:
+ * <p>
+ * gtrid sameUID, sameRootservername
+ * <p>
+ * bqual sameUID, thisservernodename, remoteservernodename
+ * 
+ * If we presented the XID from the remote server directly back to the local
+ * server it would roll it back as it does not know about it.
  */
 public class ProxyXAResource implements XAResource {
 
