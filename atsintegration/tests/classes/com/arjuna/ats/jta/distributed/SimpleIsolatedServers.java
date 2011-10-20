@@ -22,10 +22,8 @@
 package com.arjuna.ats.jta.distributed;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -52,7 +50,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
-import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.jta.distributed.server.CompletionCounter;
 import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 import com.arjuna.ats.jta.distributed.server.IsolatableServersClassLoader;
@@ -414,8 +411,9 @@ public class SimpleIsolatedServers {
 	}
 
 	@Test
-	public void testOnePhaseCommit() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, XAException, SecurityException,
-			HeuristicMixedException, HeuristicRollbackException, IOException {
+	public void testOnePhaseCommit() throws Exception {
+		tearDown();
+		setup();
 		int startingServer = 1000;
 		LocalServer originalServer = getLocalServer(startingServer);
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -429,17 +427,24 @@ public class SimpleIsolatedServers {
 		originalServer.storeRootTransaction();
 		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, 2000);
 		transactionManager.suspend();
-		performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 1, false);
+		performTransactionalWork(getLocalServer(2000).getCompletionCounter(), new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout,
+				currentXid, 1, false);
 		transactionManager.resume(originalTransaction);
 		originalTransaction.enlistResource(proxyXAResource);
 		originalServer.removeRootTransaction(currentXid);
 		transactionManager.commit();
 		Thread.currentThread().setContextClassLoader(classLoader);
+
+		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 1);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 1);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getRollbackCount() == 0);
 	}
 
 	@Test
-	public void testUnPreparedRollback() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, XAException,
-			SecurityException, HeuristicMixedException, HeuristicRollbackException, IOException {
+	public void testUnPreparedRollback() throws Exception {
+		tearDown();
+		setup();
 		int startingServer = 1000;
 		LocalServer originalServer = getLocalServer(startingServer);
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -453,7 +458,8 @@ public class SimpleIsolatedServers {
 		originalServer.storeRootTransaction();
 		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, 2000);
 		transactionManager.suspend();
-		performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 1, false);
+		performTransactionalWork(getLocalServer(2000).getCompletionCounter(), new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout,
+				currentXid, 1, false);
 		transactionManager.resume(originalTransaction);
 		originalTransaction.enlistResource(proxyXAResource);
 		originalTransaction
@@ -461,6 +467,11 @@ public class SimpleIsolatedServers {
 		originalServer.removeRootTransaction(currentXid);
 		transactionManager.rollback();
 		Thread.currentThread().setContextClassLoader(classLoader);
+
+		assertTrue(getLocalServer(1000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getCommitCount() == 0);
+		assertTrue(getLocalServer(2000).getCompletionCounter().getRollbackCount() == 1);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getRollbackCount() == 1);
 	}
 
 	@Test
@@ -497,43 +508,11 @@ public class SimpleIsolatedServers {
 	}
 
 	@Test
-	public void testMigrateTransactionSubordinateTimeout() throws NotSupportedException, SystemException, IllegalStateException, RollbackException,
-			XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException, InterruptedException, IOException {
+	public void testMigrateTransactionSubordinateTimeout() throws Exception {
+		tearDown();
+		setup();
 		int rootTimeout = 10000;
 		int subordinateTimeout = 1;
-
-		// Start out at the first server
-		CompletionCounter counter = new CompletionCounter() {
-			private int commitCount = 0;
-			private int rollbackCount = 0;
-
-			@Override
-			public void incrementCommit() {
-				commitCount++;
-
-			}
-
-			@Override
-			public void incrementRollback() {
-				rollbackCount++;
-			}
-
-			@Override
-			public int getCommitCount() {
-				return commitCount;
-			}
-
-			@Override
-			public int getRollbackCount() {
-				return rollbackCount;
-			}
-
-			@Override
-			public void resetCounters() {
-				commitCount = 0;
-				rollbackCount = 0;
-			}
-		};
 		LocalServer originalServer = getLocalServer(1000);
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
@@ -543,7 +522,7 @@ public class SimpleIsolatedServers {
 		Transaction originalTransaction = transactionManager.getTransaction();
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
-		originalTransaction.enlistResource(new TestResource(counter, originalServer.getNodeName(), false));
+		originalTransaction.enlistResource(new TestResource(originalServer.getCompletionCounter(), originalServer.getNodeName(), false));
 		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, 2000);
 		transactionManager.suspend();
 
@@ -552,7 +531,8 @@ public class SimpleIsolatedServers {
 		ClassLoader parentsClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(currentServer.getClass().getClassLoader());
 		currentServer.getAndResumeTransaction(subordinateTimeout, currentXid);
-		currentServer.getTransactionManager().getTransaction().enlistResource(new TestResource(counter, currentServer.getNodeName(), false));
+		currentServer.getTransactionManager().getTransaction()
+				.enlistResource(new TestResource(currentServer.getCompletionCounter(), currentServer.getNodeName(), false));
 		currentServer.getTransactionManager().suspend();
 		Thread.currentThread().setContextClassLoader(parentsClassLoader);
 
@@ -563,12 +543,14 @@ public class SimpleIsolatedServers {
 		Thread.currentThread().sleep((subordinateTimeout + 1) * 1000);
 		try {
 			transactionManager.commit();
+			fail("Did not rollback");
 		} catch (RollbackException rbe) {
 			// GOOD!
-			assertTrue(counter.getRollbackCount() == 2);
 		} finally {
 			Thread.currentThread().setContextClassLoader(classLoader);
 		}
+		assertTrue(getLocalServer(2000).getCompletionCounter().getRollbackCount() == 1);
+		assertTrue(getLocalServer(1000).getCompletionCounter().getRollbackCount() == 2);
 	}
 
 	private void doRecursiveTransactionalWork(int startingTimeout, List<Integer> nodesToFlowTo, boolean commit) throws NotSupportedException, SystemException,
