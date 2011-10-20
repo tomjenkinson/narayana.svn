@@ -350,7 +350,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
      * @return a list of potentially indoubt transactions or <code>null</code>.
      */
 
-    public synchronized Xid[] doRecover (Integer parentNodeName, boolean recoverInflightTransactions) throws XAException
+    public synchronized Xid[] doRecover (Integer parentNodeName, boolean recoverInflightTransactionsUnpreparedTransactions) throws XAException
     {
         /*
          * Requires going through the objectstore for the states of imported
@@ -410,7 +410,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
                 while (!finished);
 
                 
-				if (recoverInflightTransactions) {
+				if (recoverInflightTransactionsUnpreparedTransactions) {
 					Set<SubordinateXidImple> inflightXids = ((TransactionImporterImple) SubordinationManager.getTransactionImporter()).getInflightXids();
 					Iterator<SubordinateXidImple> iterator = inflightXids.iterator();
 					while (iterator.hasNext()) {
