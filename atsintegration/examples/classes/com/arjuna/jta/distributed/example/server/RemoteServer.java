@@ -52,7 +52,7 @@ public interface RemoteServer {
 	 * @throws XAException
 	 * @throws DummyRemoteException
 	 */
-	public Xid[] propagateRecover(Integer callingServerNodeName) throws XAException, DummyRemoteException;
+	public Xid[] recoverFor(Integer callingServerNodeName) throws XAException, DummyRemoteException;
 
 	/**
 	 * Relay the propagate completion.
@@ -62,7 +62,7 @@ public interface RemoteServer {
 	 * @throws SystemException
 	 * @throws DummyRemoteException
 	 */
-	public void propagateBeforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException;
+	public void beforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException;
 
 	/**
 	 * Relay a prepare to the remote side for a specific Xid.
@@ -72,7 +72,7 @@ public interface RemoteServer {
 	 * @throws XAException
 	 * @throws DummyRemoteException
 	 */
-	public int propagatePrepare(Xid xid) throws XAException, DummyRemoteException;
+	public int prepare(Xid xid) throws XAException, DummyRemoteException;
 
 	/**
 	 * Relay the commit.
@@ -82,7 +82,7 @@ public interface RemoteServer {
 	 * @throws XAException
 	 * @throws DummyRemoteException
 	 */
-	public void propagateCommit(Xid xid, boolean onePhase) throws XAException, DummyRemoteException;
+	public void commit(Xid xid, boolean onePhase) throws XAException, DummyRemoteException;
 
 	/**
 	 * Relay the rollback
@@ -91,7 +91,7 @@ public interface RemoteServer {
 	 * @throws XAException
 	 * @throws DummyRemoteException
 	 */
-	public void propagateRollback(Xid xid) throws XAException, DummyRemoteException;
+	public void rollback(Xid xid) throws XAException, DummyRemoteException;
 
 	/**
 	 * Relay the forget.
@@ -100,6 +100,6 @@ public interface RemoteServer {
 	 * @throws XAException
 	 * @throws DummyRemoteException
 	 */
-	public void propagateForget(Xid xid) throws XAException, DummyRemoteException;
+	public void forget(Xid xid) throws XAException, DummyRemoteException;
 
 }

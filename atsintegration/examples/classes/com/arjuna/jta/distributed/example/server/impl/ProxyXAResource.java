@@ -148,7 +148,7 @@ public class ProxyXAResource implements XAResource {
 		}
 
 		try {
-			int propagatePrepare = lookupProvider.lookup(remoteServerName).propagatePrepare(xid);
+			int propagatePrepare = lookupProvider.lookup(remoteServerName).prepare(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARED");
 			return propagatePrepare;
 		} catch (DummyRemoteException ce) {
@@ -161,7 +161,7 @@ public class ProxyXAResource implements XAResource {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
 
 		try {
-			lookupProvider.lookup(remoteServerName).propagateCommit(xid, onePhase);
+			lookupProvider.lookup(remoteServerName).commit(xid, onePhase);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
@@ -183,7 +183,7 @@ public class ProxyXAResource implements XAResource {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
 
 		try {
-			lookupProvider.lookup(remoteServerName).propagateRollback(xid);
+			lookupProvider.lookup(remoteServerName).rollback(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
@@ -231,7 +231,7 @@ public class ProxyXAResource implements XAResource {
 		List<Xid> toReturn = new ArrayList<Xid>();
 		Xid[] recovered = null;
 		try {
-			recovered = lookupProvider.lookup(remoteServerName).propagateRecover(localServerName);
+			recovered = lookupProvider.lookup(remoteServerName).recoverFor(localServerName);
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
 		}
@@ -278,7 +278,7 @@ public class ProxyXAResource implements XAResource {
 	public void forget(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGET  [" + xid + "]");
 		try {
-			lookupProvider.lookup(remoteServerName).propagateForget(xid);
+			lookupProvider.lookup(remoteServerName).forget(xid);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGETED[" + xid + "]");
 		} catch (DummyRemoteException ce) {
 			throw new XAException(XAException.XA_RETRY);
