@@ -66,8 +66,6 @@ import com.arjuna.ats.jta.distributed.server.DummyRemoteException;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 import com.arjuna.ats.jta.distributed.server.RemoteServer;
-import com.arjuna.ats.jta.xa.XATxConverter;
-import com.arjuna.ats.jta.xa.XidImple;
 
 public class ServerImpl implements LocalServer, RemoteServer {
 
@@ -353,19 +351,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			List<Xid> toReturn = new ArrayList<Xid>();
-			Xid[] recovered = ((XATerminatorImple) SubordinationManager.getXATerminator()).recover();
-			if (recovered != null) {
-				for (int i = 0; i < recovered.length; i++) {
-					// Filter out the transactions that are not owned by this
-					// parent
-					if ((recovered[i].getFormatId() == XATxConverter.FORMAT_ID && parentNodeName == XATxConverter.getParentNodeName(((XidImple) recovered[i])
-							.getXID()))) {
-						toReturn.add(recovered[i]);
-					}
-				}
-			}
-			return toReturn.toArray(new Xid[0]);
+			Xid[] recovered = ((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(parentNodeName);
+			return recovered;
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}

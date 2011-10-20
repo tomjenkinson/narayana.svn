@@ -63,6 +63,7 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 				int gtrid_length = fis.readInt();
 				final byte[] gtrid = new byte[gtrid_length];
 				fis.read(gtrid, 0, gtrid_length);
+
 				int bqual_length = fis.readInt();
 				final byte[] bqual = new byte[bqual_length];
 				fis.read(bqual, 0, bqual_length);
