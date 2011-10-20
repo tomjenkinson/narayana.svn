@@ -113,7 +113,20 @@ public class SimpleIsolatedServers {
 	@Test
 	public void testSimultaneousRecover() throws XAException, DummyRemoteException {
 		// Simulates different servers attempting to recover the XIDs from the
-		// same server
+		// same server basically XATerminator::recover doesn't allow two calls
+		// at once this used to fail, but after I changed XATerminatorImple, it
+		// can't fail now doesn't matter if there are Xids or not you see it
+		// used to be done in two passes with a different flag
+		// 	recover(TMSTARTSCAN)/recover(TMENDSCAN)
+		// but that is for JCA, not us, we have some knowledge of the state of
+		// transactions so we pass in our node name instead and call recover in
+		// a single scan
+		// to put it another way, the test used to say:
+		// 	lookupProvider.lookup(2000).propagateRecover(1000, TMSTARTSCAN);
+		// 	lookupProvider.lookup(2000).propagateRecover(3000, TMSTARTSCAN);
+		// 	lookupProvider.lookup(2000).propagateRecover(3000, TMENDSCAN);
+		// 	lookupProvider.lookup(2000).propagateRecover(1000, TMENDSCAN);
+		// That second call to TMSTARTSCAN would fail
 		{
 			RemoteServer server = lookupProvider.lookup(2000);
 			server.propagateRecover(1000);
