@@ -31,6 +31,8 @@
 
 package com.arjuna.ats.internal.jta.transaction.arjunacore.jca;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.transaction.SystemException;
@@ -93,7 +95,7 @@ public class TransactionImporterImple implements TransactionImporter
 		{
 			imported = new TransactionImple(timeout, xid);
 			
-			_transactions.put(new SubordinateXidImple(xid), imported);
+			_transactions.put(new SubordinateXidImple(imported.baseXid()), imported);
 		}
 
 		return imported;
@@ -205,6 +207,13 @@ public class TransactionImporterImple implements TransactionImporter
 			throw new IllegalArgumentException();
 
 		_transactions.remove(new SubordinateXidImple(xid));
+	}
+	
+	public Set<SubordinateXidImple> getInflightXids() {
+		Set<SubordinateXidImple> keySet = _transactions.keySet();
+		Set<SubordinateXidImple> toReturn = new HashSet<SubordinateXidImple>();
+		toReturn.addAll(keySet);
+		return toReturn;
 	}
 
 	private static ConcurrentHashMap<SubordinateXidImple, SubordinateTransaction> _transactions = new ConcurrentHashMap<SubordinateXidImple, SubordinateTransaction>();

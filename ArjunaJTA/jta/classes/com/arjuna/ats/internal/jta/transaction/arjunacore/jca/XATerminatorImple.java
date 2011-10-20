@@ -32,10 +32,18 @@
 package com.arjuna.ats.internal.jta.transaction.arjunacore.jca;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.Stack;
 
-import javax.transaction.*;
-import javax.transaction.xa.*;
+import javax.transaction.HeuristicCommitException;
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import javax.transaction.xa.XAException;
+import javax.transaction.xa.XAResource;
+import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.arjuna.coordinator.TwoPhaseOutcome;
@@ -46,6 +54,7 @@ import com.arjuna.ats.internal.arjuna.common.UidHelper;
 import com.arjuna.ats.internal.jta.recovery.arjunacore.NodeNameXAResourceOrphanFilter;
 import com.arjuna.ats.internal.jta.resources.spi.XATerminatorExtensions;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.SubordinateAtomicAction;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.TransactionImple;
 import com.arjuna.ats.jta.exceptions.UnexpectedConditionException;
 import com.arjuna.ats.jta.logging.jtaLogger;
 import com.arjuna.ats.jta.xa.XATxConverter;
@@ -326,7 +335,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
         }
 
         // if we are here, then check the object store
-        return doRecover(0);
+        return doRecover(0, false);
     }
     
     /**
@@ -341,7 +350,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
      * @return a list of potentially indoubt transactions or <code>null</code>.
      */
 
-    public synchronized Xid[] doRecover (Integer parentNodeName) throws XAException
+    public synchronized Xid[] doRecover (Integer parentNodeName, boolean recoverInflightTransactions) throws XAException
     {
         /*
          * Requires going through the objectstore for the states of imported
@@ -361,7 +370,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
             if (recoveryStore.allObjUids(SubordinateAtomicAction.getType(), states)
                     && (states.notempty()))
             {
-                Stack values = new Stack();
+                Stack<Xid> values = new Stack<Xid>();
                 boolean finished = false;
 
                 do
@@ -388,10 +397,10 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
 							if (jtaLogger.logger.isDebugEnabled()) {
 								jtaLogger.logger.debug("Found record for " + saa);
 							}
-							Transaction tx = SubordinationManager.getTransactionImporter().recoverTransaction(uid);
+							TransactionImple tx = (TransactionImple)SubordinationManager.getTransactionImporter().recoverTransaction(uid);
 
 							if (tx != null)
-								values.push(tx);
+								values.push(tx.baseXid());
 						}
                     }
                     else
@@ -400,6 +409,19 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
                 }
                 while (!finished);
 
+                
+				if (recoverInflightTransactions) {
+					Set<SubordinateXidImple> inflightXids = ((TransactionImporterImple) SubordinationManager.getTransactionImporter()).getInflightXids();
+					Iterator<SubordinateXidImple> iterator = inflightXids.iterator();
+					while (iterator.hasNext()) {
+						SubordinateXidImple next = iterator.next();
+						if (parentNodeName.equals(NodeNameXAResourceOrphanFilter.RECOVER_ALL_NODES)
+								|| parentNodeName.equals(XATxConverter.getParentNodeName(next.getXID()))) {
+							values.push(next);
+						}
+					}
+				}
+                
                 if (values.size() > 0)
                 {
                     int index = 0;
@@ -408,10 +430,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
 
                     while (!values.empty())
                     {
-                        com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.TransactionImple tx = (com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.TransactionImple) values
-                                .pop();
-
-                        indoubt[index] = tx.baseXid();
+                        indoubt[index] = values.pop();
                         index++;
                     }
                 }
