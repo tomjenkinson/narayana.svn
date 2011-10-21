@@ -156,7 +156,7 @@ public class ProxyXAResource implements XAResource {
 		// prepare but the alternative is to orphan a prepared server
 
 		try {
-			File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + localServerName + "/");
+			File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/ProxyXAResource/" + localServerName + "/");
 			dir.mkdirs();
 			File file = new File(dir, new Uid().fileStringForm());
 			file.createNewFile();

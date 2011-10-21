@@ -206,7 +206,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		// prepare but the alternative is to orphan a prepared server
 
 		Xid currentXid = getCurrentXid();
-		File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + nodeName);
+		File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/ProxyXAResource/" + nodeName);
 		dir.mkdirs();
 		File file = new File(dir, new Uid().fileStringForm());
 		file.createNewFile();

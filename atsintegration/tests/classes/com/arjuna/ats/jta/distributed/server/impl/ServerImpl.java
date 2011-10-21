@@ -272,7 +272,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public long getTimeLeftBeforeTransactionTimeout() throws RollbackException {
-		return ((TransactionTimeoutConfiguration) transactionManagerService.getTransactionManager()).getTimeLeftBeforeTransactionTimeout(false);
+		return ((TransactionTimeoutConfiguration) transactionManagerService.getTransactionManager()).getTimeLeftBeforeTransactionTimeout(true);
 	}
 
 	@Override

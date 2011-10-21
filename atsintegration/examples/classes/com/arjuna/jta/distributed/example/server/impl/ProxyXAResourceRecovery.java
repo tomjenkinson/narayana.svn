@@ -44,7 +44,7 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 	private List<ProxyXAResource> resources = new ArrayList<ProxyXAResource>();
 
 	public ProxyXAResourceRecovery(LookupProvider lookupProvider, Integer id) throws IOException {
-		File directory = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + id + "/");
+		File directory = new File(System.getProperty("user.dir") + "/distributedjta-example/ProxyXAResource/" + id + "/");
 		Map<String, Map<Xid, File>> savedData = new HashMap<String, Map<Xid, File>>();
 		if (directory.exists() && directory.isDirectory()) {
 			File[] listFiles = directory.listFiles();
