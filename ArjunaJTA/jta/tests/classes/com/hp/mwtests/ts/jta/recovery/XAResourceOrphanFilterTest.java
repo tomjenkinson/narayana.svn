@@ -55,7 +55,7 @@ public class XAResourceOrphanFilterTest
 
         List<Integer> recoveryNodes = new LinkedList<Integer>();
         recoveryNodes.add(1);
-        jtaPropertyManager.getJTAEnvironmentBean().setXaRecoveryNodes(recoveryNodes);
+        jtaPropertyManager.getJTAEnvironmentBean().setXaRecoveryNodesImpl(recoveryNodes);
 
         int notRecoverableNodeName =2;
         TxControl.setXANodeName(notRecoverableNodeName);
@@ -71,7 +71,7 @@ public class XAResourceOrphanFilterTest
 
         recoveryNodes.clear();
         recoveryNodes.add(NodeNameXAResourceOrphanFilter.RECOVER_ALL_NODES);
-        jtaPropertyManager.getJTAEnvironmentBean().setXaRecoveryNodes(recoveryNodes);
+        jtaPropertyManager.getJTAEnvironmentBean().setXaRecoveryNodesImpl(recoveryNodes);
 
         assertEquals(XAResourceOrphanFilter.Vote.ROLLBACK, orphanFilter.checkXid(jtaNotRecoverableNodeName));
         assertEquals(XAResourceOrphanFilter.Vote.ROLLBACK, orphanFilter.checkXid(jtaRecoverableNodeName));

@@ -117,6 +117,28 @@ public class CoreEnvironmentBean implements CoreEnvironmentBeanMBean
     }
 
     /**
+     * Sets the node identifier. Should be uniq amongst all instances that share resource managers or an objectstore. It should be set as the String value of an integer.
+     *
+     * @param nodeIdentifier the Node Identifier.
+     * @throws CoreEnvironmentBeanException 
+     * @deprecated
+     */
+    public void setNodeIdentifier(String nodeIdentifierAsString)
+    {
+    	Integer nodeIdentifier = null;
+    	
+    	try {
+    		nodeIdentifier = Integer.valueOf(nodeIdentifierAsString);
+        	setNodeIdentifier(nodeIdentifier);
+    	} catch (NumberFormatException nfe) {
+    		throw new RuntimeException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
+    	} catch (CoreEnvironmentBeanException e) {
+			throw new RuntimeException(e);
+		}
+    	
+    }
+
+    /**
      * Returns the port number for the Socket based process id implementation.
      *
      * Default: 0 (use any free port)

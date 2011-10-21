@@ -21,12 +21,14 @@
 package com.arjuna.ats.jta.common;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 import javax.transaction.UserTransaction;
 
+import com.arjuna.ats.arjuna.logging.tsLogger;
 import com.arjuna.ats.internal.arjuna.common.ClassloadingUtility;
 import com.arjuna.ats.internal.jta.resources.arjunacore.XAResourceRecordWrappingPlugin;
 import com.arjuna.ats.jta.recovery.XAResourceOrphanFilter;
@@ -374,8 +376,35 @@ public class JTAEnvironmentBean implements JTAEnvironmentBeanMBean
      * The provided list will be copied, not retained.
      *
      * @param xaRecoveryNodes the set of node identifiers for which to perform recovery.
+     * @deprecated
      */
-    public void setXaRecoveryNodes(List<Integer> xaRecoveryNodes)
+	public void setXaRecoveryNodes(List<String> xaRecoveryNodes) {
+
+		ArrayList<Integer> arrayList = new ArrayList<Integer>();
+		Iterator<String> iterator = xaRecoveryNodes.iterator();
+		while (iterator.hasNext()) {
+			Integer nodeIdentifier = null;
+			try {
+				nodeIdentifier = Integer.valueOf(iterator.next());
+			} catch (NumberFormatException nfe) {
+				throw new RuntimeException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
+			}
+			if (nodeIdentifier < 1) {
+				throw new RuntimeException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
+			}
+			arrayList.add(Integer.valueOf(nodeIdentifier));
+		}
+		setXaRecoveryNodesImpl(arrayList);
+	}
+    
+
+    /**
+     * Sets the node identifiers for which recovery will be performed.
+     * The provided list will be copied, not retained.
+     *
+     * @param xaRecoveryNodes the set of node identifiers for which to perform recovery.
+     */
+    public void setXaRecoveryNodesImpl(List<Integer> xaRecoveryNodes)
     {
         if(xaRecoveryNodes == null) {
             this.xaRecoveryNodes = new ArrayList<Integer>(); 
