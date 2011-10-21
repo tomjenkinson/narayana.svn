@@ -200,7 +200,6 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			if (e.errorCode == XAException.XAER_INVAL) {
 				// We know that this means that the transaction is not known at
 				// the remote side
-				e.printStackTrace();
 			}
 		}
 

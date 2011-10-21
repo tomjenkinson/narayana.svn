@@ -161,7 +161,7 @@ public class SimpleIsolatedServers {
 					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, 2000);
 					originalServer.storeRootTransaction();
 					transactionManager.suspend();
-					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 1, false);
+					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 1, false, false);
 					transactionManager.resume(originalTransaction);
 					originalTransaction.enlistResource(proxyXAResource);
 					// Needs a second resource to make sure we dont get the one
@@ -238,7 +238,7 @@ public class SimpleIsolatedServers {
 					originalServer.storeRootTransaction();
 					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, 2000);
 					transactionManager.suspend();
-					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 2, false);
+					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 2, false, false);
 					transactionManager.resume(originalTransaction);
 					originalTransaction.enlistResource(proxyXAResource);
 					originalServer.removeRootTransaction(currentXid);
@@ -316,7 +316,7 @@ public class SimpleIsolatedServers {
 					originalServer.storeRootTransaction();
 					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, 2000);
 					transactionManager.suspend();
-					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 2, false);
+					performTransactionalWork(null, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 2, false, false);
 					transactionManager.resume(originalTransaction);
 					originalTransaction.enlistResource(proxyXAResource);
 					originalServer.removeRootTransaction(currentXid);
@@ -430,7 +430,7 @@ public class SimpleIsolatedServers {
 					originalServer.storeRootTransaction();
 					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, 2000);
 					transactionManager.suspend();
-					performTransactionalWork(counter, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 2, false);
+					performTransactionalWork(counter, new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout, currentXid, 2, false, false);
 					transactionManager.resume(originalTransaction);
 					originalTransaction.enlistResource(proxyXAResource);
 					originalServer.removeRootTransaction(currentXid);
@@ -492,7 +492,7 @@ public class SimpleIsolatedServers {
 				int startingTimeout = 0;
 				List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
 				try {
-					doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, true);
+					doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, true, false);
 				} catch (InvalidTransactionException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -568,7 +568,7 @@ public class SimpleIsolatedServers {
 		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, 2000);
 		transactionManager.suspend();
 		performTransactionalWork(getLocalServer(2000).getCompletionCounter(), new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout,
-				currentXid, 1, false);
+				currentXid, 1, false, false);
 		transactionManager.resume(originalTransaction);
 		originalTransaction.enlistResource(proxyXAResource);
 		originalServer.removeRootTransaction(currentXid);
@@ -599,7 +599,7 @@ public class SimpleIsolatedServers {
 		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, 2000);
 		transactionManager.suspend();
 		performTransactionalWork(getLocalServer(2000).getCompletionCounter(), new LinkedList<Integer>(Arrays.asList(new Integer[] { 2000 })), remainingTimeout,
-				currentXid, 1, false);
+				currentXid, 1, false, false);
 		transactionManager.resume(originalTransaction);
 		originalTransaction.enlistResource(proxyXAResource);
 		originalTransaction
@@ -615,11 +615,27 @@ public class SimpleIsolatedServers {
 	}
 
 	@Test
+	public void testMigrateTransactionRollbackOnlyCommit() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, XAException,
+			SecurityException, HeuristicMixedException, HeuristicRollbackException, IOException {
+		int startingTimeout = 0;
+		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
+		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, true, true);
+	}
+
+	@Test
+	public void testMigrateTransactionRollbackOnlyRollback() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, XAException,
+			SecurityException, HeuristicMixedException, HeuristicRollbackException, IOException {
+		int startingTimeout = 0;
+		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
+		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, false, true);
+	}
+
+	@Test
 	public void testMigrateTransactionCommit() throws NotSupportedException, SystemException, IllegalStateException, RollbackException, XAException,
 			SecurityException, HeuristicMixedException, HeuristicRollbackException, IOException {
 		int startingTimeout = 0;
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
-		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, true);
+		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, true, false);
 	}
 
 	@Test
@@ -628,7 +644,7 @@ public class SimpleIsolatedServers {
 
 		int startingTimeout = 0;
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 1000, 3000, 1000, 2000, 3000 }));
-		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, true);
+		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, true, false);
 	}
 
 	@Test
@@ -636,7 +652,7 @@ public class SimpleIsolatedServers {
 			SecurityException, HeuristicMixedException, HeuristicRollbackException, IOException {
 		int startingTimeout = 0;
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 3000, 2000, 1000, 2000, 3000, 1000, 3000 }));
-		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, false);
+		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, false, false);
 	}
 
 	@Test
@@ -644,7 +660,7 @@ public class SimpleIsolatedServers {
 			SecurityException, HeuristicMixedException, HeuristicRollbackException, IOException {
 		int startingTimeout = 0;
 		List<Integer> nodesToFlowTo = new LinkedList<Integer>(Arrays.asList(new Integer[] { 1000, 2000, 1000, 3000, 1000, 2000, 3000 }));
-		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, false);
+		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, false, false);
 	}
 
 	@Test
@@ -693,7 +709,7 @@ public class SimpleIsolatedServers {
 		assertTrue(getLocalServer(1000).getCompletionCounter().getRollbackCount() == 2);
 	}
 
-	private void doRecursiveTransactionalWork(int startingTimeout, List<Integer> nodesToFlowTo, boolean commit) throws NotSupportedException, SystemException,
+	private void doRecursiveTransactionalWork(int startingTimeout, List<Integer> nodesToFlowTo, boolean commit, boolean rollbackOnlyOnLastNode) throws NotSupportedException, SystemException,
 			RollbackException, IllegalStateException, XAException, SecurityException, HeuristicMixedException, HeuristicRollbackException, IOException {
 
 		// Start out at the first server
@@ -741,12 +757,18 @@ public class SimpleIsolatedServers {
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
 		transactionManager.suspend();
-		performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid, 1, true);
+		performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid, 1, true, rollbackOnlyOnLastNode);
 		transactionManager.resume(originalTransaction);
 		originalServer.removeRootTransaction(currentXid);
 		if (commit) {
-			transactionManager.commit();
-			assertTrue(counter.getCommitCount() == totalNodeCount);
+			try {
+				transactionManager.commit();
+				assertTrue(counter.getCommitCount() == totalNodeCount);
+			} catch (RollbackException e) {
+				if (!rollbackOnlyOnLastNode) {
+					assertTrue(counter.getRollbackCount() == totalNodeCount);
+				}
+			}
 		} else {
 			transactionManager.rollback();
 			assertTrue(counter.getRollbackCount() == totalNodeCount);
@@ -755,7 +777,7 @@ public class SimpleIsolatedServers {
 	}
 
 	private boolean performTransactionalWork(CompletionCounter counter, List<Integer> nodesToFlowTo, int remainingTimeout, Xid toMigrate,
-			int numberOfResourcesToRegister, boolean addSynchronization) throws RollbackException, IllegalStateException, XAException, SystemException,
+			int numberOfResourcesToRegister, boolean addSynchronization, boolean rollbackOnlyOnLastNode) throws RollbackException, IllegalStateException, XAException, SystemException,
 			NotSupportedException, IOException {
 		Integer currentServerName = nodesToFlowTo.remove(0);
 		LocalServer currentServer = getLocalServer(currentServerName);
@@ -774,7 +796,11 @@ public class SimpleIsolatedServers {
 			transaction.enlistResource(new TestResource(counter, currentServer.getNodeName(), false));
 		}
 
-		if (!nodesToFlowTo.isEmpty()) {
+		if (nodesToFlowTo.isEmpty()) {
+			if (rollbackOnlyOnLastNode) {
+				transaction.setRollbackOnly();
+			}
+		} else {
 			Integer nextServerNodeName = nodesToFlowTo.get(0);
 
 			// FLOW THE TRANSACTION
@@ -786,7 +812,7 @@ public class SimpleIsolatedServers {
 			transactionManager.suspend();
 
 			boolean proxyRequired = performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid, numberOfResourcesToRegister,
-					addSynchronization);
+					addSynchronization, rollbackOnlyOnLastNode);
 			transactionManager.resume(transaction);
 
 			// Create a proxy for the new server if necessary, this can orphan

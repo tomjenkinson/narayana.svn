@@ -146,6 +146,10 @@ public class TestResource implements XAResource {
 		this.xid = null;
 	}
 
+	public void start(Xid xid, int flags) throws XAException {
+		System.out.println("        TestResource (" + serverId + ")      XA_START   [" + xid + "] Flags=" + flags);
+	}
+
 	public void end(Xid xid, int flags) throws XAException {
 		System.out.println("        TestResource (" + serverId + ")      XA_END     [" + xid + "] Flags=" + flags);
 	}
@@ -194,9 +198,5 @@ public class TestResource implements XAResource {
 	public boolean setTransactionTimeout(int seconds) throws XAException {
 		timeout = seconds;
 		return (true);
-	}
-
-	public void start(Xid xid, int flags) throws XAException {
-		System.out.println("        TestResource (" + serverId + ")      XA_START   [" + xid + "] Flags=" + flags);
 	}
 }
