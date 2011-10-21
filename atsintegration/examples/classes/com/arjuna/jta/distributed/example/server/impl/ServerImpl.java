@@ -66,7 +66,6 @@ import com.arjuna.jta.distributed.example.server.RemoteServer;
 
 public class ServerImpl implements LocalServer, RemoteServer {
 
-	private int nodeName;
 	private RecoveryManagerService recoveryManagerService;
 	private TransactionManagerService transactionManagerService;
 	private Map<SubordinateXidImple, TransactionImple> transactions = new HashMap<SubordinateXidImple, TransactionImple>();
@@ -74,8 +73,6 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	public void initialise(LookupProvider lookupProvider, Integer nodeName) throws CoreEnvironmentBeanException, IOException, SecurityException,
 			NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
-		this.nodeName = nodeName;
-
 		RecoveryEnvironmentBean recoveryEnvironmentBean = com.arjuna.ats.arjuna.common.recoveryPropertyManager.getRecoveryEnvironmentBean();
 		recoveryEnvironmentBean.setRecoveryBackoffPeriod(1);
 
@@ -186,7 +183,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public Integer getNodeName() {
-		return nodeName;
+		return TxControl.getXANodeName();
 	}
 
 	/**
@@ -221,7 +218,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		// prepare but the alternative is to orphan a prepared server
 
 		Xid currentXid = getCurrentXid();
-		File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/ProxyXAResource/" + nodeName);
+		File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/ProxyXAResource/" + TxControl.getXANodeName());
 		dir.mkdirs();
 		File file = new File(dir, new Uid().fileStringForm());
 		file.createNewFile();
@@ -234,7 +231,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		fos.writeInt(currentXid.getBranchQualifier().length);
 		fos.write(currentXid.getBranchQualifier());
 
-		return new ProxyXAResource(lookupProvider, nodeName, remoteServerName, file);
+		return new ProxyXAResource(lookupProvider, TxControl.getXANodeName(), remoteServerName, file);
 	}
 
 	@Override
@@ -244,7 +241,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, String remoteServerName, Xid toRegisterAgainst) {
-		return new ProxySynchronization(lookupProvider, nodeName, remoteServerName, toRegisterAgainst);
+		return new ProxySynchronization(lookupProvider, TxControl.getXANodeName(), remoteServerName, toRegisterAgainst);
 	}
 
 	@Override
