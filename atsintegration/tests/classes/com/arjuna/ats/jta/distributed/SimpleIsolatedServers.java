@@ -101,6 +101,8 @@ public class SimpleIsolatedServers {
 	}
 
 	/**
+	 * Ensure that two servers can start up and call recover on the same server
+	 * 
 	 * The JCA XATerminator call wont allow intermediary calls to
 	 * XATerminator::recover between TMSTARTSCAN and TMENDSCAN. This is fine for
 	 * distributed JTA.
@@ -135,6 +137,10 @@ public class SimpleIsolatedServers {
 		}
 	}
 
+	/**
+	 * Ensure that subordinate XA resource orphans created during 2PC can be
+	 * recovered
+	 */
 	@Test
 	@BMScript("leaveorphan")
 	public void testTwoPhaseXAResourceOrphan() throws Exception {
@@ -213,6 +219,10 @@ public class SimpleIsolatedServers {
 		}
 	}
 
+	/**
+	 * Ensure that subordinate XA resource orphans created during 1PC (at root)
+	 * can be recovered
+	 */
 	@Test
 	@BMScript("leaveorphan")
 	public void testOnePhaseXAResourceOrphan() throws Exception {
@@ -292,6 +302,10 @@ public class SimpleIsolatedServers {
 		}
 	}
 
+	/**
+	 * Ensure that subordinate transaction orphans created during 1PC (at root)
+	 * can be recovered
+	 */
 	@Test
 	@BMScript("leave-subordinate-orphan")
 	public void testOnePhaseSubordinateOrphan() throws Exception {
@@ -365,11 +379,13 @@ public class SimpleIsolatedServers {
 	}
 
 	/**
-	 * recoverFor (as it is now known) it first greps the logs for any
-	 * subordinates that are owned by "parentNodeName" then it greps the list of
-	 * currently running transactions to see if any of them are owned by
-	 * "parentNodeName" this is covered by testRecoverInflightTransaction
-	 * basically what can happen is:
+	 * Check that if transaction was in flight when a root crashed, when
+	 * recovered it can terminate it.
+	 * 
+	 * recoverFor first greps the logs for any subordinates that are owned by
+	 * "parentNodeName" then it greps the list of currently running transactions
+	 * to see if any of them are owned by "parentNodeName" this is covered by
+	 * testRecoverInflightTransaction basically what can happen is:
 	 * 
 	 * 1. TM1 starts tx 2. propagate to TM2 3. TM1 crashes 4. we need to
 	 * rollback TM2 as it is now orphaned the detail being that as TM2 hasn't
@@ -477,6 +493,9 @@ public class SimpleIsolatedServers {
 		assertTrue(counter.getRollbackCount() == 2);
 	}
 
+	/**
+	 * Top down recovery of a prepared transaction
+	 */
 	@Test
 	@BMScript("fail2pc")
 	public void testRecovery() throws Exception {
