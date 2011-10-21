@@ -78,7 +78,9 @@ public interface LocalServer {
 	 * here we have a hashmap to locate the transaction in.
 	 * 
 	 * Clearly servers where the transaction has been inflowed back to *must
-	 * not* commit the transaction.
+	 * not* commit the transaction. 
+	 * 
+	 * NOTE: CMT would not allow you do this anyway
 	 * 
 	 * @throws SystemException
 	 */
@@ -96,6 +98,8 @@ public interface LocalServer {
 	 * Xid.
 	 * 
 	 * If it is the root transaction, it must not be committed!
+	 * 
+	 * NOTE: CMT would not allow you do this anyway
 	 * 
 	 * e.g. A transaction flowed 1,2,1 **must not** be committed at the third
 	 * stage of the flow even though we are back at the originating server!!!

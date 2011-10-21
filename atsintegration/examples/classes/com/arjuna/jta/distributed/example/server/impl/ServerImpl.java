@@ -164,7 +164,9 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	 * If this returns the root transaction, it must not be committed!
 	 * 
 	 * e.g. A transaction flowed 1,2,1 **must not** be committed at the third
-	 * stage of the flow!!!
+	 * stage of the flow!!! 
+	 * 
+	 * NOTE: CMT would not allow you do this anyway
 	 */
 	@Override
 	public boolean getAndResumeTransaction(int remainingTimeout, Xid toResume) throws XAException, InvalidTransactionException, IllegalStateException,
