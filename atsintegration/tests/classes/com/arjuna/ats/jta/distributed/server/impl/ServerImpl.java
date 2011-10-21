@@ -175,7 +175,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 				.setTransactionSynchronizationRegistryClassName("com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple");
 		List<Integer> xaRecoveryNodes = new ArrayList<Integer>();
 		xaRecoveryNodes.add(nodeName);
-		jTAEnvironmentBean.setXaRecoveryNodes(xaRecoveryNodes);
+		jTAEnvironmentBean.setXaRecoveryNodesImpl(xaRecoveryNodes);
 
 		List<String> xaResourceOrphanFilterClassNames = new ArrayList<String>();
 

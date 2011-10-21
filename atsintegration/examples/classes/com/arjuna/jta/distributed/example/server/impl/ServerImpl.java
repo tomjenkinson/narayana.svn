@@ -51,7 +51,6 @@ import com.arjuna.ats.arjuna.recovery.RecoveryManager;
 import com.arjuna.ats.arjuna.tools.osb.mbean.ObjStoreBrowser;
 import com.arjuna.ats.internal.jbossatx.jta.XAResourceRecordWrappingPluginImpl;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
-import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateTransaction;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateXidImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinationManager;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.XATerminatorImple;
@@ -127,7 +126,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 				.setTransactionSynchronizationRegistryClassName("com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple");
 		List<Integer> xaRecoveryNodes = new ArrayList<Integer>();
 		xaRecoveryNodes.add(nodeName);
-		jTAEnvironmentBean.setXaRecoveryNodes(xaRecoveryNodes);
+		jTAEnvironmentBean.setXaRecoveryNodesImpl(xaRecoveryNodes);
 
 		List<String> xaResourceOrphanFilterClassNames = new ArrayList<String>();
 
@@ -161,7 +160,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	 * If this returns the root transaction, it must not be committed!
 	 * 
 	 * e.g. A transaction flowed 1,2,1 **must not** be committed at the third
-	 * stage of the flow!!! 
+	 * stage of the flow!!!
 	 * 
 	 * NOTE: CMT would not allow you do this anyway
 	 */
