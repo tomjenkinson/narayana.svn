@@ -77,6 +77,9 @@ public interface LocalServer {
 	 * Store the current transaction, this is so if a subordinate comes back
 	 * here we have a hashmap to locate the transaction in.
 	 * 
+	 * Clearly servers where the transaction has been inflowed back to *must
+	 * not* commit the transaction.
+	 * 
 	 * @throws SystemException
 	 */
 	public void storeRootTransaction(Transaction transaction) throws SystemException;
@@ -91,6 +94,11 @@ public interface LocalServer {
 	/**
 	 * Either create or locate a subordinate (or root) transaction for a given
 	 * Xid.
+	 * 
+	 * If it is the root transaction, it must not be committed!
+	 * 
+	 * e.g. A transaction flowed 1,2,1 **must not** be committed at the third
+	 * stage of the flow even though we are back at the originating server!!!
 	 * 
 	 * @param remainingTimeout
 	 * @param toImport

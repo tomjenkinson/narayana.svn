@@ -160,6 +160,12 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		return transactionManagerService.getTransactionManager();
 	}
 
+	/**
+	 * If this returns the root transaction, it must not be committed!
+	 * 
+	 * e.g. A transaction flowed 1,2,1 **must not** be committed at the third
+	 * stage of the flow!!!
+	 */
 	@Override
 	public boolean getAndResumeTransaction(int remainingTimeout, Xid toResume) throws XAException, InvalidTransactionException, IllegalStateException,
 			SystemException {
@@ -181,6 +187,13 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		return nodeName;
 	}
 
+	/**
+	 * If a subordinate returns the root transaction in a call to
+	 * getAndResumeTransaction, it must not be committed
+	 * 
+	 * e.g. A transaction flowed 1,2,1 **must not** be committed at the third
+	 * stage of the flow!!!
+	 */
 	@Override
 	public void storeRootTransaction(Transaction transaction) throws SystemException {
 		TransactionImple transactionI = ((TransactionImple) transaction);
@@ -276,7 +289,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			// Pass in true so we can recover the inflight transactions for this node
+			// Pass in true so we can recover the inflight transactions for this
+			// node
 			Xid[] recovered = ((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(parentNodeName, true);
 			return recovered;
 		} finally {
