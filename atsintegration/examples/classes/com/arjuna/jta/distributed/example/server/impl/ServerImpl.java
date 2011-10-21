@@ -254,7 +254,6 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			SubordinateTransaction tx = SubordinationManager.getTransactionImporter().getImportedTransaction(xid);
 			return SubordinationManager.getXATerminator().prepare(xid);
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
