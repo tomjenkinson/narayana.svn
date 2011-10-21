@@ -49,7 +49,7 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 
 	@Override
 	public Vote checkXid(Xid xid) {
-		List<Integer> _xaRecoveryNodes = jtaPropertyManager.getJTAEnvironmentBean().getXaRecoveryNodes();
+		List<Integer> _xaRecoveryNodes = jtaPropertyManager.getJTAEnvironmentBean().getXaRecoveryNodesImpl();
 
 		if (_xaRecoveryNodes == null || _xaRecoveryNodes.size() == 0) {
 			jtaLogger.i18NLogger.info_recovery_noxanodes();

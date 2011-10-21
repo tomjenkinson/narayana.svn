@@ -48,7 +48,7 @@ public class NodeNameXAResourceOrphanFilter implements XAResourceOrphanFilter
     @Override
     public Vote checkXid(Xid xid)
     {
-        List<Integer> _xaRecoveryNodes = jtaPropertyManager.getJTAEnvironmentBean().getXaRecoveryNodes();
+        List<Integer> _xaRecoveryNodes = jtaPropertyManager.getJTAEnvironmentBean().getXaRecoveryNodesImpl();
 
         if(_xaRecoveryNodes == null || _xaRecoveryNodes.size() == 0) {
             doWarning();

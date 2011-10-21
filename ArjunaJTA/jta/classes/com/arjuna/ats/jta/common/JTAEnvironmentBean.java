@@ -366,7 +366,7 @@ public class JTAEnvironmentBean implements JTAEnvironmentBeanMBean
      *
      * @return the set of node identifiers for which to perform recovery.
      */
-    public List<Integer> getXaRecoveryNodes()
+    public List<Integer> getXaRecoveryNodesImpl()
     {
        return new ArrayList<Integer>(xaRecoveryNodes);
     }
@@ -381,21 +381,43 @@ public class JTAEnvironmentBean implements JTAEnvironmentBeanMBean
 	public void setXaRecoveryNodes(List<String> xaRecoveryNodes) {
 
 		ArrayList<Integer> arrayList = new ArrayList<Integer>();
-		Iterator<String> iterator = xaRecoveryNodes.iterator();
-		while (iterator.hasNext()) {
-			Integer nodeIdentifier = null;
-			try {
-				nodeIdentifier = Integer.valueOf(iterator.next());
-			} catch (NumberFormatException nfe) {
-				throw new RuntimeException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
+		if (xaRecoveryNodes != null) {
+			Iterator<String> iterator = xaRecoveryNodes.iterator();
+			while (iterator.hasNext()) {
+				Integer nodeIdentifier = null;
+				try {
+					nodeIdentifier = Integer.valueOf(iterator.next());
+				} catch (NumberFormatException nfe) {
+					throw new RuntimeException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
+				}
+				if (nodeIdentifier < 1) {
+					throw new RuntimeException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
+				}
+				arrayList.add(Integer.valueOf(nodeIdentifier));
 			}
-			if (nodeIdentifier < 1) {
-				throw new RuntimeException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
-			}
-			arrayList.add(Integer.valueOf(nodeIdentifier));
 		}
 		setXaRecoveryNodesImpl(arrayList);
 	}
+	
+	/**
+     * Returns the set of node identifiers for which recovery will be performed.
+     * The returned list is a copy. May return an empty list, will not return null.
+     *
+     * Default: empty list.
+     * Equivalent deprecated property prefix: com.arjuna.ats.jta.xaRecoveryNode
+     *
+     * @return the set of node identifiers for which to perform recovery.
+     * @deprecated
+     */
+    public List<String> getXaRecoveryNodes()
+    {
+    	List<String> toReturn = new ArrayList<String>();
+    	Iterator<Integer> iterator = xaRecoveryNodes.iterator();
+    	while (iterator.hasNext()) {
+    		toReturn.add(String.valueOf(iterator.next()));
+    	}
+       return toReturn;
+    }
     
 
     /**
