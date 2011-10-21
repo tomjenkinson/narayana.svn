@@ -1446,7 +1446,7 @@ public interface arjunaI18NLogger {
     @Message(id = 12367, value = "Failed to create store dir {0}", format = MESSAGE_FORMAT)
     public String get_dir_create_failed(String arg0);
 
-    @Message(id = 12368, value = "The node identifier was set to a value less than 1: {0}", format = MESSAGE_FORMAT)
+    @Message(id = 12368, value = "Node identifiers must be an integer and must be 1 or greater: {0}", format = MESSAGE_FORMAT)
 	public String get_node_identifier_invalid(int nodeIdentifier);
     
     @Message(id = 12369, value = "The node identifier was already set", format = MESSAGE_FORMAT)
