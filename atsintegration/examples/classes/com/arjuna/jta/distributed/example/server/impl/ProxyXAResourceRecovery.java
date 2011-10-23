@@ -51,7 +51,7 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 			for (int i = 0; i < listFiles.length; i++) {
 				File file = listFiles[i];
 				DataInputStream fis = new DataInputStream(new FileInputStream(file));
-				int read = fis.read();
+				int read = fis.readInt();
 				byte[] nameB = new byte[read];
 				fis.read(nameB, 0, read);
 				String remoteServerName = new String(nameB);
