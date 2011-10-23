@@ -58,7 +58,7 @@ public class IsolatableServersClassLoader extends ClassLoader {
 		this.ignoredPackage = ignoredPackage;
 
 		String property = System.getProperty("java.class.path");
-		String[] split = property.split(":");
+		String[] split = property.split(System.getProperty("path.separator"));
 		URL[] urls = new URL[split.length];
 		for (int i = 0; i < urls.length; i++) {
 			String url = split[i];
