@@ -78,7 +78,7 @@ public interface LocalServer {
 	 * here we have a hashmap to locate the transaction in.
 	 * 
 	 * Clearly servers where the transaction has been inflowed back to *must
-	 * not* commit the transaction. 
+	 * not* commit the transaction.
 	 * 
 	 * NOTE: CMT would not allow you do this anyway
 	 * 
@@ -104,6 +104,17 @@ public interface LocalServer {
 	 * e.g. A transaction flowed 1,2,1 **must not** be committed at the third
 	 * stage of the flow even though we are back at the originating server!!!
 	 * 
+	 * When a transaction is propagated to a server the transport is responsible
+	 * for detecting that the server has not participated in the transaction yet
+	 * and if so it must assign it the next available subordinate name and
+	 * persist this information to help with recovery (see ServerImpl.java and
+	 * the test itself for how to determine the next available subordinate name
+	 * and a potential method of persisting this data). This is important when a
+	 * proxy xa resource is involved in recovery and invokes commit or rollback
+	 * as the transaction must be reloaded by the remote server before the
+	 * commit/rollback – if it was prepared - before we attempt to complete the
+	 * transaction.
+	 * 
 	 * @param remainingTimeout
 	 * @param toImport
 	 * @return
@@ -111,10 +122,10 @@ public interface LocalServer {
 	 * @throws InvalidTransactionException
 	 * @throws IllegalStateException
 	 * @throws SystemException
-	 * @throws IOException 
+	 * @throws IOException
 	 */
-	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport, Integer nextAvailableSubordinateName) throws XAException, InvalidTransactionException, IllegalStateException,
-			SystemException, IOException;
+	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport, Integer nextAvailableSubordinateName) throws XAException,
+			InvalidTransactionException, IllegalStateException, SystemException, IOException;
 
 	/**
 	 * Transport specific function to generate a proxy for a remote server.

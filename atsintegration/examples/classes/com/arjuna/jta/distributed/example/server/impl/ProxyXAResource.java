@@ -44,37 +44,37 @@ import com.arjuna.jta.distributed.example.server.LookupProvider;
  * an XID that is allocated by the local transaction manager for this spoof XA
  * resource.
  * 
- * This manifests itself in several ways, however most crucially when recover is
- * called. RemoteServer::recover returns the list of Xids to the proxy and the
- * proxy presents these to the coordinator (they are filtered at the remote
- * server so we know this server is responsible for the transaction). Before
- * they are returned however, the proxy gets them and replaces the remote view
- * of the XID for a locally known one.
+ * Persistence points required by the transport: ProxyXAResource: 1. Before a
+ * transaction is propagated the Xid must be recorded 2. When a transaction is
+ * successfully prepared the previously recorded Xid must be deleted and the
+ * real Xid recorded – otherwise the transaction could only be aborted with a
+ * heuristic The transport must register a *single* proxy XA resource per
+ * subordinate transaction – thereby eliminating diamonds in the users
+ * transaction flow. In my example I do this by registering the proxy xa
+ * resource after I have spoken to the remote server thereby allowing me to use
+ * knowledge from the remote server to determine whether or not a proxy is
+ * required. Do notice how the proxy xa resource is created before the
+ * transaction is flowed though, and the XID of the transaction is persisted to
+ * assist with recovery. Once the proxy xa resource is prepared, the file is
+ * then replaced and persisted again with the XID of the actual proxy xa
+ * resource. The first persist was just so that when recovering this proxy xa
+ * resource can be recovered so that we know we talked to a remote server for
+ * this transaction (and the remote server may have prepared the transaction,
+ * even if the parent failed before it was able to).
  * 
- * During recover, the proxy is checking through the list and replacing ones it
- * knows about with XIDs the local transaction manager knows about, any it
- * doesn't know about (due to failure) will not be replaced and therefore get
- * rolled back - as is right.
- * 
- * This is actually one of the key points to be fair basically, the XID that the
- * remote server knows about, isn't directly one that the local server knows
- * about, the job of the proxy xa resource is to map the XIDs from the remote
- * back to locally known ones.
- * 
- * As an example, an XID that this proxy might have been allocated would be:
- * <p>
- * gtrid UID, rootservernodename
- * <p>
- * bqual UID, parentservernodename, thisservernodename
- * 
- * The remote view of this would be:
- * <p>
- * gtrid sameUID, sameRootservername
- * <p>
- * bqual sameUID, thisservernodename, remoteservernodename
- * 
- * If we presented the XID from the remote server directly back to the local
- * server it would roll it back as it does not know about it.
+ * Recovery The proxy xa resource is responsible for recording which
+ * transactions are known of at the remote server and can therefore be recovered
+ * by it without requiring the proxy invoke the remote server to ascertain this
+ * list. When a transaction is propagated to a server the transport is
+ * responsible for detecting that the server has not participated in the
+ * transaction yet and if so it must assign it the next available subordinate
+ * name and persist this information to help with recovery (see ServerImpl.java
+ * and the test itself for how to determine the next available subordinate name
+ * and a potential method of persisting this data). This is important when a
+ * proxy xa resource is involved in recovery and invokes commit or rollback as
+ * the transaction must be reloaded by the remote server before the
+ * commit/rollback – if it was prepared - before we attempt to complete the
+ * transaction.
  */
 public class ProxyXAResource implements XAResource {
 
@@ -196,7 +196,7 @@ public class ProxyXAResource implements XAResource {
 			e.printStackTrace();
 			throw new XAException(XAException.XA_RETRY);
 		}
-		
+
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
 
 		if (map.get(xid) != null) {

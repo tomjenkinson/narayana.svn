@@ -32,13 +32,10 @@ import javax.transaction.xa.Xid;
  * classloader separation is used in
  * <class>ExampelDistributedJTATestCase</class>
  * 
- * Most of the calls are fairly innocuous, however two need special explanation.
+ * Most of the calls are fairly innocuous, however one needs special explanation.
  * 
  * Firstly the before completion takes an XID, check out
  * <class>ProxySynchronization</class> for more details on that.
- * 
- * More interesting is the propagate recover call - see it's Javadoc for
- * details.
  */
 public interface RemoteServer {
 
