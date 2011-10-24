@@ -97,7 +97,7 @@ public class CoreEnvironmentBean implements CoreEnvironmentBeanMBean
     }
 
     /**
-     * Sets the node identifier. Should be uniq amongst all instances that share resource managers or an objectstore. It should be set as the String value of an integer.
+     * Sets the node identifier. Should be uniq amongst all instances that share resource managers or an objectstore.
      *
      * @param nodeIdentifier the Node Identifier.
      * @throws CoreEnvironmentBeanException 
