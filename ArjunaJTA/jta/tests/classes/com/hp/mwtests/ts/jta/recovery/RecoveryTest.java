@@ -48,12 +48,12 @@ public class RecoveryTest
     public void test()
     {
         Vector xaRecoveryNodes = new Vector();
-        xaRecoveryNodes.add(2);
+        xaRecoveryNodes.add("2");
 
-        System.err.println("Bogus XA node name: "+2);
+        System.err.println("Bogus XA node name: "+"2");
 
         XidImple xid = new XidImple(new Uid());
-        int nodeName = XAUtils.getXANodeName(xid);
+        String nodeName = XAUtils.getXANodeName(xid);
 
         // should fail.
 

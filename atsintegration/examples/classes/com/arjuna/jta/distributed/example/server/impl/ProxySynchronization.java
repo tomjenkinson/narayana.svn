@@ -26,7 +26,6 @@ import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
-import com.arjuna.jta.distributed.example.server.DummyRemoteException;
 import com.arjuna.jta.distributed.example.server.LookupProvider;
 
 /**
@@ -36,12 +35,12 @@ import com.arjuna.jta.distributed.example.server.LookupProvider;
  */
 public class ProxySynchronization implements Synchronization {
 
-	private int localServerName;
+	private String localServerName;
 	private String remoteServerName;
 	private Xid toRegisterAgainst;
 	private LookupProvider lookupProvider;
 
-	public ProxySynchronization(LookupProvider lookupProvider, Integer localServerName, String remoteServerName, Xid toRegisterAgainst) {
+	public ProxySynchronization(LookupProvider lookupProvider, String localServerName, String remoteServerName, Xid toRegisterAgainst) {
 		this.lookupProvider = lookupProvider;
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
@@ -56,8 +55,6 @@ public class ProxySynchronization implements Synchronization {
 		} catch (XAException e) {
 			e.printStackTrace();
 		} catch (SystemException e) {
-			e.printStackTrace();
-		} catch (DummyRemoteException e) {
 			e.printStackTrace();
 		}
 	}

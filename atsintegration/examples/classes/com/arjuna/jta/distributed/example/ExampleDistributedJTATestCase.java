@@ -110,7 +110,7 @@ public class ExampleDistributedJTATestCase {
 			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.jta.distributed.example.server", contextClassLoader);
 			localServers[i] = (LocalServer) classLoader.loadClass("com.arjuna.jta.distributed.example.server.impl.ServerImpl").newInstance();
 			Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
-			localServers[i].initialise(lookupProvider, (i + 1) * 1000);
+			localServers[i].initialise(lookupProvider, String.valueOf((i + 1) * 1000), (i + 1) * 1000);
 			// This is a short cut, normally remote servers would not be the
 			// same as the local servers and would be a tranport layer
 			// abstraction
@@ -213,7 +213,7 @@ public class ExampleDistributedJTATestCase {
 				transactionManager.suspend();
 
 				// WE CAN NOW PROPAGATE THE TRANSACTION
-				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = propagateTransaction(nodesToFlowTo, remainingTimeout, currentXid);
+				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = propagateTransaction(nodesToFlowTo, remainingTimeout, currentXid, 1);
 
 				// After the call retuns, resume the local transaction
 				transactionManager.resume(transaction);
@@ -277,7 +277,7 @@ public class ExampleDistributedJTATestCase {
 	 * @throws NotSupportedException
 	 * @throws IOException
 	 */
-	private DataReturnedFromRemoteServer propagateTransaction(List<String> nodesToFlowTo, int remainingTimeout, Xid toMigrate) throws RollbackException,
+	private DataReturnedFromRemoteServer propagateTransaction(List<String> nodesToFlowTo, int remainingTimeout, Xid toMigrate, Integer nextAvailableSubordinateName) throws RollbackException,
 			IllegalStateException, XAException, SystemException, NotSupportedException, IOException {
 		// Do some test setup to initialize this method as it if was being
 		// invoked in a remote server
@@ -293,7 +293,10 @@ public class ExampleDistributedJTATestCase {
 		// Check if this server has seen this transaction before - this is
 		// crucial to ensure that calling servers will only lay down a proxy if
 		// they are the first visitor to this server.
-		boolean requiresProxyAtPreviousServer = !currentServer.getAndResumeTransaction(remainingTimeout, toMigrate);
+		boolean requiresProxyAtPreviousServer = !currentServer.getAndResumeTransaction(remainingTimeout, toMigrate, nextAvailableSubordinateName);
+		if (requiresProxyAtPreviousServer) {
+			nextAvailableSubordinateName++;
+		}
 
 		{
 			// Perform work on the migrated transaction
@@ -339,7 +342,7 @@ public class ExampleDistributedJTATestCase {
 				// indicate whether this caller is the first client to establish
 				// the
 				// subordinate transaction at the remote node
-				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = propagateTransaction(nodesToFlowTo, remainingTimeout, currentXid);
+				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = propagateTransaction(nodesToFlowTo, remainingTimeout, currentXid, nextAvailableSubordinateName);
 				// Resume the transaction locally, ready for any more local work
 				// and
 				// to add the proxy resource and sync if needed
@@ -352,6 +355,7 @@ public class ExampleDistributedJTATestCase {
 					transaction.enlistResource(proxyXAResource);
 					// Register a sync
 					transaction.registerSynchronization(currentServer.generateProxySynchronization(lookupProvider, nextServerNodeName, toMigrate));
+					nextAvailableSubordinateName = dataReturnedFromRemoteServer.getNextAvailableSubordinateName();
 				} else {
 					// This will discard the state of this resource, i.e. the
 					// file
@@ -386,7 +390,7 @@ public class ExampleDistributedJTATestCase {
 		// Return to the previous caller back over the transport/classloader
 		// boundary in this case
 		Thread.currentThread().setContextClassLoader(classLoader);
-		return new DataReturnedFromRemoteServer(requiresProxyAtPreviousServer, transactionState);
+		return new DataReturnedFromRemoteServer(requiresProxyAtPreviousServer, transactionState, nextAvailableSubordinateName);
 	}
 
 	/**
@@ -412,9 +416,12 @@ public class ExampleDistributedJTATestCase {
 
 		private int transactionState;
 
-		public DataReturnedFromRemoteServer(boolean proxyRequired, int transactionState) {
+		private Integer nextAvailableSubordinateName;
+
+		public DataReturnedFromRemoteServer(boolean proxyRequired, int transactionState, Integer nextAvailableSubordinateName) {
 			this.proxyRequired = proxyRequired;
 			this.transactionState = transactionState;
+			this.nextAvailableSubordinateName = nextAvailableSubordinateName;
 		}
 
 		public boolean isProxyRequired() {
@@ -423,6 +430,10 @@ public class ExampleDistributedJTATestCase {
 
 		public int getTransactionState() {
 			return transactionState;
+		}
+		
+		public Integer getNextAvailableSubordinateName() {
+			return nextAvailableSubordinateName;
 		}
 	}
 }

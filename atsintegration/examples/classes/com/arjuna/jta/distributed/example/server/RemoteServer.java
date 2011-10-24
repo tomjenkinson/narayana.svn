@@ -21,6 +21,8 @@
  */
 package com.arjuna.jta.distributed.example.server;
 
+import java.io.IOException;
+
 import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
@@ -41,20 +43,6 @@ import javax.transaction.xa.Xid;
 public interface RemoteServer {
 
 	/**
-	 * Atypical for a recover call we need to pass over the node name of the
-	 * caller. This will ensure that all Xids for the caller coordinated
-	 * Subordinates are returned. Also this method should pass true to the
-	 * XATerminator::recover method so that it will recover the inflight
-	 * transactions for this node
-	 * 
-	 * @param callingServerNodeName
-	 * @return
-	 * @throws XAException
-	 * @throws DummyRemoteException
-	 */
-	public Xid[] recoverFor(Integer callingServerNodeName) throws XAException, DummyRemoteException;
-
-	/**
 	 * Relay the propagate completion.
 	 * 
 	 * @param xid
@@ -62,7 +50,7 @@ public interface RemoteServer {
 	 * @throws SystemException
 	 * @throws DummyRemoteException
 	 */
-	public void beforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException;
+	public void beforeCompletion(Xid xid) throws XAException, SystemException;
 
 	/**
 	 * Relay a prepare to the remote side for a specific Xid.
@@ -72,26 +60,36 @@ public interface RemoteServer {
 	 * @throws XAException
 	 * @throws DummyRemoteException
 	 */
-	public int prepare(Xid xid) throws XAException, DummyRemoteException;
+	public int prepare(Xid xid) throws XAException;
 
 	/**
 	 * Relay the commit.
 	 * 
+	 * If this call is coming from a recover scan on a ProxyXAResource, then
+	 * pass the recover flag in so the remote server knows it needs to recover
+	 * the transaction.
+	 * 
 	 * @param xid
 	 * @param onePhase
 	 * @throws XAException
+	 * @throws IOException 
 	 * @throws DummyRemoteException
 	 */
-	public void commit(Xid xid, boolean onePhase) throws XAException, DummyRemoteException;
+	public void commit(Xid xid, boolean onePhase, boolean recover) throws XAException, IOException;
 
 	/**
-	 * Relay the rollback
+	 * Relay the rollback.
+	 * 
+	 * If this call is coming from a recover scan on a ProxyXAResource, then
+	 * pass the recover flag in so the remote server knows it needs to recover
+	 * the transaction.
 	 * 
 	 * @param xid
 	 * @throws XAException
+	 * @throws IOException 
 	 * @throws DummyRemoteException
 	 */
-	public void rollback(Xid xid) throws XAException, DummyRemoteException;
+	public void rollback(Xid xid, boolean recover) throws XAException, IOException;
 
 	/**
 	 * Relay the forget.
@@ -100,6 +98,6 @@ public interface RemoteServer {
 	 * @throws XAException
 	 * @throws DummyRemoteException
 	 */
-	public void forget(Xid xid) throws XAException, DummyRemoteException;
+	public void forget(Xid xid) throws XAException;
 
 }

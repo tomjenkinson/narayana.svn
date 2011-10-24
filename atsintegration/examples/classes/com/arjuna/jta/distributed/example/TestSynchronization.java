@@ -29,9 +29,9 @@ import javax.transaction.Synchronization;
  * considered a black box.
  */
 public class TestSynchronization implements Synchronization {
-	private int localServerName;
+	private String localServerName;
 
-	public TestSynchronization(Integer localServerName) {
+	public TestSynchronization(String localServerName) {
 		this.localServerName = localServerName;
 	}
 

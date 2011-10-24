@@ -45,17 +45,17 @@ public class TestResource implements XAResource {
 
 	private File file;
 
-	private int serverId;
+	private String serverId;
 
 	private CompletionCounter completionCounter;
 
-	public TestResource(CompletionCounter completionCounter, int serverId, boolean readonly) {
+	public TestResource(CompletionCounter completionCounter, String serverId, boolean readonly) {
 		this.completionCounter = completionCounter;
 		this.serverId = serverId;
 		this.readonly = readonly;
 	}
 
-	public TestResource(CompletionCounter completionCounter, int serverId, File file) throws IOException {
+	public TestResource(CompletionCounter completionCounter, String serverId, File file) throws IOException {
 		this.completionCounter = completionCounter;
 		this.serverId = serverId;
 		this.file = file;

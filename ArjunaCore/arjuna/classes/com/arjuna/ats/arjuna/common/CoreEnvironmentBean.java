@@ -42,8 +42,7 @@ public class CoreEnvironmentBean implements CoreEnvironmentBeanMBean
     private volatile String varDir = System.getProperty("user.dir") + File.separator + "var" + File.separator + "tmp";
 
     @FullPropertyName(name = "com.arjuna.ats.arjuna.nodeIdentifier")
-    private volatile int nodeIdentifier = 1;
-    private volatile boolean nodeIdentifierSet = false;
+    private volatile String nodeIdentifier = null;
 
     @FullPropertyName(name = "com.arjuna.ats.internal.arjuna.utils.SocketProcessIdPort")
     private volatile int socketProcessIdPort = 0;
@@ -92,28 +91,9 @@ public class CoreEnvironmentBean implements CoreEnvironmentBeanMBean
      *
      * @return the Node Identifier.
      */
-    public int getNodeIdentifier()
+    public String getNodeIdentifier()
     {
         return nodeIdentifier;
-    }
-
-    /**
-     * Sets the node identifier. Should be uniq amongst all instances that share resource managers or an objectstore.
-     *
-     * @param nodeIdentifier the Node Identifier.
-     * @throws CoreEnvironmentBeanException 
-     */
-    public void setNodeIdentifier(int nodeIdentifier) throws CoreEnvironmentBeanException
-    {
-    	if (nodeIdentifier < 1) {
-    		throw new CoreEnvironmentBeanException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
-    	}
-    	
-    	if (this.nodeIdentifierSet) {
-    		throw new CoreEnvironmentBeanException(tsLogger.i18NLogger.get_node_identifier_reset_attempt());
-    	}
-        this.nodeIdentifier = nodeIdentifier;
-        this.nodeIdentifierSet = true;
     }
 
     /**
@@ -121,21 +101,10 @@ public class CoreEnvironmentBean implements CoreEnvironmentBeanMBean
      *
      * @param nodeIdentifier the Node Identifier.
      * @throws CoreEnvironmentBeanException 
-     * @deprecated
      */
     public void setNodeIdentifier(String nodeIdentifierAsString)
     {
-    	Integer nodeIdentifier = null;
-    	
-    	try {
-    		nodeIdentifier = Integer.valueOf(nodeIdentifierAsString);
-        	setNodeIdentifier(nodeIdentifier);
-    	} catch (NumberFormatException nfe) {
-    		throw new RuntimeException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
-    	} catch (CoreEnvironmentBeanException e) {
-			throw new RuntimeException(e);
-		}
-    	
+    	this.nodeIdentifier = nodeIdentifierAsString;
     }
 
     /**

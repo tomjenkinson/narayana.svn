@@ -44,15 +44,19 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 
 	private List<ProxyXAResource> resources = new ArrayList<ProxyXAResource>();
 
-	public ProxyXAResourceRecovery(CompletionCounter counter, LookupProvider lookupProvider, Integer id) throws IOException {
-		File directory = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + id + "/");
-		Map<Integer, Map<Xid, File>> savedData = new HashMap<Integer, Map<Xid, File>>();
+	public ProxyXAResourceRecovery(CompletionCounter counter, LookupProvider lookupProvider, String nodeName) throws IOException {
+		File directory = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + nodeName + "/");
+		Map<String, Map<Xid, File>> savedData = new HashMap<String, Map<Xid, File>>();
 		if (directory.exists() && directory.isDirectory()) {
 			File[] listFiles = directory.listFiles();
 			for (int i = 0; i < listFiles.length; i++) {
 				File file = listFiles[i];
 				DataInputStream fis = new DataInputStream(new FileInputStream(file));
-				int remoteServerName = fis.readInt();
+				int remoteServerNameLength = fis.readInt();
+				final byte[] remoteServerNameBytes = new byte[remoteServerNameLength];
+				fis.read(remoteServerNameBytes, 0, remoteServerNameLength);
+				String remoteServerName = new String(remoteServerNameBytes);
+				
 
 				Map<Xid, File> map = savedData.get(remoteServerName);
 				if (map == null) {
@@ -86,11 +90,11 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 				map.put(xid, file);
 			}
 		}
-		Iterator<Integer> iterator = savedData.keySet().iterator();
+		Iterator<String> iterator = savedData.keySet().iterator();
 		while (iterator.hasNext()) {
-			Integer remoteServerName = iterator.next();
+			String remoteServerName = iterator.next();
 			Map<Xid, File> map = savedData.get(remoteServerName);
-			resources.add(new ProxyXAResource(counter, lookupProvider, id, remoteServerName, map));
+			resources.add(new ProxyXAResource(counter, lookupProvider, nodeName, remoteServerName, map));
 		}
 	}
 

@@ -58,7 +58,7 @@ public class JTAEnvironmentBean implements JTAEnvironmentBeanMBean
     private volatile TransactionSynchronizationRegistry transactionSynchronizationRegistry = null;
 
     @ConcatenationPrefix(prefix = "com.arjuna.ats.jta.xaRecoveryNode")
-    private volatile List<Integer> xaRecoveryNodes = new ArrayList<Integer>();
+    private volatile List<String> xaRecoveryNodes = new ArrayList<String>();
 
     @ConcatenationPrefix(prefix = "com.arjuna.ats.jta.recovery.XAResourceRecovery")
     private volatile List<String> xaResourceRecoveryClassNames = new ArrayList<String>();
@@ -366,72 +366,25 @@ public class JTAEnvironmentBean implements JTAEnvironmentBeanMBean
      *
      * @return the set of node identifiers for which to perform recovery.
      */
-    public List<Integer> getXaRecoveryNodesImpl()
-    {
-       return new ArrayList<Integer>(xaRecoveryNodes);
-    }
-
-    /**
-     * Sets the node identifiers for which recovery will be performed.
-     * The provided list will be copied, not retained.
-     *
-     * @param xaRecoveryNodes the set of node identifiers for which to perform recovery.
-     * @deprecated
-     */
-	public void setXaRecoveryNodes(List<String> xaRecoveryNodes) {
-
-		ArrayList<Integer> arrayList = new ArrayList<Integer>();
-		if (xaRecoveryNodes != null) {
-			Iterator<String> iterator = xaRecoveryNodes.iterator();
-			while (iterator.hasNext()) {
-				Integer nodeIdentifier = null;
-				try {
-					nodeIdentifier = Integer.valueOf(iterator.next());
-				} catch (NumberFormatException nfe) {
-					throw new RuntimeException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
-				}
-				if (nodeIdentifier < 1) {
-					throw new RuntimeException(tsLogger.i18NLogger.get_node_identifier_invalid(nodeIdentifier));
-				}
-				arrayList.add(Integer.valueOf(nodeIdentifier));
-			}
-		}
-		setXaRecoveryNodesImpl(arrayList);
-	}
-	
-	/**
-     * Returns the set of node identifiers for which recovery will be performed.
-     * The returned list is a copy. May return an empty list, will not return null.
-     *
-     * Default: empty list.
-     * Equivalent deprecated property prefix: com.arjuna.ats.jta.xaRecoveryNode
-     *
-     * @return the set of node identifiers for which to perform recovery.
-     * @deprecated
-     */
     public List<String> getXaRecoveryNodes()
     {
-    	List<String> toReturn = new ArrayList<String>();
-    	Iterator<Integer> iterator = xaRecoveryNodes.iterator();
-    	while (iterator.hasNext()) {
-    		toReturn.add(String.valueOf(iterator.next()));
-    	}
-       return toReturn;
+       return new ArrayList<String>(xaRecoveryNodes);
     }
-    
 
+
+	
     /**
      * Sets the node identifiers for which recovery will be performed.
      * The provided list will be copied, not retained.
      *
      * @param xaRecoveryNodes the set of node identifiers for which to perform recovery.
      */
-    public void setXaRecoveryNodesImpl(List<Integer> xaRecoveryNodes)
+    public void setXaRecoveryNodes(List<String> xaRecoveryNodes)
     {
         if(xaRecoveryNodes == null) {
-            this.xaRecoveryNodes = new ArrayList<Integer>(); 
+            this.xaRecoveryNodes = new ArrayList<String>(); 
         } else {
-            this.xaRecoveryNodes = new ArrayList<Integer>(xaRecoveryNodes);
+            this.xaRecoveryNodes = new ArrayList<String>(xaRecoveryNodes);
         }
     }
 

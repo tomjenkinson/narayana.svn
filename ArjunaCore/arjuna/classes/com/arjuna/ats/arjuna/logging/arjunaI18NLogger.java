@@ -578,7 +578,7 @@ public interface arjunaI18NLogger {
 	@LogMessage(level = WARN)
 	public void warn_coordinator_notrunning();
 
-	@Message(id = 12138, value = "Node name cannot exceed 64 bytes!", format = MESSAGE_FORMAT)
+	@Message(id = 12138, value = "Node name cannot exceed 36 bytes!", format = MESSAGE_FORMAT)
 	@LogMessage(level = WARN)
 	public void warn_coordinator_toolong();
 

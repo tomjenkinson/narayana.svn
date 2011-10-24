@@ -29,7 +29,7 @@ public interface CoreEnvironmentBeanMBean
 {
     String getVarDir();
 
-    int getNodeIdentifier();
+    String getNodeIdentifier();
 
     int getSocketProcessIdPort();
 

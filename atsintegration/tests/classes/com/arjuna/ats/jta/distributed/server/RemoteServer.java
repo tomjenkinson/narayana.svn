@@ -21,6 +21,8 @@
  */
 package com.arjuna.ats.jta.distributed.server;
 
+import java.io.IOException;
+
 import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
@@ -29,16 +31,14 @@ public interface RemoteServer {
 
 	public void setOffline(boolean offline);
 
-	public int prepare(Xid xid) throws XAException, DummyRemoteException;
+	public int prepare(Xid xid) throws XAException;
 
-	public void commit(Xid xid, boolean onePhase) throws XAException, DummyRemoteException;
+	public void commit(Xid xid, boolean onePhase, boolean recover) throws XAException, IOException;
 
-	public void rollback(Xid xid) throws XAException, DummyRemoteException;
+	public void rollback(Xid xid, boolean recover) throws XAException, IOException;
 
-	public Xid[] recoverFor(Integer parentNodeName) throws XAException, DummyRemoteException;
+	public void forget(Xid xid) throws XAException, IOException;
 
-	public void forget(Xid xid) throws XAException, DummyRemoteException;
-
-	public void beforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException;
+	public void beforeCompletion(Xid xid) throws XAException, SystemException;
 
 }

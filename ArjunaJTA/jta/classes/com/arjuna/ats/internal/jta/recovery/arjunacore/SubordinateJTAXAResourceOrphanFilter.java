@@ -21,7 +21,6 @@
 package com.arjuna.ats.internal.jta.recovery.arjunacore;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Stack;
 
 import javax.transaction.xa.Xid;
@@ -33,7 +32,6 @@ import com.arjuna.ats.arjuna.objectstore.StoreManager;
 import com.arjuna.ats.arjuna.state.InputObjectState;
 import com.arjuna.ats.internal.arjuna.common.UidHelper;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.SubordinateAtomicAction;
-import com.arjuna.ats.jta.common.jtaPropertyManager;
 import com.arjuna.ats.jta.logging.jtaLogger;
 import com.arjuna.ats.jta.recovery.XAResourceOrphanFilter;
 import com.arjuna.ats.jta.utils.XAHelper;
@@ -49,21 +47,15 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 
 	@Override
 	public Vote checkXid(Xid xid) {
-		List<Integer> _xaRecoveryNodes = jtaPropertyManager.getJTAEnvironmentBean().getXaRecoveryNodesImpl();
-
-		if (_xaRecoveryNodes == null || _xaRecoveryNodes.size() == 0) {
-			jtaLogger.i18NLogger.info_recovery_noxanodes();
-			return Vote.ABSTAIN;
-		}
-
-		int nodeName = XATxConverter.getSubordinateNodeName(new XidImple(xid).getXID());
+		Integer nodeName = XATxConverter.getSubordinateNodeName(new XidImple(xid).getXID());
 
 		if (jtaLogger.logger.isDebugEnabled()) {
 			jtaLogger.logger.debug("subordinate node name of " + xid + " is " + nodeName);
 		}
 
-		if (_xaRecoveryNodes.contains(nodeName)) {
-			if (transactionLog(xid)) {
+		// It does have an XID
+		if (nodeName > 0) {
+			if (transactionLog(xid, nodeName)) {
 				// it's owned by a logged transaction which
 				// will recover it top down in due course
 				return Vote.LEAVE_ALONE;
@@ -78,15 +70,15 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 	/**
 	 * Is there a log file for this transaction?
 	 * 
-	 * @param xid
+	 * @param recoveredResourceXid
 	 *            the transaction to check.
 	 * 
 	 * @return <code>boolean</code>true if there is a log file,
 	 *         <code>false</code> if there isn't.
 	 */
-	private boolean transactionLog(Xid xid) {
+	private boolean transactionLog(Xid recoveredResourceXid, Integer recoveredResourceNodeName) {
 
-		XidImple theXid = new XidImple(xid);
+		XidImple theXid = new XidImple(recoveredResourceXid);
 		Uid u = theXid.getTransactionUid();
 
 		if (jtaLogger.logger.isDebugEnabled()) {
@@ -120,7 +112,9 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 
 						if (uid.notEquals(Uid.nullUid())) {
 							SubordinateAtomicAction tx = new SubordinateAtomicAction(uid, true);
-							if (((XidImple) tx.getXid()).isSameTransaction(xid)) {
+							XidImple transactionXid = (XidImple) tx.getXid();
+							if (transactionXid.isSameTransaction(recoveredResourceXid)
+									&& recoveredResourceNodeName == XATxConverter.getSubordinateNodeName(transactionXid.getXID())) {
 								if (jtaLogger.logger.isDebugEnabled()) {
 									jtaLogger.logger.debug("Found record for " + theXid);
 								}
@@ -134,7 +128,7 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 						jtaLogger.logger.debug("No record found for " + theXid);
 					}
 				} else {
-					jtaLogger.i18NLogger.info_recovery_notaxid(XAHelper.xidToString(xid));
+					jtaLogger.i18NLogger.info_recovery_notaxid(XAHelper.xidToString(recoveredResourceXid));
 				}
 			} catch (ObjectStoreException e) {
 				// TODO Auto-generated catch block

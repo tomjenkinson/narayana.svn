@@ -52,6 +52,9 @@ public class SubordinateAtomicAction extends
 		com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.SubordinateAtomicAction
 {
 
+	/**
+	 * @deprecated This is only used by test code
+	 */
 	public SubordinateAtomicAction ()
 	{
 		super();  // does start for us
@@ -87,7 +90,7 @@ public class SubordinateAtomicAction extends
 	{
 		super(timeout); // implicit start (done in base class)
 		
-		_theXid = new XidImple(xid, true);
+		_theXid = new XidImple(xid);
 		_activated = true;
 	}
 	

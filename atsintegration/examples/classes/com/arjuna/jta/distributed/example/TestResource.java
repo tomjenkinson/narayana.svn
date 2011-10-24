@@ -46,13 +46,13 @@ public class TestResource implements XAResource {
 
 	private File file;
 
-	private Integer localServerName;
+	private String localServerName;
 
-	public TestResource(Integer localServerName) {
+	public TestResource(String localServerName) {
 		this.localServerName = localServerName;
 	}
 
-	public TestResource(Integer localServerName, File file) throws IOException {
+	public TestResource(String localServerName, File file) throws IOException {
 		this.localServerName = localServerName;
 		this.file = file;
 		DataInputStream fis = new DataInputStream(new FileInputStream(file));

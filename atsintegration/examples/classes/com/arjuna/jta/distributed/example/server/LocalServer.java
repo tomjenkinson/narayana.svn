@@ -56,13 +56,13 @@ public interface LocalServer {
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 */
-	public void initialise(LookupProvider lookupProvider, Integer nodeName) throws CoreEnvironmentBeanException, IOException, SecurityException,
+	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset) throws CoreEnvironmentBeanException, IOException, SecurityException,
 			NoSuchFieldException, IllegalArgumentException, IllegalAccessException;
 
 	/**
 	 * Get the local transaction managers node name.
 	 */
-	public Integer getNodeName();
+	public String getNodeName();
 
 	/**
 	 * Get a reference on the local transaction manager.
@@ -111,9 +111,10 @@ public interface LocalServer {
 	 * @throws InvalidTransactionException
 	 * @throws IllegalStateException
 	 * @throws SystemException
+	 * @throws IOException 
 	 */
-	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException,
-			SystemException;
+	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport, Integer nextAvailableSubordinateName) throws XAException, InvalidTransactionException, IllegalStateException,
+			SystemException, IOException;
 
 	/**
 	 * Transport specific function to generate a proxy for a remote server.

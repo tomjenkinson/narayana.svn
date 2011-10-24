@@ -32,6 +32,7 @@
 package com.arjuna.ats.internal.jta.transaction.arjunacore.jca;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Stack;
@@ -55,6 +56,7 @@ import com.arjuna.ats.internal.jta.recovery.arjunacore.NodeNameXAResourceOrphanF
 import com.arjuna.ats.internal.jta.resources.spi.XATerminatorExtensions;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.SubordinateAtomicAction;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.TransactionImple;
+import com.arjuna.ats.internal.jta.xa.XID;
 import com.arjuna.ats.jta.exceptions.UnexpectedConditionException;
 import com.arjuna.ats.jta.logging.jtaLogger;
 import com.arjuna.ats.jta.xa.XATxConverter;
@@ -335,7 +337,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
         }
 
         // if we are here, then check the object store
-        return doRecover(NodeNameXAResourceOrphanFilter.RECOVER_ALL_NODES, false);
+        return doRecover(null);
     }
     
     /**
@@ -350,7 +352,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
      * @return a list of potentially indoubt transactions or <code>null</code>.
      */
 
-    public synchronized Xid[] doRecover (Integer parentNodeName, boolean recoverInflightTransactionsUnpreparedTransactions) throws XAException
+    public synchronized Xid[] doRecover (XidImple toRecover) throws XAException
     {
         /*
          * Requires going through the objectstore for the states of imported
@@ -390,37 +392,36 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
 
                     if (uid.notEquals(Uid.nullUid()))
                     {
-                    	
-                    	SubordinateAtomicAction saa = new SubordinateAtomicAction(uid, true);
-						if (parentNodeName.equals(NodeNameXAResourceOrphanFilter.RECOVER_ALL_NODES)
-								|| parentNodeName.equals(XATxConverter.getParentNodeName(((XidImple) saa.getXid()).getXID()))) {
-							if (jtaLogger.logger.isDebugEnabled()) {
-								jtaLogger.logger.debug("Found record for " + saa);
-							}
-							TransactionImple tx = (TransactionImple)SubordinationManager.getTransactionImporter().recoverTransaction(uid);
+						if (toRecover == null) {
+							TransactionImple tx = (TransactionImple) SubordinationManager.getTransactionImporter().recoverTransaction(uid);
 
 							if (tx != null)
 								values.push(tx.baseXid());
+						} else {
+							SubordinateAtomicAction saa = new SubordinateAtomicAction(uid, true);
+							XidImple loadedXid = (XidImple) saa.getXid();
+							if (loadedXid.getFormatId() == XATxConverter.FORMAT_ID) {
+								Integer loadedXidSubordinateNodeName = XATxConverter.getSubordinateNodeName(loadedXid.getXID());
+								if (XATxConverter.getSubordinateNodeName(toRecover.getXID()) == loadedXidSubordinateNodeName) {
+									if (Arrays.equals(loadedXid.getGlobalTransactionId(), toRecover.getGlobalTransactionId())) {
+										if (jtaLogger.logger.isDebugEnabled()) {
+											jtaLogger.logger.debug("Found record for " + saa);
+										}
+										TransactionImple tx = (TransactionImple) SubordinationManager.getTransactionImporter().recoverTransaction(uid);
+
+										if (tx != null)
+											values.push(tx.baseXid());
+									}
+								}
+							}
 						}
+
                     }
                     else
                         finished = true;
 
                 }
                 while (!finished);
-
-                
-				if (recoverInflightTransactionsUnpreparedTransactions) {
-					Set<SubordinateXidImple> inflightXids = ((TransactionImporterImple) SubordinationManager.getTransactionImporter()).getInflightXids();
-					Iterator<SubordinateXidImple> iterator = inflightXids.iterator();
-					while (iterator.hasNext()) {
-						SubordinateXidImple next = iterator.next();
-						if (parentNodeName.equals(NodeNameXAResourceOrphanFilter.RECOVER_ALL_NODES)
-								|| parentNodeName.equals(XATxConverter.getParentNodeName(next.getXID()))) {
-							values.push(next);
-						}
-					}
-				}
                 
                 if (values.size() > 0)
                 {

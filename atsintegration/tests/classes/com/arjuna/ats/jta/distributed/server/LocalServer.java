@@ -38,10 +38,10 @@ import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 
 public interface LocalServer {
 
-	public void initialise(LookupProvider lookupProvider, Integer nodeName) throws CoreEnvironmentBeanException, IOException, SecurityException,
+	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset) throws CoreEnvironmentBeanException, IOException, SecurityException,
 			NoSuchFieldException, IllegalArgumentException, IllegalAccessException;
 
-	public Integer getNodeName();
+	public String getNodeName();
 
 	public TransactionManager getTransactionManager() throws NotSupportedException, SystemException;
 
@@ -53,16 +53,16 @@ public interface LocalServer {
 
 	public void removeRootTransaction(Xid toMigrate);
 
-	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException,
-			SystemException;
+	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport, Integer nextAvailableSubordinateName) throws XAException, InvalidTransactionException, IllegalStateException,
+			SystemException, IOException;
 
 	public RemoteServer connectTo();
 
-	public XAResource generateProxyXAResource(LookupProvider lookupProvider, Integer remoteServerName) throws SystemException, IOException;
+	public XAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName) throws SystemException, IOException;
 
 	public void cleanupProxyXAResource(XAResource proxyXAResource);
 
-	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, Integer localServerName, Integer remoteServerName, Xid toRegisterAgainst);
+	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, String localServerName, String remoteServerName, Xid toRegisterAgainst);
 
 	public Xid getCurrentXid() throws SystemException;
 

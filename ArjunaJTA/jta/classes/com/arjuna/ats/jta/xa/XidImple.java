@@ -62,24 +62,10 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 	}
 
 	public XidImple(Xid xid) {
-		this(xid, false);
-	}
-
-	public XidImple (Xid xid, boolean subordinate)
-	{
 		_theXid = null;
 
 		copy(xid);
 		
-		// If this is a subordinate transaction and it is one of ours, bump up the parent node name
-		if (subordinate && _theXid.formatID == XATxConverter.FORMAT_ID) {
-			int parentNodeName = XATxConverter.getSubordinateNodeName(_theXid);
-			if (parentNodeName == 0) {
-				parentNodeName = XATxConverter.getNodeName(_theXid);
-			}
-			XATxConverter.setParentNodeName(_theXid, parentNodeName);
-			XATxConverter.setSubordinateNodeName(_theXid, TxControl.getXANodeName());
-		}
 		hashCode = getHash(_theXid) ;
 	}
 
@@ -92,13 +78,16 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 	}
 
 	public XidImple(Xid xid, boolean branch, String eisName) {
-		this(xid, false);
+		this(xid);
 		if (branch) {
 			XATxConverter.setBranchUID(_theXid, new Uid());
 		}
 		XATxConverter.setEisName(_theXid, eisName);
 	}
 
+	/**
+	 * @deprecated This is only used by test code
+	 */
 	public XidImple(Uid id) {
 		this(id, false, null);
 	}
@@ -108,6 +97,7 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 			_theXid = XATxConverter.getXid(id, branch, eisName);
 		} catch (Exception e) {
 			_theXid = null;
+			e.printStackTrace();
 
 			// abort or throw exception?
 		}

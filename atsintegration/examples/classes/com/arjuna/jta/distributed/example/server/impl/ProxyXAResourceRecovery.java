@@ -43,8 +43,8 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 
 	private List<ProxyXAResource> resources = new ArrayList<ProxyXAResource>();
 
-	public ProxyXAResourceRecovery(LookupProvider lookupProvider, Integer id) throws IOException {
-		File directory = new File(System.getProperty("user.dir") + "/distributedjta-example/ProxyXAResource/" + id + "/");
+	public ProxyXAResourceRecovery(LookupProvider lookupProvider, String nodeName) throws IOException {
+		File directory = new File(System.getProperty("user.dir") + "/distributedjta-example/ProxyXAResource/" + nodeName + "/");
 		Map<String, Map<Xid, File>> savedData = new HashMap<String, Map<Xid, File>>();
 		if (directory.exists() && directory.isDirectory()) {
 			File[] listFiles = directory.listFiles();
@@ -92,7 +92,7 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 		while (iterator.hasNext()) {
 			String remoteServerName = iterator.next();
 			Map<Xid, File> map = savedData.get(remoteServerName);
-			resources.add(new ProxyXAResource(lookupProvider, id, remoteServerName, map));
+			resources.add(new ProxyXAResource(lookupProvider, nodeName, remoteServerName, map));
 		}
 	}
 

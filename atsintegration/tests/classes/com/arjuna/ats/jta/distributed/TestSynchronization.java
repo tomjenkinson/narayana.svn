@@ -24,9 +24,9 @@ package com.arjuna.ats.jta.distributed;
 import javax.transaction.Synchronization;
 
 public class TestSynchronization implements Synchronization {
-	private int serverId;
+	private String serverId;
 
-	public TestSynchronization(int serverId) {
+	public TestSynchronization(String serverId) {
 		this.serverId = serverId;
 	}
 

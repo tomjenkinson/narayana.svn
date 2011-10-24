@@ -21,17 +21,19 @@
  */
 package com.arjuna.jta.distributed.example.server.impl;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.transaction.InvalidTransactionException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -47,7 +49,6 @@ import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
 import com.arjuna.ats.arjuna.common.RecoveryEnvironmentBean;
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.arjuna.coordinator.TxControl;
-import com.arjuna.ats.arjuna.recovery.RecoveryManager;
 import com.arjuna.ats.arjuna.tools.osb.mbean.ObjStoreBrowser;
 import com.arjuna.ats.internal.jbossatx.jta.XAResourceRecordWrappingPluginImpl;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
@@ -57,8 +58,9 @@ import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.XATerminatorImple;
 import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 import com.arjuna.ats.jbossatx.jta.TransactionManagerService;
 import com.arjuna.ats.jta.common.JTAEnvironmentBean;
+import com.arjuna.ats.jta.xa.XATxConverter;
+import com.arjuna.ats.jta.xa.XidImple;
 import com.arjuna.jta.distributed.example.TestResourceRecovery;
-import com.arjuna.jta.distributed.example.server.DummyRemoteException;
 import com.arjuna.jta.distributed.example.server.LocalServer;
 import com.arjuna.jta.distributed.example.server.LookupProvider;
 import com.arjuna.jta.distributed.example.server.RemoteServer;
@@ -68,17 +70,19 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	private RecoveryManagerService recoveryManagerService;
 	private TransactionManagerService transactionManagerService;
 	private Map<SubordinateXidImple, TransactionImple> transactions = new HashMap<SubordinateXidImple, TransactionImple>();
-	private RecoveryManager _recoveryManager;
+	private String nodeName;
+	private Map<SubordinateXidImple, File> subordinateOrphanDetection = new HashMap<SubordinateXidImple, File>();
 
-	public void initialise(LookupProvider lookupProvider, Integer nodeName) throws CoreEnvironmentBeanException, IOException, SecurityException,
+	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset) throws CoreEnvironmentBeanException, IOException, SecurityException,
 			NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+		this.nodeName = nodeName;
 		RecoveryEnvironmentBean recoveryEnvironmentBean = com.arjuna.ats.arjuna.common.recoveryPropertyManager.getRecoveryEnvironmentBean();
 		recoveryEnvironmentBean.setRecoveryBackoffPeriod(1);
 
 		recoveryEnvironmentBean.setRecoveryInetAddress(InetAddress.getByName("localhost"));
-		recoveryEnvironmentBean.setRecoveryPort(4712 + nodeName);
+		recoveryEnvironmentBean.setRecoveryPort(4712 + portOffset);
 		recoveryEnvironmentBean.setTransactionStatusManagerInetAddress(InetAddress.getByName("localhost"));
-		recoveryEnvironmentBean.setTransactionStatusManagerPort(4713 + nodeName);
+		recoveryEnvironmentBean.setTransactionStatusManagerPort(4713 + portOffset);
 		List<String> recoveryModuleClassNames = new ArrayList<String>();
 
 		recoveryModuleClassNames.add("com.arjuna.ats.internal.arjuna.recovery.AtomicActionRecoveryModule");
@@ -91,7 +95,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		recoveryEnvironmentBean.setRecoveryActivators(null);
 
 		CoreEnvironmentBean coreEnvironmentBean = com.arjuna.ats.arjuna.common.arjPropertyManager.getCoreEnvironmentBean();
-		coreEnvironmentBean.setSocketProcessIdPort(4714 + nodeName);
+		coreEnvironmentBean.setSocketProcessIdPort(4714 + portOffset);
 		coreEnvironmentBean.setNodeIdentifier(nodeName);
 		coreEnvironmentBean.setSocketProcessIdMaxPorts(1);
 
@@ -124,9 +128,9 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		jTAEnvironmentBean.setUserTransactionClassName("com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple");
 		jTAEnvironmentBean
 				.setTransactionSynchronizationRegistryClassName("com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple");
-		List<Integer> xaRecoveryNodes = new ArrayList<Integer>();
+		List<String> xaRecoveryNodes = new ArrayList<String>();
 		xaRecoveryNodes.add(nodeName);
-		jTAEnvironmentBean.setXaRecoveryNodesImpl(xaRecoveryNodes);
+		jTAEnvironmentBean.setXaRecoveryNodes(xaRecoveryNodes);
 
 		List<String> xaResourceOrphanFilterClassNames = new ArrayList<String>();
 
@@ -163,16 +167,36 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	 * stage of the flow!!!
 	 * 
 	 * NOTE: CMT would not allow you do this anyway
+	 * 
+	 * @throws IOException
 	 */
 	@Override
-	public boolean getAndResumeTransaction(int remainingTimeout, Xid toResume) throws XAException, InvalidTransactionException, IllegalStateException,
-			SystemException {
+	public boolean getAndResumeTransaction(int remainingTimeout, Xid toResume, Integer nextAvailableSubordinateName) throws XAException, IllegalStateException,
+			SystemException, IOException {
 		boolean existed = true;
 		Transaction transaction = transactions.get(new SubordinateXidImple(toResume));
 		if (transaction == null) {
 			transaction = SubordinationManager.getTransactionImporter().getImportedTransaction(toResume);
 			if (transaction == null) {
-				transaction = SubordinationManager.getTransactionImporter().importTransaction(toResume, remainingTimeout);
+
+				File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/SubordinateNameXANodeNameMap/" + TxControl.getXANodeName());
+				dir.mkdirs();
+				File file = new File(dir, new Uid().fileStringForm());
+				file.createNewFile();
+				DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
+				byte[] nodeName = TxControl.getXANodeName().getBytes();
+				fos.writeInt(nodeName.length);
+				fos.write(nodeName);
+				fos.writeInt(nextAvailableSubordinateName);
+				fos.writeInt(toResume.getGlobalTransactionId().length);
+				fos.write(toResume.getGlobalTransactionId());
+
+				subordinateOrphanDetection.put(new SubordinateXidImple(toResume), file);
+
+				XidImple toImport = new XidImple(toResume);
+				XATxConverter.setSubordinateNodeName(toImport.getXID(), nextAvailableSubordinateName);
+
+				transaction = SubordinationManager.getTransactionImporter().importTransaction(toImport, remainingTimeout);
 				existed = false;
 			}
 		}
@@ -181,7 +205,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public Integer getNodeName() {
+	public String getNodeName() {
 		return TxControl.getXANodeName();
 	}
 
@@ -230,7 +254,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		fos.writeInt(currentXid.getBranchQualifier().length);
 		fos.write(currentXid.getBranchQualifier());
 
-		return new ProxyXAResource(lookupProvider, TxControl.getXANodeName(), remoteServerName, file);
+		return new ProxyXAResource(lookupProvider, nodeName, remoteServerName, file);
 	}
 
 	@Override
@@ -240,7 +264,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, String remoteServerName, Xid toRegisterAgainst) {
-		return new ProxySynchronization(lookupProvider, TxControl.getXANodeName(), remoteServerName, toRegisterAgainst);
+		return new ProxySynchronization(lookupProvider, nodeName, remoteServerName, toRegisterAgainst);
 	}
 
 	@Override
@@ -249,7 +273,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public int prepare(Xid xid) throws XAException, DummyRemoteException {
+	public int prepare(Xid xid) throws XAException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
@@ -260,55 +284,96 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public void commit(Xid xid, boolean onePhase) throws XAException, DummyRemoteException {
+	public void commit(Xid xid, boolean onePhase, boolean recover) throws XAException, IOException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		if (recover) {
+			recover(xid);
+		}
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			SubordinationManager.getXATerminator().commit(xid, onePhase);
+			subordinateOrphanDetection.remove(new SubordinateXidImple(xid)).delete();
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
 
 	@Override
-	public void rollback(Xid xid) throws XAException, DummyRemoteException {
+	public void rollback(Xid xid, boolean recover) throws XAException, IOException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		if (recover) {
+			recover(xid);
+		}
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			SubordinationManager.getXATerminator().rollback(xid);
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
+
+			subordinateOrphanDetection.remove(new SubordinateXidImple(xid)).delete();
+		}
+	}
+
+	public void recover(Xid toRecover) throws XAException, IOException {
+		// Work out what the subordinate name would be for these transaction
+		// for this server
+		XidImple recoverable = null;
+
+		// Look at the list of subordinate name to XA node name map
+		File directory = new File(System.getProperty("user.dir") + "/distributedjta-example/SubordinateNameXANodeNameMap/" + nodeName + "/");
+		if (directory.exists() && directory.isDirectory()) {
+			File[] listFiles = directory.listFiles();
+			for (int i = 0; i < listFiles.length; i++) {
+				File file = listFiles[i];
+				DataInputStream fis = new DataInputStream(new FileInputStream(file));
+				int nodeNameLength = fis.readInt();
+				final byte[] nodeNameBytes = new byte[nodeNameLength];
+				fis.read(nodeNameBytes, 0, nodeNameLength);
+				String nodeName = new String(nodeNameBytes);
+
+				// Is the node name this servers node name
+				if (nodeName.equals(TxControl.getXANodeName())) {
+					// Read in the subordinate name for the encapsulated
+					// transaction
+					Integer subordinateNodeName = fis.readInt();
+					int gtridLength = fis.readInt();
+					byte[] gtrid = new byte[gtridLength];
+					fis.read(gtrid, 0, gtridLength);
+
+					// Check if the transaction in the list the client is
+					// requesting
+					byte[] requestedGtrid = toRecover.getGlobalTransactionId();
+					if (Arrays.equals(gtrid, requestedGtrid)) {
+						// Set the subordinate name
+						recoverable = new XidImple(toRecover);
+						XATxConverter.setSubordinateNodeName(recoverable.getXID(), subordinateNodeName);
+						subordinateOrphanDetection.put(new SubordinateXidImple(recoverable), file);
+					}
+				}
+			}
+
+		}
+
+		if (recoverable != null) {
+			((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(recoverable);
 		}
 	}
 
 	@Override
-	public Xid[] recoverFor(Integer parentNodeName) throws XAException, DummyRemoteException {
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		try {
-			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			// Pass in true so we can recover the inflight transactions for this
-			// node
-			Xid[] recovered = ((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(parentNodeName, true);
-			return recovered;
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
-		}
-	}
-
-	@Override
-	public void forget(Xid xid) throws XAException, DummyRemoteException {
+	public void forget(Xid xid) throws XAException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			SubordinationManager.getXATerminator().forget(xid);
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
+			subordinateOrphanDetection.remove(new SubordinateXidImple(xid)).delete();
 		}
 
 	}
 
 	@Override
-	public void beforeCompletion(Xid xid) throws XAException, SystemException, DummyRemoteException {
+	public void beforeCompletion(Xid xid) throws XAException, SystemException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());

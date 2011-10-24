@@ -45,12 +45,12 @@ public class Test02
 		boolean passed = false;
 		Uid bogusNodeName = new Uid();
 
-		xaRecoveryNodes.add(2);
+		xaRecoveryNodes.add("2");
 
 		System.err.println("Bogus XA node name: " + bogusNodeName);
 
 		XidImple xid = new XidImple(new Uid());
-		int nodeName = XAUtils.getXANodeName(xid);
+		String nodeName = XAUtils.getXANodeName(xid);
 
 		// should fail.
 

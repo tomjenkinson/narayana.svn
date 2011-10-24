@@ -175,11 +175,11 @@ public class Utility
 
 	otid_t otid = new otid_t();
 	byte[] b = theUid.getBytes();
-	int nodeName = TxControl.getXANodeName();
+	byte[] nodeName = TxControl.getXANodeName().getBytes();
 
 	otid.formatID = 0;
-	otid.tid = new byte[b.length+4];
-	otid.bqual_length = 4;
+	otid.tid = new byte[b.length+nodeName.length];
+	otid.bqual_length = nodeName.length;
 	
 	/*
 	 * gtrid must be first then immediately followed by bqual.
@@ -187,13 +187,8 @@ public class Utility
 	 */
 
 	System.arraycopy(b, 0, otid.tid, 0, b.length);
+	System.arraycopy(nodeName, 0, otid.tid, b.length, nodeName.length);
 
-	int offset = b.length;
-	otid.tid[offset + 0] = (byte) (nodeName >>> 24);
-	otid.tid[offset + 1] = (byte) (nodeName >>> 16);
-	otid.tid[offset + 2] = (byte) (nodeName >>> 8);
-	otid.tid[offset + 3] = (byte) (nodeName >>> 0);
-	
 	b = null;
 
 	return otid;
