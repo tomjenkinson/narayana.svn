@@ -65,6 +65,12 @@ import com.arjuna.jta.distributed.example.server.LocalServer;
 import com.arjuna.jta.distributed.example.server.LookupProvider;
 import com.arjuna.jta.distributed.example.server.RemoteServer;
 
+/**
+ * IMPORTANT: Although this example shows points at which the transport is
+ * expected to persist data, it does not define concretely the mechanisms to do
+ * so, nor should it be considered sufficient for reliably persisting this data.
+ * For instance, we do not flush to disk.
+ */
 public class ServerImpl implements LocalServer, RemoteServer {
 
 	private RecoveryManagerService recoveryManagerService;

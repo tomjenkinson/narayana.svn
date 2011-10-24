@@ -75,6 +75,11 @@ import com.arjuna.jta.distributed.example.server.LookupProvider;
  * the transaction must be reloaded by the remote server before the
  * commit/rollback – if it was prepared - before we attempt to complete the
  * transaction.
+ * 
+ * IMPORTANT: Although this example shows points at which the transport is
+ * expected to persist data, it does not define concretely the mechanisms to do
+ * so, nor should it be considered sufficient for reliably persisting this data.
+ * For instance, we do not flush to disk.
  */
 public class ProxyXAResource implements XAResource {
 

@@ -68,6 +68,11 @@ import com.arjuna.jta.distributed.example.server.RemoteServer;
  * programatic configurably trigger a rollback exception which is good for
  * certain situations, the example though guards "migrations" by checking their
  * state before propagation - I recommend all transports do the same.
+ * 
+ * IMPORTANT: Although this example shows points at which the transport is
+ * expected to persist data, it does not define concretely the mechanisms to do
+ * so, nor should it be considered sufficient for reliably persisting this data.
+ * For instance, we do not flush to disk.
  */
 public class ExampleDistributedJTATestCase {
 	/**
@@ -277,8 +282,9 @@ public class ExampleDistributedJTATestCase {
 	 * @throws NotSupportedException
 	 * @throws IOException
 	 */
-	private DataReturnedFromRemoteServer propagateTransaction(List<String> nodesToFlowTo, int remainingTimeout, Xid toMigrate, Integer nextAvailableSubordinateName) throws RollbackException,
-			IllegalStateException, XAException, SystemException, NotSupportedException, IOException {
+	private DataReturnedFromRemoteServer propagateTransaction(List<String> nodesToFlowTo, int remainingTimeout, Xid toMigrate,
+			Integer nextAvailableSubordinateName) throws RollbackException, IllegalStateException, XAException, SystemException, NotSupportedException,
+			IOException {
 		// Do some test setup to initialize this method as it if was being
 		// invoked in a remote server
 		String currentServerName = nodesToFlowTo.remove(0);
@@ -342,7 +348,8 @@ public class ExampleDistributedJTATestCase {
 				// indicate whether this caller is the first client to establish
 				// the
 				// subordinate transaction at the remote node
-				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = propagateTransaction(nodesToFlowTo, remainingTimeout, currentXid, nextAvailableSubordinateName);
+				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = propagateTransaction(nodesToFlowTo, remainingTimeout, currentXid,
+						nextAvailableSubordinateName);
 				// Resume the transaction locally, ready for any more local work
 				// and
 				// to add the proxy resource and sync if needed
@@ -431,7 +438,7 @@ public class ExampleDistributedJTATestCase {
 		public int getTransactionState() {
 			return transactionState;
 		}
-		
+
 		public Integer getNextAvailableSubordinateName() {
 			return nextAvailableSubordinateName;
 		}
