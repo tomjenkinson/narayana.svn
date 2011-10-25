@@ -48,7 +48,7 @@ import com.arjuna.ats.internal.jta.xa.XID;
 
 public class XATxConverter
 {
-    public static final int FORMAT_ID = 131076; // different from JTS ones.
+    public static final int FORMAT_ID = 131077; // different from JTS ones.
 
     static XID getXid (Uid uid, boolean branch, String eisName) throws IllegalStateException
     {
