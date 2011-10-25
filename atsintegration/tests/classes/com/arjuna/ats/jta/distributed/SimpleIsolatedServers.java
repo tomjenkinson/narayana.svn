@@ -279,13 +279,7 @@ public class SimpleIsolatedServers {
 					originalServer.removeRootTransaction(currentXid);
 					transactionManager.commit();
 					Thread.currentThread().setContextClassLoader(classLoader);
-				} catch (ExecuteException e) {
-					System.err.println("Should be a thread death but cest la vie");
-					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
-						phase2CommitAborted.notify();
-					}
-				} catch (LinkageError t) {
+				} catch (Error t) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
 						phase2CommitAborted.incrementPhase2CommitAborted();
@@ -357,24 +351,18 @@ public class SimpleIsolatedServers {
 					originalServer.removeRootTransaction(currentXid);
 					transactionManager.commit();
 					Thread.currentThread().setContextClassLoader(classLoader);
-				} catch (ExecuteException e) {
-					System.err.println("Should be a thread death but cest la vie");
-					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
-						phase2CommitAborted.notify();
-					}
-				} catch (LinkageError t) {
+				} catch (Error t) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
 						phase2CommitAborted.incrementPhase2CommitAborted();
 						phase2CommitAborted.notify();
 					}
 				} catch (Throwable t) {
-					System.err.println("Should be a thread death but cest la vie");
-					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
-						phase2CommitAborted.notify();
-					}
+					t.printStackTrace();
+//					synchronized (phase2CommitAborted) {
+//						phase2CommitAborted.incrementPhase2CommitAborted();
+//						phase2CommitAborted.notify();
+//					}
 				}
 			}
 		}, "Orphan-creator");
