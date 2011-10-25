@@ -89,6 +89,7 @@ public class TestResource implements XAResource {
 	/**
 	 * This class declares that it throws an Error *purely for byteman* so that we can crash the resource during this method:
 	 * https://issues.jboss.org/browse/BYTEMAN-156
+	 * https://issues.jboss.org/browse/BYTEMAN-175
 	 */
 	public synchronized int prepare(Xid xid) throws XAException, Error {
 		System.out.println("        TestResource (" + serverId + ")      XA_PREPARE [" + xid + "]");
