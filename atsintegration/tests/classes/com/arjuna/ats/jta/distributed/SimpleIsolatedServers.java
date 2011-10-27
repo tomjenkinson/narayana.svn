@@ -788,6 +788,50 @@ public class SimpleIsolatedServers {
 		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 1);
 		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 2);
 	}
+	
+	
+	@Test
+	public void testTransactionReaperIsCleanedUp() throws Exception {
+		tearDown();
+		setup();
+		int rootTimeout = 5;
+		LocalServer originalServer = getLocalServer("1000");
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+		TransactionManager transactionManager = originalServer.getTransactionManager();
+		transactionManager.setTransactionTimeout(rootTimeout);
+		transactionManager.begin();
+		Transaction originalTransaction = transactionManager.getTransaction();
+		Xid currentXid = originalServer.getCurrentXid();
+		originalServer.storeRootTransaction();
+		originalTransaction.enlistResource(new TestResource(originalServer.getCompletionCounter(), originalServer.getNodeName(), false));
+		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000");
+		int subordinateTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
+		transactionManager.suspend();
+
+		// Migrate a transaction
+		LocalServer currentServer = getLocalServer("2000");
+		ClassLoader parentsClassLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(currentServer.getClass().getClassLoader());
+		currentServer.getAndResumeTransaction(subordinateTimeout, currentXid, 2000);
+		currentServer.getTransactionManager().getTransaction()
+				.enlistResource(new TestResource(currentServer.getCompletionCounter(), currentServer.getNodeName(), false));
+		currentServer.getTransactionManager().suspend();
+		Thread.currentThread().setContextClassLoader(parentsClassLoader);
+
+		// Complete the transaction at the original server
+		transactionManager.resume(originalTransaction);
+		originalTransaction.enlistResource(proxyXAResource);
+		originalServer.removeRootTransaction(currentXid);
+		transactionManager.commit();
+		Thread.currentThread().setContextClassLoader(classLoader);
+		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 1);
+		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 2);
+		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 0);
+		
+		Thread.currentThread().sleep((subordinateTimeout + 4) * 1000);
+	}
 
 	private void doRecursiveTransactionalWork(int startingTimeout, List<String> nodesToFlowTo, boolean commit, boolean rollbackOnlyOnLastNode) throws Exception {
 		tearDown();
