@@ -99,6 +99,7 @@ public class TransactionImpleUnitTest
     @Test
     public void test () throws Exception
     {
+        ThreadActionData.purgeActions();
         TransactionImple tx = new TransactionImple(0);
         
         TxImpleOverride.put(tx);
@@ -162,11 +163,13 @@ public class TransactionImpleUnitTest
         assertFalse(res.booleanValue());
         
         tx.rollback();
+        ThreadActionData.purgeActions();
     }
     
     @Test
     public void testXidCreation () throws Exception
     {
+        ThreadActionData.purgeActions();
         Class[] parameterTypes = new Class[3];
         TransactionImple tx = new TransactionImple(0);
         
