@@ -130,7 +130,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		List<String> recoveryModuleClassNames = new ArrayList<String>();
 
 		recoveryModuleClassNames.add("com.arjuna.ats.internal.arjuna.recovery.AtomicActionRecoveryModule");
-		recoveryModuleClassNames.add("com.arjuna.ats.internal.txoj.recovery.TORecoveryModule");
+//		recoveryModuleClassNames.add("com.arjuna.ats.internal.txoj.recovery.TORecoveryModule");
 		recoveryModuleClassNames.add("com.arjuna.ats.internal.jta.recovery.arjunacore.XARecoveryModule");
 		recoveryEnvironmentBean.setRecoveryModuleClassNames(recoveryModuleClassNames);
 		List<String> expiryScannerClassNames = new ArrayList<String>();

@@ -113,6 +113,9 @@ public class SimpleIsolatedServers {
 	@Test
 	@BMScript("leave-subordinate-orphan")
 	public void testSimultaneousRecover() throws Exception {
+		System.out.println("testSimultaneousRecover");
+		tearDown();
+		setup();
 		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
 		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
@@ -249,6 +252,9 @@ public class SimpleIsolatedServers {
 	@Test
 	@BMScript("leaveorphan")
 	public void testTwoPhaseXAResourceOrphan() throws Exception {
+		System.out.println("testTwoPhaseXAResourceOrphan");
+		tearDown();
+		setup();
 		assertTrue(getLocalServer("3000").getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
@@ -324,6 +330,9 @@ public class SimpleIsolatedServers {
 	@Test
 	@BMScript("leaveorphan")
 	public void testOnePhaseXAResourceOrphan() throws Exception {
+		System.out.println("testOnePhaseXAResourceOrphan");
+		tearDown();
+		setup();
 		assertTrue(getLocalServer("3000").getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
@@ -400,6 +409,9 @@ public class SimpleIsolatedServers {
 	@Test
 	@BMScript("leave-subordinate-orphan")
 	public void testOnePhaseSubordinateOrphan() throws Exception {
+		System.out.println("testOnePhaseSubordinateOrphan");
+		tearDown();
+		setup();
 		assertTrue(getLocalServer("3000").getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
@@ -484,6 +496,9 @@ public class SimpleIsolatedServers {
 	@Test
 	@BMScript("leaverunningorphan")
 	public void testRecoverInflightTransaction() throws Exception {
+		System.out.println("testRecoverInflightTransaction");
+		tearDown();
+		setup();
 		final CompletionCounter counter = new CompletionCounter() {
 			private int commitCount = 0;
 			private int rollbackCount = 0;
@@ -588,6 +603,7 @@ public class SimpleIsolatedServers {
 	@Test
 	@BMScript("fail2pc")
 	public void testRecovery() throws Exception {
+		System.out.println("testRecovery");
 		tearDown();
 		setup();
 		assertTrue(getLocalServer("3000").getCompletionCounter().getCommitCount() == 0);
@@ -636,6 +652,7 @@ public class SimpleIsolatedServers {
 
 	@Test
 	public void testOnePhaseCommit() throws Exception {
+		System.out.println("testOnePhaseCommit");
 		tearDown();
 		setup();
 		LocalServer originalServer = getLocalServer("1000");
@@ -666,6 +683,7 @@ public class SimpleIsolatedServers {
 
 	@Test
 	public void testUnPreparedRollback() throws Exception {
+		System.out.println("testUnPreparedRollback");
 		tearDown();
 		setup();
 		LocalServer originalServer = getLocalServer("1000");
@@ -698,6 +716,9 @@ public class SimpleIsolatedServers {
 
 	@Test
 	public void testMigrateTransactionRollbackOnlyCommit() throws Exception {
+		System.out.println("testMigrateTransactionRollbackOnlyCommit");
+		tearDown();
+		setup();
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(
 				Arrays.asList(new String[] { "1000", "2000", "3000", "2000", "1000", "2000", "3000", "1000", "3000" }));
@@ -706,6 +727,9 @@ public class SimpleIsolatedServers {
 
 	@Test
 	public void testMigrateTransactionRollbackOnlyRollback() throws Exception {
+		System.out.println("testMigrateTransactionRollbackOnlyRollback");
+		tearDown();
+		setup();
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(
 				Arrays.asList(new String[] { "1000", "2000", "3000", "2000", "1000", "2000", "3000", "1000", "3000" }));
@@ -714,6 +738,9 @@ public class SimpleIsolatedServers {
 
 	@Test
 	public void testMigrateTransactionCommit() throws Exception {
+		System.out.println("testMigrateTransactionCommit");
+		tearDown();
+		setup();
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(
 				Arrays.asList(new String[] { "1000", "2000", "3000", "2000", "1000", "2000", "3000", "1000", "3000" }));
@@ -722,6 +749,9 @@ public class SimpleIsolatedServers {
 
 	@Test
 	public void testMigrateTransactionCommitDiamond() throws Exception {
+		System.out.println("testMigrateTransactionCommitDiamond");
+		tearDown();
+		setup();
 
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(Arrays.asList(new String[] { "1000", "2000", "1000", "3000", "1000", "2000", "3000" }));
@@ -730,6 +760,9 @@ public class SimpleIsolatedServers {
 
 	@Test
 	public void testMigrateTransactionRollback() throws Exception {
+		System.out.println("testMigrateTransactionRollback");
+		tearDown();
+		setup();
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(
 				Arrays.asList(new String[] { "1000", "2000", "3000", "2000", "1000", "2000", "3000", "1000", "3000" }));
@@ -738,6 +771,9 @@ public class SimpleIsolatedServers {
 
 	@Test
 	public void testMigrateTransactionRollbackDiamond() throws Exception {
+		System.out.println("testMigrateTransactionRollbackDiamond");
+		tearDown();
+		setup();
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(Arrays.asList(new String[] { "1000", "2000", "1000", "3000", "1000", "2000", "3000" }));
 		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, false, false);
@@ -745,6 +781,7 @@ public class SimpleIsolatedServers {
 
 	@Test
 	public void testMigrateTransactionSubordinateTimeout() throws Exception {
+		System.out.println("testMigrateTransactionSubordinateTimeout");
 		tearDown();
 		setup();
 		int rootTimeout = 10000;
@@ -792,6 +829,7 @@ public class SimpleIsolatedServers {
 	
 	@Test
 	public void testTransactionReaperIsCleanedUp() throws Exception {
+		System.out.println("testTransactionReaperIsCleanedUp");
 		tearDown();
 		setup();
 		int rootTimeout = 5;
