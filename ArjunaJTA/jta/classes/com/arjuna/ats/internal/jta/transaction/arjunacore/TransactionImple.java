@@ -52,6 +52,7 @@ import com.arjuna.ats.jta.xa.XAModifier;
 
 import com.arjuna.ats.arjuna.coordinator.*;
 import com.arjuna.ats.arjuna.common.*;
+import com.arjuna.ats.arjuna.exceptions.ObjectStoreException;
 
 import javax.transaction.xa.*;
 
@@ -60,6 +61,7 @@ import java.util.*;
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 
+import java.io.IOException;
 import java.lang.IllegalStateException;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -1484,15 +1486,15 @@ public class TransactionImple implements javax.transaction.Transaction,
 		return null;
 	}
 
-	protected Xid createXid(boolean branch, XAModifier theModifier, XAResource xaResource)
+	protected Xid createXid(boolean branch, XAModifier theModifier, XAResource xaResource) throws IOException, ObjectStoreException
 	{
-        String eisName = null;
+        int eisName = 0;
         if(branch) {
             if(_xaResourceRecordWrappingPlugin != null) {
                 eisName = _xaResourceRecordWrappingPlugin.getEISName(xaResource);
             }
         }
-		Xid xid = new XidImple(_theTransaction, branch, eisName);
+		Xid xid = new XidImple(_theTransaction.get_uid(), branch, eisName);
 
 		if (theModifier != null)
 		{

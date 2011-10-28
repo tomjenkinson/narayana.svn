@@ -82,6 +82,7 @@
             <tests>
                 <fileset dir="tests/classes">
                     <include name="**/SimpleIsolatedServers.java"/>
+                    <include name="**/TestXAResourceRecordWrapperImpl.java"/>
                 </fileset>
             </tests>
         </run.tests.macro>

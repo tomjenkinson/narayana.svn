@@ -33,6 +33,7 @@ package com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate;
 
 import com.arjuna.ats.arjuna.coordinator.ActionStatus;
 import com.arjuna.ats.arjuna.coordinator.TwoPhaseOutcome;
+import com.arjuna.ats.arjuna.exceptions.ObjectStoreException;
 
 import com.arjuna.ats.internal.jta.transaction.arjunacore.AtomicAction;
 import com.arjuna.ats.jta.exceptions.InvalidTerminationStateException;
@@ -42,6 +43,7 @@ import com.arjuna.ats.jta.xa.XAModifier;
 import com.arjuna.ats.jta.xa.XATxConverter;
 import com.arjuna.ats.jta.xa.XidImple;
 
+import java.io.IOException;
 import java.lang.IllegalStateException;
 
 import javax.transaction.*;
@@ -362,7 +364,7 @@ public class TransactionImple extends
     }
 
 	@Override
-	protected Xid createXid(boolean branch, XAModifier theModifier, XAResource xaResource)
+	protected Xid createXid(boolean branch, XAModifier theModifier, XAResource xaResource) throws IOException, ObjectStoreException
 	{
 		Xid xid = baseXid();
 
@@ -370,7 +372,7 @@ public class TransactionImple extends
 		if (xid.getFormatId() != XATxConverter.FORMAT_ID)
 			return xid;
 
-        String eisName = null;
+		Integer eisName = null;
         if(branch) {
             if(_xaResourceRecordWrappingPlugin != null) {
                 eisName = _xaResourceRecordWrappingPlugin.getEISName(xaResource);

@@ -73,11 +73,7 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 		this(c.get_uid(), false, null);
 	}
 
-	public XidImple(AtomicAction c, boolean branch, String eisName) {
-		this(c.get_uid(), branch, eisName);
-	}
-
-	public XidImple(Xid xid, boolean branch, String eisName) {
+	public XidImple(Xid xid, boolean branch, Integer eisName) {
 		this(xid);
 		if (branch) {
 			XATxConverter.setBranchUID(_theXid, new Uid());
@@ -92,7 +88,7 @@ public class XidImple implements javax.transaction.xa.Xid, Serializable {
 		this(id, false, null);
 	}
 
-	public XidImple(Uid id, boolean branch, String eisName) {
+	public XidImple(Uid id, boolean branch, Integer eisName) {
 		try {
 			_theXid = XATxConverter.getXid(id, branch, eisName);
 		} catch (Exception e) {

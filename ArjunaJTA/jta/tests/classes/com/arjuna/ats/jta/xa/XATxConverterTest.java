@@ -1,6 +1,7 @@
 package com.arjuna.ats.jta.xa;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import javax.transaction.xa.Xid;
 
@@ -9,7 +10,6 @@ import org.junit.Test;
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.arjuna.common.arjPropertyManager;
-import com.arjuna.ats.arjuna.coordinator.TxControl;
 
 public class XATxConverterTest {
 
@@ -17,7 +17,7 @@ public class XATxConverterTest {
 	public void testXAConverter() throws CoreEnvironmentBeanException {
 		Uid uid = new Uid();
 		boolean branch = true;
-		String eisName = "foo";
+		Integer eisName = 1;
 		arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier("1");
 
 		XidImple rootXid = new XidImple(uid, branch, eisName);
@@ -27,7 +27,7 @@ public class XATxConverterTest {
 			assertEquals(XATxConverter.getSubordinateNodeName(rootXid.getXID()), new Integer(0));
 		}
 
-//		TxControl.setXANodeName(2);
+		// TxControl.setXANodeName(2);
 		XATxConverter.setSubordinateNodeName(rootXid.getXID(), 1);
 		XidImple subordinateXid = new XidImple(rootXid);
 		{
@@ -42,7 +42,7 @@ public class XATxConverterTest {
 		XidImple foreignXidImple = new XidImple(new MyForeignXID());
 
 		assertEquals(XATxConverter.getNodeName(foreignXidImple.getXID()), null);
-		assertEquals(XATxConverter.getEISName(foreignXidImple.getXID()), "unknown eis name");
+		assertTrue(XATxConverter.getEISName(foreignXidImple.getXID()) == -1);
 		assertEquals(XATxConverter.getSubordinateNodeName(foreignXidImple.getXID()), new Integer(-1));
 	}
 
