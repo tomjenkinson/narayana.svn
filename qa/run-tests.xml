@@ -33,7 +33,7 @@
     ant -f run-tests.xml junit junit-jdbc
 
   Paths are relative to the JVM's working dir - don't expect to be able to execute this from anywhere but 'qa'.
-
+ 
 -->
 <project name="QA Tests for JBossTS" default="junit" basedir=".">
   <!-- set this property to the location of a JBossTS core build -->
