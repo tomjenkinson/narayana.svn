@@ -342,11 +342,11 @@
             <include name="*.jar"/>
             <include name="*.zip"/>
           </fileset>
-          <!-- Commented out as this is just running the same tests again?
+          <!-- JBTM-941 -->
         <fileset dir="../ArjunaJTS/jts/build/lib">
           <include name="jts_tests.jar"/>
         </fileset> 
-        -->
+        
           <pathelement location="${org.jboss.jbossts.qa.ts.home}/etc"/>
         </classpath>
         <formatter type="plain"/>
