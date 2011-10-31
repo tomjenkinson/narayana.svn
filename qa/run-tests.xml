@@ -358,34 +358,43 @@
       </junit>
     </sequential>
   </macrodef>
-  <!-- directory that contains emma.jar and emma_ant.jar: -->
-  <path id="emma.lib">
-    <pathelement location="../ext/emma.jar"/>
-    <pathelement location="../build/extlib/emma_ant.jar"/>
-  </path>
-  <taskdef resource="emma_ant.properties" classpathref="emma.lib"/>
-  <target name="emmareport">
-    <emma enabled="true">
-      <report>
-        <fileset dir="..">
-          <include name="**/target/**/metadata.emma"/>
-        </fileset>
-        <fileset dir="testoutput">
-          <include name="**/*-coverage.ec"/>
-        </fileset>
-        <fileset dir="..">
-          <include name="**/target/**/coverage.ec"/>
-        </fileset>
-        <sourcepath>
-          <dirset dir="..">
-            <include name="**/classes"/>
-          </dirset>
-        </sourcepath>
-        <txt outfile="testoutput/emma/coverage.txt"/>
-        <html outfile="testoutput/emma/coverage.html"/>
-      </report>
-    </emma>
-  </target>
+    <!-- directory that contains emma.jar and emma_ant.jar: -->
+    <property name="emma.dir" value="../build/extlib" />
+
+    <path id="emma.lib" >
+        <pathelement location="${emma.dir}/emma.jar" />
+        <pathelement location="${emma.dir}/emma_ant.jar" />
+    </path>
+
+    <taskdef resource="emma_ant.properties" classpathref="emma.lib" />
+
+    <target name="emmareport">
+        <emma enabled="true">
+            <report>
+
+                <fileset dir=".." >
+                    <include name="**/build/metadata.emma"/>
+                </fileset>
+
+                <fileset dir="testoutput">
+                    <include name="**/*-coverage.ec"/>                    
+                </fileset>
+
+                <fileset dir="..">
+                    <include name="**/build/coverage.ec"/>
+                </fileset>
+
+
+                <sourcepath>
+                    <dirset dir="..">
+                        <include name="**/classes"/>
+                    </dirset>
+                </sourcepath>
+                <txt outfile="testoutput/emma/coverage.txt" />
+                <html outfile="testoutput/emma/coverage.html" />
+            </report>
+        </emma>
+    </target>
   <!--
 
     unused groups, pending cleanup and wiring:
