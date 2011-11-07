@@ -68,15 +68,16 @@
 <TD colspan="3" height="20" bgcolor="#ffffff">&nbsp;</TD>
 </TR>
 <TR>
-<TD valign="top" align="left" width="10" bgcolor="#336699"><IMG src="images/tl_corner_10.gif" alt="" border="0"></TD><TD valign="middle" align="left" width="510" bgcolor="#336699"><FONT size="2" color="#ffffff" style="font-family: Arial, Helvetica, sans-serif"><B>Transaction Result</B></FONT></TD><TD valign="top" align="right" width="10" bgcolor="#336699"><IMG src="images/tr_corner_10.gif" alt="" border="0"></TD>
+<TD valign="top" align="left" width="10" bgcolor="#336699"><IMG src="images/tl_corner_10.gif" alt="" border="0"></TD><TD valign="middle" align="left" width="510" bgcolor="#336699"><DIV class="result_title"><FONT size="2" color="#ffffff" style="font-family: Arial, Helvetica, sans-serif"><B>Transaction Result</B></FONT></DIV></TD><TD valign="top" align="right" width="10" bgcolor="#336699"><IMG src="images/tr_corner_10.gif" alt="" border="0"></TD>
 </TR>
 <TR>
 <TD width="10" bgcolor="#e3e3e3">&nbsp;</TD><TD width="510" bgcolor="#e3e3e3">
 <FONT size="2" style="font-family: Arial, Helvetica, sans-serif">
-<div>
+<DIV class="result">
 <p>
 <%= request.getAttribute("result") %>
 </p>
+</DIV>
 </FONT></TD>
 <TD width="10" bgcolor="#e3e3e3">&nbsp;</TD>
 </TR>
@@ -101,7 +102,7 @@
 <div>
 <p>
 Transaction Type:
-<SELECT NAME="txType">
+<SELECT NAME="txType" ID="txType">
 <option value="AtomicTransaction">Atomic Transaction</option>
 <option value="BusinessActivity">Business Activity</option>
 </SELECT>
@@ -129,7 +130,7 @@ Transaction Type:
 <div>
 <p>
 Table for
-<SELECT NAME="restaurant">
+<SELECT NAME="restaurant" ID="restaurant">
 <OPTION>1
 <OPTION>2
 <OPTION>3
@@ -165,7 +166,7 @@ people.
 <div>
 <p>
 Book
-<SELECT NAME="theatrecirclecount">
+<SELECT NAME="theatrecirclecount" ID="theatrecirclecount">
 <OPTION>0
 <OPTION>1
 <OPTION>2
@@ -182,7 +183,7 @@ seats in the Circle
 </p>
 <p>
 Book
-<SELECT NAME="theatrestallscount">
+<SELECT NAME="theatrestallscount" ID="theatrestallscount">
 <OPTION>0
 <OPTION>1
 <OPTION>2
@@ -199,7 +200,7 @@ seats in the Stalls
 </p>
 <p>
 Book
-<SELECT NAME="theatrebalconycount">
+<SELECT NAME="theatrebalconycount" ID="theatrebalconycount">
 <OPTION>0
 <OPTION>1
 <OPTION>2
@@ -236,7 +237,7 @@ seats in the Balcony
 <div>
 <p>
 Book a taxi?
-<SELECT NAME="taxi">
+<SELECT NAME="taxi" ID="taxi">
 <option value="0">No</option>
 <option value="1">Yes</option>
 </SELECT>
@@ -261,9 +262,9 @@ Book a taxi?
 <TD width="10" bgcolor="#e3e3e3">&nbsp;</TD><TD width="510" bgcolor="#e3e3e3">
 <FONT size="2" style="font-family: Arial, Helvetica, sans-serif">
 <p>
-<input type="submit" name="submit" value="Submit Booking Requests" />
+<input type="submit" name="submit" id="submit" value="Submit Booking Requests" />
 &nbsp;&nbsp;
-<input type="reset" name="reset" value="Reset Form Values" />
+<input type="reset" name="reset" id="reset" value="Reset Form Values" />
 </p>
 </FONT></TD>
 <TD width="10" bgcolor="#e3e3e3">&nbsp;</TD>
