@@ -810,7 +810,7 @@ public class XARecoveryModule implements RecoveryModule
 			else
 			{
                 refreshXidScansForEquivalentXAResourceImpl(xares, trans);
-                
+
 				xidsToRecover = (RecoveryXids) _xidScans.get(xares);
 
 				if (xidsToRecover == null)
@@ -844,7 +844,7 @@ public class XARecoveryModule implements RecoveryModule
 
 			xidsToRecover.nextScan(trans);
 
-			Object[] xids = xidsToRecover.toRecover();
+			Xid[] xids = xidsToRecover.toRecover();
 
 			if (xids != null)
 			{
@@ -872,7 +872,7 @@ public class XARecoveryModule implements RecoveryModule
 					{
 						// is the xid known to be one that couldn't be recovered
 
-						recordUid = previousFailure((Xid) xids[j]);
+						recordUid = previousFailure(xids[j]);
 
 						if ((recordUid == null) && (foundTransaction))
 							break; // end
@@ -900,7 +900,7 @@ public class XARecoveryModule implements RecoveryModule
 							}
 
 							String nodeName = XAUtils
-									.getXANodeName((Xid) xids[j]);
+									.getXANodeName(xids[j]);
 							boolean doRecovery = false;
 
 							if (jtaLogger.loggerI18N.isDebugEnabled())
@@ -1008,7 +1008,7 @@ public class XARecoveryModule implements RecoveryModule
 							{
                                 if (doRecovery)
                                 {
-                                    if (!transactionLog((Xid) xids[j]))
+                                    if (!transactionLog(xids[j]))
                                     {
                                         if (jtaLogger.loggerI18N.isInfoEnabled())
                                         {
@@ -1017,10 +1017,10 @@ public class XARecoveryModule implements RecoveryModule
                                                             "com.arjuna.ats.internal.jta.recovery.info.rollingback",
                                                             new Object[]
                                                                     { XAHelper
-                                                                            .xidToString((Xid) xids[j]) });
+                                                                            .xidToString(xids[j]) });
                                         }
 
-                                        xares.rollback((Xid) xids[j]);
+                                        xares.rollback(xids[j]);
                                     }
                                     else
                                     {
@@ -1031,7 +1031,7 @@ public class XARecoveryModule implements RecoveryModule
                                                             "com.arjuna.ats.internal.jta.recovery.info.rollingbackignore",
                                                             new Object[]
                                                                     { XAHelper
-                                                                            .xidToString((Xid) xids[j]) });
+                                                                            .xidToString(xids[j]) });
                                         }
 
                                         /*
@@ -1049,7 +1049,7 @@ public class XARecoveryModule implements RecoveryModule
 														"com.arjuna.ats.internal.jta.recovery.info.notrollback",
 														new Object[]
 														{ XAHelper
-																.xidToString((Xid) xids[j]) });
+																.xidToString(xids[j]) });
 									}
 								}
 							}
