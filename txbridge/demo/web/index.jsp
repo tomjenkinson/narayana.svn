@@ -39,11 +39,11 @@
 
         <% if(null != request.getAttribute("result")) { %>
         <!-- tx result panel -->
-        <p>Transaction Result: <%= request.getAttribute("result") %></p>
+        <p><span class="result_title">Transaction Result:</span> <span class="result"><%= request.getAttribute("result") %></span></p>
         <% } // end if %>
 
         <p>Number of seats to book:
-            <select name="seats">
+            <select name="seats" id="seats">
                 <option>1</option>
                 <option>2</option>
                 <option>3</option>
@@ -58,7 +58,7 @@
         </p>
 
         <p>Parent Transaction Type:
-            <select name="txType">
+            <select name="txType" id="txType">
                 <option value="AtomicTransaction">WS-AT</option>
                 <option value="JTA">JTA (requires XTS demo services)</option>
             </select>
@@ -67,7 +67,7 @@
         </p>
 
         <p>
-            <input type="submit" name="submit" value="Submit Booking" />
+            <input type="submit" name="submit" id="submit" value="Submit Booking" />
         </p>
 
     </form>
