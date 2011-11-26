@@ -85,7 +85,7 @@ public class TestResource implements XAResource {
 	public synchronized int prepare(Xid xid) throws XAException {
 		System.out.println("        TestResource (" + localServerName + ")      XA_PREPARE [" + xid + "]");
 
-		File dir = new File(System.getProperty("user.dir") + "/distributedjta-example/TestResource/" + localServerName + "/");
+		File dir = new File(System.getProperty("user.dir") + "/distributedjta-examples/TestResource/" + localServerName + "/");
 		dir.mkdirs();
 		file = new File(dir, new Uid().fileStringForm() + "_");
 		try {

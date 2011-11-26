@@ -164,31 +164,47 @@ public class XATxConverter
 		return new String(Arrays.copyOfRange(xid.data, offset, xid.gtrid_length));
 	}
 
-	public static void setSubordinateNodeName(XID theXid, Integer xaNodeName) {
+	public static void setSubordinateNodeName(XID theXid, String xaNodeName) {
 		if (theXid == null || theXid.formatID != FORMAT_ID) {
 			return;
 		}
+		int length = 0;
+		if (xaNodeName != null) {
+			length = xaNodeName.length();
+		}
 		int offset = theXid.gtrid_length + Uid.UID_SIZE + 4;
-		theXid.data[offset + 0] = (byte) (xaNodeName >>> 24);
-		theXid.data[offset + 1] = (byte) (xaNodeName >>> 16);
-		theXid.data[offset + 2] = (byte) (xaNodeName >>> 8);
-		theXid.data[offset + 3] = (byte) (xaNodeName >>> 0);
+		theXid.data[offset++] = (byte) (length >>> 24);
+		theXid.data[offset++] = (byte) (length >>> 16);
+		theXid.data[offset++] = (byte) (length >>> 8);
+		theXid.data[offset++] = (byte) (length >>> 0);
+		if (length > 0) {
+			byte[] nameAsBytes = xaNodeName.getBytes();
+			System.arraycopy(nameAsBytes, 0, theXid.data, offset, length);
+		}
+		for (int i = offset+length; i < theXid.bqual_length; i++) {
+			theXid.data[i] = 0;
+		}
 	}
-	public static Integer getSubordinateNodeName(XID xid) {
+	public static String getSubordinateNodeName(XID xid) {
 		// Arjuna.XID()
 		// don't check the formatId - it may differ e.g. JTA vs. JTS.
 		if (xid.formatID != FORMAT_ID) {
-			return -1;
+			return null;
 		}
 
 		// the node name follows the Uid with no separator, so the only
 		// way to tell where it starts is to figure out how long the Uid is.
 		int offset = xid.gtrid_length + Uid.UID_SIZE + 4;
 
-		return (xid.data[offset + 0] << 24)
-				+ ((xid.data[offset + 1] & 0xFF) << 16)
-				+ ((xid.data[offset + 2] & 0xFF) << 8)
-				+ (xid.data[offset + 3] & 0xFF);
+		int length = (xid.data[offset++] << 24)
+				+ ((xid.data[offset++] & 0xFF) << 16)
+				+ ((xid.data[offset++] & 0xFF) << 8)
+				+ (xid.data[offset++] & 0xFF);
+		if (length > 0) {
+			return new String(Arrays.copyOfRange(xid.data, offset, offset+length));
+		} else {
+			return null;
+		}
 	}
 
 

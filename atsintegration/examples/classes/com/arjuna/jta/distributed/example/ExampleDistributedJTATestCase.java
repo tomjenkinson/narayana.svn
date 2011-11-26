@@ -218,7 +218,7 @@ public class ExampleDistributedJTATestCase {
 				transactionManager.suspend();
 
 				// WE CAN NOW PROPAGATE THE TRANSACTION
-				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = propagateTransaction(nodesToFlowTo, remainingTimeout, currentXid, 1);
+				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = propagateTransaction(nodesToFlowTo, remainingTimeout, currentXid);
 
 				// After the call retuns, resume the local transaction
 				transactionManager.resume(transaction);
@@ -282,8 +282,7 @@ public class ExampleDistributedJTATestCase {
 	 * @throws NotSupportedException
 	 * @throws IOException
 	 */
-	private DataReturnedFromRemoteServer propagateTransaction(List<String> nodesToFlowTo, int remainingTimeout, Xid toMigrate,
-			Integer nextAvailableSubordinateName) throws RollbackException, IllegalStateException, XAException, SystemException, NotSupportedException,
+	private DataReturnedFromRemoteServer propagateTransaction(List<String> nodesToFlowTo, int remainingTimeout, Xid toMigrate) throws RollbackException, IllegalStateException, XAException, SystemException, NotSupportedException,
 			IOException {
 		// Do some test setup to initialize this method as it if was being
 		// invoked in a remote server
@@ -299,10 +298,7 @@ public class ExampleDistributedJTATestCase {
 		// Check if this server has seen this transaction before - this is
 		// crucial to ensure that calling servers will only lay down a proxy if
 		// they are the first visitor to this server.
-		boolean requiresProxyAtPreviousServer = !currentServer.getAndResumeTransaction(remainingTimeout, toMigrate, nextAvailableSubordinateName);
-		if (requiresProxyAtPreviousServer) {
-			nextAvailableSubordinateName++;
-		}
+		boolean requiresProxyAtPreviousServer = !currentServer.getAndResumeTransaction(remainingTimeout, toMigrate);
 
 		{
 			// Perform work on the migrated transaction
@@ -348,8 +344,7 @@ public class ExampleDistributedJTATestCase {
 				// indicate whether this caller is the first client to establish
 				// the
 				// subordinate transaction at the remote node
-				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = propagateTransaction(nodesToFlowTo, remainingTimeout, currentXid,
-						nextAvailableSubordinateName);
+				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = propagateTransaction(nodesToFlowTo, remainingTimeout, currentXid);
 				// Resume the transaction locally, ready for any more local work
 				// and
 				// to add the proxy resource and sync if needed
@@ -362,7 +357,6 @@ public class ExampleDistributedJTATestCase {
 					transaction.enlistResource(proxyXAResource);
 					// Register a sync
 					transaction.registerSynchronization(currentServer.generateProxySynchronization(lookupProvider, nextServerNodeName, toMigrate));
-					nextAvailableSubordinateName = dataReturnedFromRemoteServer.getNextAvailableSubordinateName();
 				} else {
 					// This will discard the state of this resource, i.e. the
 					// file
@@ -397,7 +391,7 @@ public class ExampleDistributedJTATestCase {
 		// Return to the previous caller back over the transport/classloader
 		// boundary in this case
 		Thread.currentThread().setContextClassLoader(classLoader);
-		return new DataReturnedFromRemoteServer(requiresProxyAtPreviousServer, transactionState, nextAvailableSubordinateName);
+		return new DataReturnedFromRemoteServer(requiresProxyAtPreviousServer, transactionState);
 	}
 
 	/**
@@ -423,12 +417,9 @@ public class ExampleDistributedJTATestCase {
 
 		private int transactionState;
 
-		private Integer nextAvailableSubordinateName;
-
-		public DataReturnedFromRemoteServer(boolean proxyRequired, int transactionState, Integer nextAvailableSubordinateName) {
+		public DataReturnedFromRemoteServer(boolean proxyRequired, int transactionState) {
 			this.proxyRequired = proxyRequired;
 			this.transactionState = transactionState;
-			this.nextAvailableSubordinateName = nextAvailableSubordinateName;
 		}
 
 		public boolean isProxyRequired() {
@@ -437,10 +428,6 @@ public class ExampleDistributedJTATestCase {
 
 		public int getTransactionState() {
 			return transactionState;
-		}
-
-		public Integer getNextAvailableSubordinateName() {
-			return nextAvailableSubordinateName;
 		}
 	}
 }

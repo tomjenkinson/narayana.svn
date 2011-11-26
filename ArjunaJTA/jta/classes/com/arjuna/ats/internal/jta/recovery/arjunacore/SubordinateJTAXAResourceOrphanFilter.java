@@ -47,14 +47,14 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 
 	@Override
 	public Vote checkXid(Xid xid) {
-		Integer nodeName = XATxConverter.getSubordinateNodeName(new XidImple(xid).getXID());
+		String nodeName = XATxConverter.getSubordinateNodeName(new XidImple(xid).getXID());
 
 		if (jtaLogger.logger.isDebugEnabled()) {
 			jtaLogger.logger.debug("subordinate node name of " + xid + " is " + nodeName);
 		}
 
 		// It does have an XID
-		if (nodeName > 0) {
+		if (nodeName != null) {
 			if (transactionLog(xid, nodeName)) {
 				// it's owned by a logged transaction which
 				// will recover it top down in due course
@@ -76,7 +76,7 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 	 * @return <code>boolean</code>true if there is a log file,
 	 *         <code>false</code> if there isn't.
 	 */
-	private boolean transactionLog(Xid recoveredResourceXid, Integer recoveredResourceNodeName) {
+	private boolean transactionLog(Xid recoveredResourceXid, String recoveredResourceNodeName) {
 
 		XidImple theXid = new XidImple(recoveredResourceXid);
 		Uid u = theXid.getTransactionUid();
@@ -114,7 +114,7 @@ public class SubordinateJTAXAResourceOrphanFilter implements XAResourceOrphanFil
 							SubordinateAtomicAction tx = new SubordinateAtomicAction(uid, true);
 							XidImple transactionXid = (XidImple) tx.getXid();
 							if (transactionXid.isSameTransaction(recoveredResourceXid)
-									&& recoveredResourceNodeName == XATxConverter.getSubordinateNodeName(transactionXid.getXID())) {
+									&& recoveredResourceNodeName.equals(XATxConverter.getSubordinateNodeName(transactionXid.getXID()))) {
 								if (jtaLogger.logger.isDebugEnabled()) {
 									jtaLogger.logger.debug("Found record for " + theXid);
 								}

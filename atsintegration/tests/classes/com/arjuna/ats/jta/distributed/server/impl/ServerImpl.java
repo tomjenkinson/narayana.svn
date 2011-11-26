@@ -83,7 +83,6 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	private Map<SubordinateXidImple, TransactionImple> transactions = new HashMap<SubordinateXidImple, TransactionImple>();
 	private RecoveryManager _recoveryManager;
 	private CompletionCounter counter;
-	private Map<SubordinateXidImple, File> subordinateOrphanDetection = new HashMap<SubordinateXidImple, File>();
 
 	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset) throws CoreEnvironmentBeanException, IOException, SecurityException,
 			NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
@@ -153,15 +152,15 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 		ObjectStoreEnvironmentBean actionStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator.getNamedInstance(
 				com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "default");
-		actionStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta/tx-object-store/" + nodeName);
+		actionStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta-tests/tx-object-store/" + nodeName);
 
 		ObjectStoreEnvironmentBean stateStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator.getNamedInstance(
 				com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "stateStore");
-		stateStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta/tx-object-store/" + nodeName);
+		stateStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta-tests/tx-object-store/" + nodeName);
 
 		ObjectStoreEnvironmentBean communicationStoreObjectStoreEnvironmentBean = com.arjuna.common.internal.util.propertyservice.BeanPopulator
 				.getNamedInstance(com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.class, "communicationStore");
-		communicationStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta/tx-object-store/" + nodeName);
+		communicationStoreObjectStoreEnvironmentBean.setObjectStoreDir(System.getProperty("user.dir") + "/distributedjta-tests/tx-object-store/" + nodeName);
 
 		ObjStoreBrowser objStoreBrowser = new ObjStoreBrowser();
 		Map<String, String> types = new HashMap<String, String>();
@@ -259,22 +258,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			transaction = SubordinationManager.getTransactionImporter().getImportedTransaction(toResume);
 			if (transaction == null) {
 
-				File dir = new File(System.getProperty("user.dir") + "/distributedjta/SubordinateNameXANodeNameMap/" + TxControl.getXANodeName());
-				dir.mkdirs();
-				File file = new File(dir, new Uid().fileStringForm());
-				file.createNewFile();
-				DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
-				byte[] nodeName = TxControl.getXANodeName().getBytes();
-				fos.writeInt(nodeName.length);
-				fos.write(nodeName);
-				fos.writeInt(nextAvailableSubordinateName);
-				fos.writeInt(toResume.getGlobalTransactionId().length);
-				fos.write(toResume.getGlobalTransactionId());
-
-				subordinateOrphanDetection.put(new SubordinateXidImple(toResume), file);
-
 				XidImple toImport = new XidImple(toResume);
-				XATxConverter.setSubordinateNodeName(toImport.getXID(), nextAvailableSubordinateName);
+				XATxConverter.setSubordinateNodeName(toImport.getXID(), TxControl.getXANodeName());
 
 				transaction = SubordinationManager.getTransactionImporter().importTransaction(toImport, remainingTimeout);
 				existed = false;
@@ -325,7 +310,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		// prepare but the alternative is to orphan a prepared server
 
 		Xid currentXid = getCurrentXid();
-		File dir = new File(System.getProperty("user.dir") + "/distributedjta/ProxyXAResource/" + getNodeName());
+		File dir = new File(System.getProperty("user.dir") + "/distributedjta-tests/ProxyXAResource/" + getNodeName());
 		dir.mkdirs();
 		File file = new File(dir, new Uid().fileStringForm());
 		file.createNewFile();
@@ -380,13 +365,12 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	@Override
 	public void commit(Xid xid, boolean onePhase, boolean recover) throws XAException, IOException {
 		if (recover) {
-			recover(new Xid[] { xid });
+			recover(xid);
 		}
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			SubordinationManager.getXATerminator().commit(xid, onePhase);
-			subordinateOrphanDetection.remove(new SubordinateXidImple(xid)).delete();
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
@@ -395,7 +379,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	@Override
 	public void rollback(Xid xid, boolean recover) throws XAException, IOException {
 		if (recover) {
-			recover(new Xid[] { xid });
+			recover(xid);
 		}
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
@@ -403,67 +387,26 @@ public class ServerImpl implements LocalServer, RemoteServer {
 			SubordinationManager.getXATerminator().rollback(xid);
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
-			subordinateOrphanDetection.remove(new SubordinateXidImple(xid)).delete();
 		}
 	}
 
-	public void recover(Xid[] toRecover) throws XAException, IOException {
+	protected void recover(Xid toRecover) throws XAException, IOException {
 		// Work out what the subordinate name would be for these transaction
 		// for this server
-		XidImple recoverable = null;
-
-		// Look at the list of subordinate name to XA node name map
-		File directory = new File(System.getProperty("user.dir") + "/distributedjta/SubordinateNameXANodeNameMap/" + nodeName + "/");
-		if (directory.exists() && directory.isDirectory()) {
-			File[] listFiles = directory.listFiles();
-			for (int i = 0; i < listFiles.length; i++) {
-				File file = listFiles[i];
-				DataInputStream fis = new DataInputStream(new FileInputStream(file));
-				int nodeNameLength = fis.readInt();
-				final byte[] nodeNameBytes = new byte[nodeNameLength];
-				fis.read(nodeNameBytes, 0, nodeNameLength);
-				String nodeName = new String(nodeNameBytes);
-
-				// Is the node name this servers node name
-				if (nodeName.equals(TxControl.getXANodeName())) {
-					// Read in the subordinate name for the encapsulated
-					// transaction
-					Integer subordinateNodeName = fis.readInt();
-					int gtridLength = fis.readInt();
-					byte[] gtrid = new byte[gtridLength];
-					fis.read(gtrid, 0, gtridLength);
-
-					// Check if the transaction in the list the client is
-					// requesting
-					for (int j = 0; j < toRecover.length; j++) {
-						Xid toCheck = toRecover[j];
-						byte[] requestedGtrid = toCheck.getGlobalTransactionId();
-						if (Arrays.equals(gtrid, requestedGtrid)) {
-							// Set the subordinate name
-							recoverable = new XidImple(toCheck);
-							XATxConverter.setSubordinateNodeName(recoverable.getXID(), subordinateNodeName);
-							subordinateOrphanDetection.put(new SubordinateXidImple(recoverable), file);
-						}
-					}
-				}
-
-			}
-		}
-		if (recoverable != null) {
-			((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(recoverable);
-		}
+		XidImple recoverable = new XidImple(toRecover);
+		XATxConverter.setSubordinateNodeName(recoverable.getXID(), TxControl.getXANodeName());
+		((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(recoverable);
 	}
 
 	@Override
 	public void forget(Xid xid) throws XAException, IOException {
-		recover(new Xid[] { xid });
+		recover(xid);
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 			SubordinationManager.getXATerminator().forget(xid);
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
-			subordinateOrphanDetection.remove(new SubordinateXidImple(xid)).delete();
 		}
 
 	}

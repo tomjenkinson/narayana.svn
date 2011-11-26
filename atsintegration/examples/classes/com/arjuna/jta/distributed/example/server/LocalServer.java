@@ -124,7 +124,7 @@ public interface LocalServer {
 	 * @throws SystemException
 	 * @throws IOException
 	 */
-	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport, Integer nextAvailableSubordinateName) throws XAException,
+	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport) throws XAException,
 			InvalidTransactionException, IllegalStateException, SystemException, IOException;
 
 	/**

@@ -401,8 +401,8 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
 							SubordinateAtomicAction saa = new SubordinateAtomicAction(uid, true);
 							XidImple loadedXid = (XidImple) saa.getXid();
 							if (loadedXid.getFormatId() == XATxConverter.FORMAT_ID) {
-								Integer loadedXidSubordinateNodeName = XATxConverter.getSubordinateNodeName(loadedXid.getXID());
-								if (XATxConverter.getSubordinateNodeName(toRecover.getXID()) == loadedXidSubordinateNodeName) {
+								String loadedXidSubordinateNodeName = XATxConverter.getSubordinateNodeName(loadedXid.getXID());
+								if (XATxConverter.getSubordinateNodeName(toRecover.getXID()).equals(loadedXidSubordinateNodeName)) {
 									if (Arrays.equals(loadedXid.getGlobalTransactionId(), toRecover.getGlobalTransactionId())) {
 										if (jtaLogger.logger.isDebugEnabled()) {
 											jtaLogger.logger.debug("Found record for " + saa);

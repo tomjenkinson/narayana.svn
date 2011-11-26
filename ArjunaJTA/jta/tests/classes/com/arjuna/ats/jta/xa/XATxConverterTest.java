@@ -24,16 +24,16 @@ public class XATxConverterTest {
 		{
 			assertEquals(XATxConverter.getNodeName(rootXid.getXID()), "1");
 			assertEquals(XATxConverter.getEISName(rootXid.getXID()), eisName);
-			assertEquals(XATxConverter.getSubordinateNodeName(rootXid.getXID()), new Integer(0));
+			assertEquals(XATxConverter.getSubordinateNodeName(rootXid.getXID()), "0");
 		}
 
 		// TxControl.setXANodeName(2);
-		XATxConverter.setSubordinateNodeName(rootXid.getXID(), 1);
+		XATxConverter.setSubordinateNodeName(rootXid.getXID(), "1");
 		XidImple subordinateXid = new XidImple(rootXid);
 		{
 			assertEquals(XATxConverter.getNodeName(subordinateXid.getXID()), "1");
 			assertEquals(XATxConverter.getEISName(subordinateXid.getXID()), eisName);
-			assertEquals(XATxConverter.getSubordinateNodeName(subordinateXid.getXID()), new Integer(1));
+			assertEquals(XATxConverter.getSubordinateNodeName(subordinateXid.getXID()), "1");
 		}
 	}
 
