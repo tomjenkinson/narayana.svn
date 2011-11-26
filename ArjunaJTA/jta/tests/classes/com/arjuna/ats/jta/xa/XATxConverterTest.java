@@ -24,7 +24,7 @@ public class XATxConverterTest {
 		{
 			assertEquals(XATxConverter.getNodeName(rootXid.getXID()), "1");
 			assertEquals(XATxConverter.getEISName(rootXid.getXID()), eisName);
-			assertEquals(XATxConverter.getSubordinateNodeName(rootXid.getXID()), "0");
+			assertEquals(XATxConverter.getSubordinateNodeName(rootXid.getXID()), null);
 		}
 
 		// TxControl.setXANodeName(2);
@@ -43,7 +43,7 @@ public class XATxConverterTest {
 
 		assertEquals(XATxConverter.getNodeName(foreignXidImple.getXID()), null);
 		assertTrue(XATxConverter.getEISName(foreignXidImple.getXID()) == -1);
-		assertEquals(XATxConverter.getSubordinateNodeName(foreignXidImple.getXID()), new Integer(-1));
+		assertEquals(XATxConverter.getSubordinateNodeName(foreignXidImple.getXID()), null);
 	}
 
 	private class MyForeignXID implements Xid {
