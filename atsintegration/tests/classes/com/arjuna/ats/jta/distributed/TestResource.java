@@ -151,7 +151,6 @@ public class TestResource implements XAResource {
 			completionCounter.incrementRollback();
 		}
 		if (file != null) {
-			System.err.println(file.getAbsolutePath());
 			if (!file.delete()) {
 				throw new XAException(XAException.XA_RETRY);
 			}
