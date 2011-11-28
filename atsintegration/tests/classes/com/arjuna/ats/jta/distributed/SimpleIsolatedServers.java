@@ -231,6 +231,7 @@ public class SimpleIsolatedServers {
 		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
 		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 1);
 
+		System.out.println("RECOVERING SECOND SERVER");
 		tearDown();
 		setup();
 		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);

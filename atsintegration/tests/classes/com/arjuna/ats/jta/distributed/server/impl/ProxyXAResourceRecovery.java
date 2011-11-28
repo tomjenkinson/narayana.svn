@@ -43,8 +43,11 @@ import com.arjuna.ats.jta.xa.XidImple;
 public class ProxyXAResourceRecovery implements XAResourceRecovery {
 
 	private List<ProxyXAResource> resources = new ArrayList<ProxyXAResource>();
+	private String nodeName;
 
 	public ProxyXAResourceRecovery(CompletionCounter counter, LookupProvider lookupProvider, String nodeName) throws IOException {
+		this.nodeName = nodeName;
+		System.out.println(nodeName + " asked to recover ProxyXAResources");
 		File directory = new File(System.getProperty("user.dir") + "/distributedjta-tests/ProxyXAResource/" + nodeName + "/");
 		Map<String, Map<Xid, File>> savedData = new HashMap<String, Map<Xid, File>>();
 		if (directory.exists() && directory.isDirectory()) {
@@ -87,6 +90,7 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 						return gtrid;
 					}
 				});
+				fis.close();
 				map.put(xid, file);
 			}
 		}
@@ -100,6 +104,7 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 
 	@Override
 	public XAResource[] getXAResources() {
+		System.out.println(nodeName + "Returning list of ProxyXAResources of length: " + resources.size());
 		return resources.toArray(new XAResource[] {});
 	}
 

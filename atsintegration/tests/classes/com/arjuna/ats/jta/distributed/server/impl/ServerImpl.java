@@ -323,6 +323,8 @@ public class ServerImpl implements LocalServer, RemoteServer {
 		fos.write(currentXid.getGlobalTransactionId());
 		fos.writeInt(currentXid.getBranchQualifier().length);
 		fos.write(currentXid.getBranchQualifier());
+		fos.flush();
+		fos.close();
 
 		return new ProxyXAResource(counter, lookupProvider, getNodeName(), remoteServerName, file);
 	}

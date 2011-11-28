@@ -35,8 +35,11 @@ import com.arjuna.ats.jta.distributed.server.CompletionCounter;
 public class TestResourceRecovery implements XAResourceRecovery {
 
 	private List<TestResource> resources = new ArrayList<TestResource>();
+	private String nodeName;
 
 	public TestResourceRecovery(CompletionCounter counter, String nodeName) throws IOException {
+		this.nodeName = nodeName;
+		System.out.println(nodeName + " asked to recover TestResource");
 		File file = new File(System.getProperty("user.dir") + "/distributedjta-tests/TestResource/" + nodeName + "/");
 		if (file.exists() && file.isDirectory()) {
 			File[] listFiles = file.listFiles();
@@ -51,6 +54,7 @@ public class TestResourceRecovery implements XAResourceRecovery {
 
 	@Override
 	public XAResource[] getXAResources() {
+		System.out.println(nodeName + "Returning list of TestResources of length: " + resources.size());
 		return resources.toArray(new XAResource[] {});
 	}
 

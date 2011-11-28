@@ -84,6 +84,7 @@ public class TestResource implements XAResource {
 				return bqual;
 			}
 		};
+		fis.close();
 	}
 
 	/**
@@ -114,6 +115,8 @@ public class TestResource implements XAResource {
 				fos.write(gtrid, 0, gtrid_length);
 				fos.writeInt(bqual_length);
 				fos.write(bqual, 0, bqual_length);
+				fos.flush();
+				fos.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw new XAException(XAException.XAER_RMERR);
@@ -135,7 +138,9 @@ public class TestResource implements XAResource {
 		// File file2 = new File(newName);
 		// file.renameTo(file2);
 		if (file != null) {
-			file.delete();
+			if (!file.delete()) {
+				throw new XAException(XAException.XA_RETRY);
+			}
 		}
 		this.xid = null;
 	}
@@ -146,7 +151,10 @@ public class TestResource implements XAResource {
 			completionCounter.incrementRollback();
 		}
 		if (file != null) {
-			file.delete();
+			System.err.println(file.getAbsolutePath());
+			if (!file.delete()) {
+				throw new XAException(XAException.XA_RETRY);
+			}
 		}
 		this.xid = null;
 	}

@@ -142,8 +142,12 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 				map.remove(xid).delete();
 			}
 			if (this.file != null) {
-				this.file.delete();
+				if (!this.file.delete()) {
+					throw new XAException();
+				}
 			}
+			fos.flush();
+			fos.close();
 
 			map.put(xid, file);
 		} catch (IOException e) {
