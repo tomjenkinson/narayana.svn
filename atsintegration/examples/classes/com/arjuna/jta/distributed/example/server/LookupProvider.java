@@ -21,9 +21,34 @@
  */
 package com.arjuna.jta.distributed.example.server;
 
-/**
- * Simulates a simple JNDI inorder to resolve remote servers.
- */
-public interface LookupProvider {
-	public RemoteServer lookup(String remotingNodeName);
+public class LookupProvider {
+	private static LookupProvider instance;
+
+	private RemoteServer[] remoteServers = new RemoteServer[3];
+
+	public static LookupProvider getInstance() {
+		if (instance == null) {
+			instance = new LookupProvider();
+		}
+		return instance;
+	}
+
+	protected LookupProvider() {
+	}
+
+	public RemoteServer lookup(String jndiName) {
+		int index = (Integer.valueOf(jndiName) / 1000) - 1;
+		return remoteServers[index];
+	}
+
+	public void clear() {
+		for (int i = 0; i < remoteServers.length; i++) {
+			// Disconnect
+			remoteServers[i] = null;
+		}
+	}
+
+	public void bind(int index, RemoteServer connectTo) {
+		remoteServers[index] = connectTo;
+	}
 }

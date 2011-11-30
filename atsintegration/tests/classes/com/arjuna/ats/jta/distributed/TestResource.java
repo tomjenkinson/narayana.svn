@@ -33,11 +33,8 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import org.jboss.tm.XAResourceWrapper;
-
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.jta.distributed.server.CompletionCounter;
-import com.arjuna.ats.jta.distributed.server.CompletionCounterImpl;
 
 public class TestResource implements XAResource {
 	private Xid xid;
@@ -53,13 +50,13 @@ public class TestResource implements XAResource {
 	private CompletionCounter completionCounter;
 
 	public TestResource(String serverId, boolean readonly) {
-		this.completionCounter = CompletionCounterImpl.getCompletionCounter();
+		this.completionCounter = CompletionCounter.getInstance();
 		this.serverId = serverId;
 		this.readonly = readonly;
 	}
 
 	public TestResource(String serverId, File file) throws IOException {
-		this.completionCounter = CompletionCounterImpl.getCompletionCounter();
+		this.completionCounter = CompletionCounter.getInstance();
 		this.serverId = serverId;
 		this.file = file;
 		DataInputStream fis = new DataInputStream(new FileInputStream(file));
@@ -122,23 +119,15 @@ public class TestResource implements XAResource {
 				fos.flush();
 				fos.close();
 			} catch (IOException e) {
-				e.printStackTrace();
 				throw new XAException(XAException.XAER_RMERR);
 			}
 			return XA_OK;
 		}
-
-		// throw new XAException();
 	}
 
 	public synchronized void commit(Xid id, boolean onePhase) throws XAException {
 		System.out.println("        TestResource (" + serverId + ")      XA_COMMIT  [" + id + "]");
 		completionCounter.incrementCommit(serverId);
-		// String absoluteFile = file.getAbsolutePath();
-		// String newName = absoluteFile.substring(0, absoluteFile.length() -
-		// 1);
-		// File file2 = new File(newName);
-		// file.renameTo(file2);
 		if (file != null) {
 			if (!file.delete()) {
 				throw new XAException(XAException.XA_RETRY);

@@ -21,111 +21,59 @@
  */
 package com.arjuna.jta.distributed.example.server.impl;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.Serializable;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import com.arjuna.ats.arjuna.common.Uid;
+import org.jboss.tm.XAResourceWrapper;
+
 import com.arjuna.jta.distributed.example.server.LookupProvider;
 
 /**
- * The XA resource that the transport must provide inorder to proxy directives
- * from the root transaction coordinator.
- * 
- * One of the key features of the pattern is the Proxy. It will adapt the XID of
- * the subordinate (which the local transaction manager does not know about) to
- * an XID that is allocated by the local transaction manager for this spoof XA
- * resource.
- * 
- * Persistence points required by the transport: ProxyXAResource: 1. Before a
- * transaction is propagated the Xid must be recorded 2. When a transaction is
- * successfully prepared the previously recorded Xid must be deleted and the
- * real Xid recorded – otherwise the transaction could only be aborted with a
- * heuristic The transport must register a *single* proxy XA resource per
- * subordinate transaction – thereby eliminating diamonds in the users
- * transaction flow. In my example I do this by registering the proxy xa
- * resource after I have spoken to the remote server thereby allowing me to use
- * knowledge from the remote server to determine whether or not a proxy is
- * required. Do notice how the proxy xa resource is created before the
- * transaction is flowed though, and the XID of the transaction is persisted to
- * assist with recovery. Once the proxy xa resource is prepared, the file is
- * then replaced and persisted again with the XID of the actual proxy xa
- * resource. The first persist was just so that when recovering this proxy xa
- * resource can be recovered so that we know we talked to a remote server for
- * this transaction (and the remote server may have prepared the transaction,
- * even if the parent failed before it was able to).
- * 
- * Recovery The proxy xa resource is responsible for recording which
- * transactions are known of at the remote server and can therefore be recovered
- * by it without requiring the proxy invoke the remote server to ascertain this
- * list. When a transaction is propagated to a server the transport is
- * responsible for detecting that the server has not participated in the
- * transaction yet and if so it must assign it the next available subordinate
- * name and persist this information to help with recovery (see ServerImpl.java
- * and the test itself for how to determine the next available subordinate name
- * and a potential method of persisting this data). This is important when a
- * proxy xa resource is involved in recovery and invokes commit or rollback as
- * the transaction must be reloaded by the remote server before the
- * commit/rollback – if it was prepared - before we attempt to complete the
- * transaction.
- * 
- * IMPORTANT: Although this example shows points at which the transport is
- * expected to persist data, it does not define concretely the mechanisms to do
- * so, nor should it be considered sufficient for reliably persisting this data.
- * For instance, we do not flush to disk.
+ * I chose for this class to implement XAResourceWrapper so that I can provide a
+ * name to the Transaction manager for it to store in its XID.
  */
-public class ProxyXAResource implements XAResource {
+public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
 	private int transactionTimeout;
-	private String remoteServerName = null;
-	private Map<Xid, File> map;
+	private String remoteServerName;
 	private String localServerName;
-	private LookupProvider lookupProvider;
-	private File file;
-	private boolean recover;
+	private transient boolean nonerecovered;
+
+	private Xid migratedXid;
 
 	/**
 	 * Create a new proxy to the remote server.
 	 * 
-	 * @param lookupProvider
+	 * @param LookupProvider
+	 *            .getLookupProvider()
 	 * @param localServerName
 	 * @param remoteServerName
 	 */
-	public ProxyXAResource(LookupProvider lookupProvider, String localServerName, String remoteServerName, File file) {
-		this.lookupProvider = lookupProvider;
+	public ProxyXAResource(String localServerName, String remoteServerName, Xid migratedXid) {
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
-		this.file = file;
-		map = new HashMap<Xid, File>();
+		this.migratedXid = migratedXid;
+		this.nonerecovered = true;
 	}
 
 	/**
-	 * Used by recovery
+	 * Constructor for fallback bottom up recovery.
 	 * 
-	 * @param lookupProvider
 	 * @param localServerName
-	 * @param map
 	 * @param remoteServerName
-	 * @param file
-	 * @throws IOException
 	 */
-	public ProxyXAResource(LookupProvider lookupProvider, String localServerName, String remoteServerName, Map<Xid, File> map) throws IOException {
-		this.lookupProvider = lookupProvider;
+	public ProxyXAResource(String localServerName, String remoteServerName) {
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
-		this.map = map;
-		this.recover = true;
-	}
-
-	public void deleteTemporaryFile() {
-		this.file.delete();
 	}
 
 	/**
@@ -153,74 +101,37 @@ public class ProxyXAResource implements XAResource {
 	public synchronized int prepare(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARE [" + xid + "]");
 
-		// Persist a proxy for the remote server this can mean we try to recover
-		// a transaction at a remote server that did not get chance to
-		// prepare but the alternative is to orphan a prepared server
-
+		Xid toPropagate = migratedXid != null ? migratedXid : xid;
 		try {
-			File dir = new File(System.getProperty("user.dir") + "/distributedjta-examples/ProxyXAResource/" + localServerName + "/");
-			dir.mkdirs();
-			File file = new File(dir, new Uid().fileStringForm());
-			file.createNewFile();
-			DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
-
-			fos.writeInt(remoteServerName.length());
-			fos.writeBytes(remoteServerName);
-			fos.writeInt(xid.getFormatId());
-			fos.writeInt(xid.getGlobalTransactionId().length);
-			fos.write(xid.getGlobalTransactionId());
-			fos.writeInt(xid.getBranchQualifier().length);
-			fos.write(xid.getBranchQualifier());
-
-			if (map.containsKey(xid)) {
-				System.out.println(map.get(xid));
-				map.remove(xid).delete();
-			}
-			if (this.file != null) {
-				this.file.delete();
-			}
-
-			map.put(xid, file);
+			int propagatePrepare = LookupProvider.getInstance().lookup(remoteServerName).prepare(toPropagate, !nonerecovered);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARED");
+			return propagatePrepare;
 		} catch (IOException e) {
-			e.printStackTrace();
-			throw new XAException(XAException.XAER_RMERR);
+			throw new XAException(XAException.XA_RETRY);
 		}
-
-		int propagatePrepare = lookupProvider.lookup(remoteServerName).prepare(xid);
-		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARED");
-		return propagatePrepare;
 	}
 
 	@Override
 	public synchronized void commit(Xid xid, boolean onePhase) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
 
+		Xid toPropagate = migratedXid != null ? migratedXid : xid;
 		try {
-			lookupProvider.lookup(remoteServerName).commit(xid, onePhase, recover);
+			LookupProvider.getInstance().lookup(remoteServerName).commit(toPropagate, onePhase, !nonerecovered);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new XAException(XAException.XA_RETRY);
 		}
-
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
-
-		if (map.get(xid) != null) {
-			map.get(xid).delete();
-			map.remove(xid);
-		}
-
-		// THIS CAN ONLY HAPPEN IN 1PC OR ROLLBACK
-		if (file != null) {
-			file.delete();
-		}
 	}
 
 	@Override
 	public synchronized void rollback(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
 
+		Xid toPropagate = migratedXid != null ? migratedXid : xid;
 		try {
-			lookupProvider.lookup(remoteServerName).rollback(xid, recover);
+			LookupProvider.getInstance().lookup(remoteServerName).rollback(toPropagate, !nonerecovered);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
 		} catch (XAException e) {
 			// We know the remote side must have done a JBTM-917
@@ -231,16 +142,6 @@ public class ProxyXAResource implements XAResource {
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new XAException(XAException.XA_RETRY);
-		}
-
-		if (map.get(xid) != null) {
-			map.get(xid).delete();
-			map.remove(xid);
-		}
-
-		// THIS CAN ONLY HAPPEN IN 1PC OR ROLLBACK
-		if (file != null) {
-			file.delete();
 		}
 	}
 
@@ -257,29 +158,39 @@ public class ProxyXAResource implements XAResource {
 	@Override
 	public Xid[] recover(int flag) throws XAException {
 		if ((flag & XAResource.TMSTARTRSCAN) == XAResource.TMSTARTRSCAN) {
-			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMSTARTRSCAN]: "
-					+ remoteServerName);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMSTARTRSCAN]");
 		}
 		if ((flag & XAResource.TMENDRSCAN) == XAResource.TMENDRSCAN) {
-			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMENDRSCAN]: "
-					+ remoteServerName);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMENDRSCAN]");
+		}
+
+		Xid[] toReturn = LookupProvider.getInstance().lookup(remoteServerName).recoverFor(localServerName);
+
+		if (toReturn != null) {
+			for (int i = 0; i < toReturn.length; i++) {
+				System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD: " + toReturn[i]);
+			}
 		}
 
 		if ((flag & XAResource.TMSTARTRSCAN) == XAResource.TMSTARTRSCAN) {
-			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMSTARTRSCAN]: "
-					+ remoteServerName);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMSTARTRSCAN]");
 		}
 		if ((flag & XAResource.TMENDRSCAN) == XAResource.TMENDRSCAN) {
-			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMENDRSCAN]: "
-					+ remoteServerName);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMENDRSCAN]");
 		}
-		return map.keySet().toArray(new Xid[0]);
+		return toReturn;
 	}
 
 	@Override
 	public void forget(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGET  [" + xid + "]");
-		lookupProvider.lookup(remoteServerName).forget(xid);
+
+		Xid toPropagate = migratedXid != null ? migratedXid : xid;
+		try {
+			LookupProvider.getInstance().lookup(remoteServerName).forget(toPropagate, !nonerecovered);
+		} catch (IOException e) {
+			throw new XAException(XAException.XA_RETRY);
+		}
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGETED[" + xid + "]");
 	}
 
@@ -303,5 +214,38 @@ public class ProxyXAResource implements XAResource {
 			}
 		}
 		return toReturn;
+	}
+
+	/**
+	 * Not used by the TM.
+	 */
+	@Override
+	public XAResource getResource() {
+		return null;
+	}
+
+	/**
+	 * Not used by the TM.
+	 */
+	@Override
+	public String getProductName() {
+		return null;
+	}
+
+	/**
+	 * Not used by the TM.
+	 */
+	@Override
+	public String getProductVersion() {
+		return null;
+	}
+
+	/**
+	 * This allows the proxy to contain meaningful information in the XID in
+	 * case of failure to recover.
+	 */
+	@Override
+	public String getJndiName() {
+		return "ProxyXAResource: " + localServerName + " " + remoteServerName;
 	}
 }

@@ -30,8 +30,8 @@ import javax.transaction.xa.Xid;
 
 import org.jboss.tm.XAResourceWrapper;
 
-import com.arjuna.ats.jta.distributed.server.CompletionCounterImpl;
-import com.arjuna.ats.jta.distributed.server.LookupProviderImpl;
+import com.arjuna.ats.jta.distributed.server.CompletionCounter;
+import com.arjuna.ats.jta.distributed.server.LookupProvider;
 
 /**
  * I chose for this class to implement XAResourceWrapper so that I can provide a
@@ -54,7 +54,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 	/**
 	 * Create a new proxy to the remote server.
 	 * 
-	 * @param LookupProviderImpl
+	 * @param LookupProvider
 	 *            .getLookupProvider()
 	 * @param localServerName
 	 * @param remoteServerName
@@ -104,11 +104,10 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 
 		Xid toPropagate = migratedXid != null ? migratedXid : xid;
 		try {
-			int propagatePrepare = LookupProviderImpl.getLookupProvider().lookup(remoteServerName).prepare(toPropagate, !nonerecovered);
+			int propagatePrepare = LookupProvider.getInstance().lookup(remoteServerName).prepare(toPropagate, !nonerecovered);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARED");
 			return propagatePrepare;
 		} catch (IOException e) {
-			e.printStackTrace();
 			throw new XAException(XAException.XA_RETRY);
 		}
 	}
@@ -119,7 +118,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 
 		Xid toPropagate = migratedXid != null ? migratedXid : xid;
 		try {
-			LookupProviderImpl.getLookupProvider().lookup(remoteServerName).commit(toPropagate, onePhase, !nonerecovered);
+			LookupProvider.getInstance().lookup(remoteServerName).commit(toPropagate, onePhase, !nonerecovered);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new XAException(XAException.XA_RETRY);
@@ -127,7 +126,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
 
 		// THIS CAN ONLY HAPPEN IN 1PC OR ROLLBACK
-		CompletionCounterImpl.getCompletionCounter().incrementCommit(localServerName);
+		CompletionCounter.getInstance().incrementCommit(localServerName);
 
 	}
 
@@ -137,7 +136,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 
 		Xid toPropagate = migratedXid != null ? migratedXid : xid;
 		try {
-			LookupProviderImpl.getLookupProvider().lookup(remoteServerName).rollback(toPropagate, !nonerecovered);
+			LookupProvider.getInstance().lookup(remoteServerName).rollback(toPropagate, !nonerecovered);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
 		} catch (XAException e) {
 			// We know the remote side must have done a JBTM-917
@@ -150,7 +149,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 			throw new XAException(XAException.XA_RETRY);
 		}
 
-		CompletionCounterImpl.getCompletionCounter().incrementRollback(localServerName);
+		CompletionCounter.getInstance().incrementRollback(localServerName);
 	}
 
 	/**
@@ -172,7 +171,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMENDRSCAN]");
 		}
 
-		Xid[] toReturn = LookupProviderImpl.getLookupProvider().lookup(remoteServerName).recoverFor(localServerName);
+		Xid[] toReturn = LookupProvider.getInstance().lookup(remoteServerName).recoverFor(localServerName);
 
 		if (toReturn != null) {
 			for (int i = 0; i < toReturn.length; i++) {
@@ -195,9 +194,8 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 
 		Xid toPropagate = migratedXid != null ? migratedXid : xid;
 		try {
-			LookupProviderImpl.getLookupProvider().lookup(remoteServerName).forget(toPropagate, !nonerecovered);
+			LookupProvider.getInstance().lookup(remoteServerName).forget(toPropagate, !nonerecovered);
 		} catch (IOException e) {
-			e.printStackTrace();
 			throw new XAException(XAException.XA_RETRY);
 		}
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGETED[" + xid + "]");

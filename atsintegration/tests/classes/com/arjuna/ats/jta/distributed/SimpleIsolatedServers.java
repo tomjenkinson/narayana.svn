@@ -51,11 +51,9 @@ import org.junit.runner.RunWith;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.jta.distributed.server.CompletionCounter;
-import com.arjuna.ats.jta.distributed.server.CompletionCounterImpl;
 import com.arjuna.ats.jta.distributed.server.IsolatableServersClassLoader;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
-import com.arjuna.ats.jta.distributed.server.LookupProviderImpl;
 
 @RunWith(BMUnitRunner.class)
 public class SimpleIsolatedServers {
@@ -63,9 +61,9 @@ public class SimpleIsolatedServers {
 	private static int[] serverPortOffsets = new int[] { 1000, 2000, 3000 };
 	private static String[][] clusterBuddies = new String[][] { new String[] { "2000", "3000" }, new String[] { "1000", "3000" },
 			new String[] { "1000", "2000" } };
-	private static LookupProvider lookupProvider = LookupProviderImpl.getLookupProvider();
+	private static LookupProvider lookupProvider = LookupProvider.getInstance();
 	private static LocalServer[] localServers = new LocalServer[serverNodeNames.length];
-	private static CompletionCounter completionCounter = CompletionCounterImpl.getCompletionCounter();
+	private static CompletionCounter completionCounter = CompletionCounter.getInstance();
 
 	@BeforeClass
 	public static void setup() throws SecurityException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException,

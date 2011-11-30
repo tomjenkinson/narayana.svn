@@ -70,10 +70,6 @@ public class IsolatableServersClassLoader extends ClassLoader {
 		if (clazz != null) {
 			System.err.println("Already loaded: " + name);
 		} else {
-//			if (name.contains("BasicAction")) {
-//				System.err.println(name);
-//			}
-
 			if (!name.startsWith("com.arjuna") || (ignoredPackage != null && name.matches(ignoredPackage + ".[A-Za-z0-9]*"))) {
 				clazz = super.loadClass(name);
 			} else {

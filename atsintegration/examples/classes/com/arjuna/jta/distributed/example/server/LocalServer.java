@@ -27,7 +27,6 @@ import javax.transaction.InvalidTransactionException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
-import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -56,8 +55,8 @@ public interface LocalServer {
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 */
-	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset) throws CoreEnvironmentBeanException, IOException, SecurityException,
-			NoSuchFieldException, IllegalArgumentException, IllegalAccessException;
+	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset, String[] clusterCompatriots) throws CoreEnvironmentBeanException,
+			IOException, SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException;
 
 	/**
 	 * Get the local transaction managers node name.
@@ -84,7 +83,7 @@ public interface LocalServer {
 	 * 
 	 * @throws SystemException
 	 */
-	public void storeRootTransaction(Transaction transaction) throws SystemException;
+	public void storeRootTransaction() throws SystemException;
 
 	/**
 	 * Remove the parent transaction from the local cache. It is indexed on XID.
@@ -112,8 +111,8 @@ public interface LocalServer {
 	 * and a potential method of persisting this data). This is important when a
 	 * proxy xa resource is involved in recovery and invokes commit or rollback
 	 * as the transaction must be reloaded by the remote server before the
-	 * commit/rollback – if it was prepared - before we attempt to complete the
-	 * transaction.
+	 * commit/rollback – if it was prepared - before we attempt to complete
+	 * the transaction.
 	 * 
 	 * @param remainingTimeout
 	 * @param toImport
@@ -124,8 +123,8 @@ public interface LocalServer {
 	 * @throws SystemException
 	 * @throws IOException
 	 */
-	public boolean getAndResumeTransaction(int remainingTimeout, Xid toImport) throws XAException,
-			InvalidTransactionException, IllegalStateException, SystemException, IOException;
+	public Xid getAndResumeTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException,
+			SystemException, IOException;
 
 	/**
 	 * Transport specific function to generate a proxy for a remote server.
@@ -136,15 +135,8 @@ public interface LocalServer {
 	 * @throws IOException
 	 * @throws SystemException
 	 */
-	public XAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName) throws IOException, SystemException;
-
-	/**
-	 * Discard the proxy if it turns out the remote server was already part of
-	 * the transaction
-	 * 
-	 * @param proxyXAResource
-	 */
-	public void cleanupProxyXAResource(XAResource proxyXAResource);
+	public XAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName, Xid migratedTransaction) throws IOException,
+			SystemException;
 
 	/**
 	 * Generate a proxy synchronization

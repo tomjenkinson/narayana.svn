@@ -102,24 +102,17 @@ public class TestResource implements XAResource {
 			fos.write(gtrid, 0, gtrid_length);
 			fos.writeInt(bqual_length);
 			fos.write(bqual, 0, bqual_length);
+			fos.flush();
+			fos.close();
 		} catch (IOException e) {
-			e.printStackTrace();
 			throw new XAException(XAException.XAER_RMERR);
 		}
 		return XA_OK;
-
-		// throw new XAException();
 	}
 
 	public synchronized void commit(Xid id, boolean onePhase) throws XAException {
 		System.out.println("        TestResource (" + localServerName + ")      XA_COMMIT  [" + id + "]");
 		if (file != null) {
-			// String absoluteFile = file.getAbsolutePath();
-			// String newName = absoluteFile.substring(0, absoluteFile.length()
-			// -
-			// 1);
-			// File file2 = new File(newName);
-			// file.renameTo(file2);
 			file.delete();
 		}
 		this.xid = null;

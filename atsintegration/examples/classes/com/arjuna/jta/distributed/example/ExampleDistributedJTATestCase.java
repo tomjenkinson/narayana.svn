@@ -35,7 +35,6 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
-import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.jboss.tm.TransactionTimeoutConfiguration;
@@ -46,7 +45,6 @@ import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.jta.distributed.example.server.IsolatableServersClassLoader;
 import com.arjuna.jta.distributed.example.server.LocalServer;
 import com.arjuna.jta.distributed.example.server.LookupProvider;
-import com.arjuna.jta.distributed.example.server.RemoteServer;
 
 /**
  * This example shows how to use the JTA in a distributed manner.
@@ -78,17 +76,28 @@ public class ExampleDistributedJTATestCase {
 	/**
 	 * This is to simulate JNDI.
 	 */
-	private static LookupProvider lookupProvider = new MyLookupProvider();
+	private static LookupProvider lookupProvider = LookupProvider.getInstance();
+
+	/**
+	 * The list of server node names
+	 */
+	private static String[] serverNodeNames = new String[] { "1000", "2000", "3000" };
+
+	/**
+	 * A list of port offsets to use for the servers
+	 */
+	private static int[] serverPortOffsets = new int[] { 1000, 2000, 3000 };
+
+	/**
+	 * For each of the server nodes, a list of the other servers in the cluster
+	 */
+	private static String[][] clusterBuddies = new String[][] { new String[] { "2000", "3000" }, new String[] { "1000", "3000" },
+			new String[] { "1000", "2000" } };
 
 	/**
 	 * The example stores a reference to all local servers as a convenience
 	 */
-	private static LocalServer[] localServers = new LocalServer[3];
-
-	/**
-	 * The example stores a reference to all remote servers as a convenience
-	 */
-	private static RemoteServer[] remoteServers = new RemoteServer[3];
+	private static LocalServer[] localServers = new LocalServer[serverNodeNames.length];
 
 	/**
 	 * Initialise references to the local and remote servers.
@@ -115,11 +124,11 @@ public class ExampleDistributedJTATestCase {
 			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.jta.distributed.example.server", contextClassLoader);
 			localServers[i] = (LocalServer) classLoader.loadClass("com.arjuna.jta.distributed.example.server.impl.ServerImpl").newInstance();
 			Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
-			localServers[i].initialise(lookupProvider, String.valueOf((i + 1) * 1000), (i + 1) * 1000);
+			localServers[i].initialise(lookupProvider, serverNodeNames[i], serverPortOffsets[i], clusterBuddies[i]);
 			// This is a short cut, normally remote servers would not be the
 			// same as the local servers and would be a tranport layer
 			// abstraction
-			remoteServers[i] = localServers[i].connectTo();
+			lookupProvider.bind(i, localServers[i].connectTo());
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
@@ -195,7 +204,7 @@ public class ExampleDistributedJTATestCase {
 				// subordinate naughtily comes back to this server part way
 				// through
 				// so we can return the original transaction to them
-				originalServer.storeRootTransaction(transaction);
+				originalServer.storeRootTransaction();
 
 				// Peek at the next node - this is just a test abstraction to
 				// simulate where business logic might decide to access an EJB
@@ -208,12 +217,6 @@ public class ExampleDistributedJTATestCase {
 				int remainingTimeout = (int) (((TransactionTimeoutConfiguration) transactionManager).getTimeLeftBeforeTransactionTimeout(false) / 1000);
 				// Get the Xid to propagate
 				Xid currentXid = originalServer.getCurrentXid();
-				// Generate a ProxyXAresource, this is transport specific but it
-				// should at least have stored the currentXid in a temporary
-				// location or the name of the remote server so that we can
-				// recover
-				// orphan subordinate transactions
-				XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, nextServerNodeName);
 				// Suspend the transaction locally
 				transactionManager.suspend();
 
@@ -226,7 +229,8 @@ public class ExampleDistributedJTATestCase {
 				// that
 				// it can propagate the transaction completion events to the
 				// subordinate
-				transaction.enlistResource(proxyXAResource);
+				transaction.enlistResource(originalServer.generateProxyXAResource(lookupProvider, nextServerNodeName,
+						dataReturnedFromRemoteServer.getRemoteXidCreated()));
 				// Register a synchronization that can proxy the
 				// beforeCompletion
 				// event to the remote side, after completion events are the
@@ -282,8 +286,8 @@ public class ExampleDistributedJTATestCase {
 	 * @throws NotSupportedException
 	 * @throws IOException
 	 */
-	private DataReturnedFromRemoteServer propagateTransaction(List<String> nodesToFlowTo, int remainingTimeout, Xid toMigrate) throws RollbackException, IllegalStateException, XAException, SystemException, NotSupportedException,
-			IOException {
+	private DataReturnedFromRemoteServer propagateTransaction(List<String> nodesToFlowTo, int remainingTimeout, Xid toMigrate) throws RollbackException,
+			IllegalStateException, XAException, SystemException, NotSupportedException, IOException {
 		// Do some test setup to initialize this method as it if was being
 		// invoked in a remote server
 		String currentServerName = nodesToFlowTo.remove(0);
@@ -298,7 +302,7 @@ public class ExampleDistributedJTATestCase {
 		// Check if this server has seen this transaction before - this is
 		// crucial to ensure that calling servers will only lay down a proxy if
 		// they are the first visitor to this server.
-		boolean requiresProxyAtPreviousServer = !currentServer.getAndResumeTransaction(remainingTimeout, toMigrate);
+		Xid requiresProxyAtPreviousServer = currentServer.getAndResumeTransaction(remainingTimeout, toMigrate);
 
 		{
 			// Perform work on the migrated transaction
@@ -329,14 +333,6 @@ public class ExampleDistributedJTATestCase {
 				remainingTimeout = (int) (((TransactionTimeoutConfiguration) transactionManager).getTimeLeftBeforeTransactionTimeout(false) / 1000);
 				// Get the XID to propagate
 				Xid currentXid = currentServer.getCurrentXid();
-				// Generate the proxy (which saves a temporary copy of the XID
-				// in
-				// case the remote server was to be orphaned, this could just
-				// save a
-				// proxy that knows to contact the remote server but then it
-				// will
-				// force rollbacks on recovery - not ideal)
-				XAResource proxyXAResource = currentServer.generateProxyXAResource(lookupProvider, nextServerNodeName);
 				// Suspend the transaction ready for propagation
 				transactionManager.suspend();
 				// Propagate the transaction - in the example I return a boolean
@@ -352,16 +348,12 @@ public class ExampleDistributedJTATestCase {
 				// If this caller was the first entity to propagate the
 				// transaction
 				// to the remote server
-				if (dataReturnedFromRemoteServer.isProxyRequired()) {
+				if (dataReturnedFromRemoteServer.getRemoteXidCreated() != null) {
 					// Formally enlist the resource
-					transaction.enlistResource(proxyXAResource);
+					transaction.enlistResource(currentServer.generateProxyXAResource(lookupProvider, nextServerNodeName,
+							dataReturnedFromRemoteServer.getRemoteXidCreated()));
 					// Register a sync
 					transaction.registerSynchronization(currentServer.generateProxySynchronization(lookupProvider, nextServerNodeName, toMigrate));
-				} else {
-					// This will discard the state of this resource, i.e. the
-					// file
-					// containing the temporary unprepared XID
-					currentServer.cleanupProxyXAResource(proxyXAResource);
 				}
 
 				// Align the local state with the returning state of the
@@ -395,34 +387,20 @@ public class ExampleDistributedJTATestCase {
 	}
 
 	/**
-	 * A simple class that simulates JNDI to lookup references to remote servers
-	 * for this in memory transport.
-	 */
-	private static class MyLookupProvider implements LookupProvider {
-
-		@Override
-		public RemoteServer lookup(String jndiName) {
-			int index = (new Integer(jndiName) / 1000) - 1;
-			return remoteServers[index];
-		}
-
-	}
-
-	/**
 	 * This is the transactional data the transport needs to return from remote
 	 * instances.
 	 */
 	private class DataReturnedFromRemoteServer {
-		private boolean proxyRequired;
+		private Xid proxyRequired;
 
 		private int transactionState;
 
-		public DataReturnedFromRemoteServer(boolean proxyRequired, int transactionState) {
+		public DataReturnedFromRemoteServer(Xid proxyRequired, int transactionState) {
 			this.proxyRequired = proxyRequired;
 			this.transactionState = transactionState;
 		}
 
-		public boolean isProxyRequired() {
+		public Xid getRemoteXidCreated() {
 			return proxyRequired;
 		}
 

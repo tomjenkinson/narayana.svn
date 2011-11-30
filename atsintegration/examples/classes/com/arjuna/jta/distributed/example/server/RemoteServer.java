@@ -27,74 +27,18 @@ import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
-/**
- * This interface is to simulate most remote calls to a server (except where
- * classloader separation is used in
- * <class>ExampelDistributedJTATestCase</class>
- * 
- * Most of the calls are fairly innocuous, however one needs special explanation.
- * 
- * Firstly the before completion takes an XID, check out
- * <class>ProxySynchronization</class> for more details on that.
- */
 public interface RemoteServer {
 
-	/**
-	 * Relay the propagate completion.
-	 * 
-	 * @param xid
-	 * @throws XAException
-	 * @throws SystemException
-	 * @throws DummyRemoteException
-	 */
-	public void beforeCompletion(Xid xid) throws XAException, SystemException;
+	public int prepare(Xid xid, boolean recover) throws XAException, IOException;
 
-	/**
-	 * Relay a prepare to the remote side for a specific Xid.
-	 * 
-	 * @param xid
-	 * @return
-	 * @throws XAException
-	 * @throws DummyRemoteException
-	 */
-	public int prepare(Xid xid) throws XAException;
-
-	/**
-	 * Relay the commit.
-	 * 
-	 * If this call is coming from a recover scan on a ProxyXAResource, then
-	 * pass the recover flag in so the remote server knows it needs to recover
-	 * the transaction.
-	 * 
-	 * @param xid
-	 * @param onePhase
-	 * @throws XAException
-	 * @throws IOException 
-	 * @throws DummyRemoteException
-	 */
 	public void commit(Xid xid, boolean onePhase, boolean recover) throws XAException, IOException;
 
-	/**
-	 * Relay the rollback.
-	 * 
-	 * If this call is coming from a recover scan on a ProxyXAResource, then
-	 * pass the recover flag in so the remote server knows it needs to recover
-	 * the transaction.
-	 * 
-	 * @param xid
-	 * @throws XAException
-	 * @throws IOException 
-	 * @throws DummyRemoteException
-	 */
 	public void rollback(Xid xid, boolean recover) throws XAException, IOException;
 
-	/**
-	 * Relay the forget.
-	 * 
-	 * @param xid
-	 * @throws XAException
-	 * @throws DummyRemoteException
-	 */
-	public void forget(Xid xid) throws XAException;
+	public void forget(Xid xid, boolean recover) throws XAException, IOException;
+
+	public void beforeCompletion(Xid xid) throws XAException, SystemException;
+
+	public Xid[] recoverFor(String localServerName) throws XAException;
 
 }
