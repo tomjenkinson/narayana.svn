@@ -23,4 +23,8 @@ package com.arjuna.ats.jta.distributed.server;
 
 public interface LookupProvider {
 	public RemoteServer lookup(String jndiName);
+
+	public void clear();
+
+	public void bind(int index, RemoteServer connectTo);
 }

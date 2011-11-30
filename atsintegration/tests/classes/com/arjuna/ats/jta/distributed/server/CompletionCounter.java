@@ -22,13 +22,17 @@
 package com.arjuna.ats.jta.distributed.server;
 
 public interface CompletionCounter {
-	public void incrementCommit();
+	public void incrementCommit(String nodeName);
 
-	public void incrementRollback();
+	public void incrementRollback(String nodeName);
 
-	int getCommitCount();
+	int getCommitCount(String nodeName);
 
-	int getRollbackCount();
+	int getRollbackCount(String nodeName);
 
-	void resetCounters();
+	public int getTotalCommitCount();
+
+	public int getTotalRollbackCount();
+	
+	public void reset();
 }

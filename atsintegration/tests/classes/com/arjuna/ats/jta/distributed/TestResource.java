@@ -33,8 +33,11 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
+import org.jboss.tm.XAResourceWrapper;
+
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.jta.distributed.server.CompletionCounter;
+import com.arjuna.ats.jta.distributed.server.CompletionCounterImpl;
 
 public class TestResource implements XAResource {
 	private Xid xid;
@@ -49,14 +52,14 @@ public class TestResource implements XAResource {
 
 	private CompletionCounter completionCounter;
 
-	public TestResource(CompletionCounter completionCounter, String serverId, boolean readonly) {
-		this.completionCounter = completionCounter;
+	public TestResource(String serverId, boolean readonly) {
+		this.completionCounter = CompletionCounterImpl.getCompletionCounter();
 		this.serverId = serverId;
 		this.readonly = readonly;
 	}
 
-	public TestResource(CompletionCounter completionCounter, String serverId, File file) throws IOException {
-		this.completionCounter = completionCounter;
+	public TestResource(String serverId, File file) throws IOException {
+		this.completionCounter = CompletionCounterImpl.getCompletionCounter();
 		this.serverId = serverId;
 		this.file = file;
 		DataInputStream fis = new DataInputStream(new FileInputStream(file));
@@ -88,7 +91,8 @@ public class TestResource implements XAResource {
 	}
 
 	/**
-	 * This class declares that it throws an Error *purely for byteman* so that we can crash the resource during this method:
+	 * This class declares that it throws an Error *purely for byteman* so that
+	 * we can crash the resource during this method:
 	 * https://issues.jboss.org/browse/BYTEMAN-156
 	 * https://issues.jboss.org/browse/BYTEMAN-175
 	 */
@@ -129,9 +133,7 @@ public class TestResource implements XAResource {
 
 	public synchronized void commit(Xid id, boolean onePhase) throws XAException {
 		System.out.println("        TestResource (" + serverId + ")      XA_COMMIT  [" + id + "]");
-		if (completionCounter != null) {
-			completionCounter.incrementCommit();
-		}
+		completionCounter.incrementCommit(serverId);
 		// String absoluteFile = file.getAbsolutePath();
 		// String newName = absoluteFile.substring(0, absoluteFile.length() -
 		// 1);
@@ -147,9 +149,7 @@ public class TestResource implements XAResource {
 
 	public synchronized void rollback(Xid xid) throws XAException {
 		System.out.println("        TestResource (" + serverId + ")      XA_ROLLBACK[" + xid + "]");
-		if (completionCounter != null) {
-			completionCounter.incrementRollback();
-		}
+		completionCounter.incrementRollback(serverId);
 		if (file != null) {
 			if (!file.delete()) {
 				throw new XAException(XAException.XA_RETRY);

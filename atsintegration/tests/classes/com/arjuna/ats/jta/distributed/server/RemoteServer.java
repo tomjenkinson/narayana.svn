@@ -29,16 +29,16 @@ import javax.transaction.xa.Xid;
 
 public interface RemoteServer {
 
-	public void setOffline(boolean offline);
-
-	public int prepare(Xid xid) throws XAException;
+	public int prepare(Xid xid, boolean recover) throws XAException, IOException;
 
 	public void commit(Xid xid, boolean onePhase, boolean recover) throws XAException, IOException;
 
 	public void rollback(Xid xid, boolean recover) throws XAException, IOException;
 
-	public void forget(Xid xid) throws XAException, IOException;
+	public void forget(Xid xid, boolean recover) throws XAException, IOException;
 
 	public void beforeCompletion(Xid xid) throws XAException, SystemException;
+
+	public Xid[] recoverFor(String localServerName) throws XAException;
 
 }

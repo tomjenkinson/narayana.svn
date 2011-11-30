@@ -303,11 +303,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	public void recover(Xid toRecover) throws XAException, IOException {
-		// Work out what the subordinate name would be for these transaction
-		// for this server
-		XidImple recoverable = new XidImple(toRecover);
-		XATxConverter.setSubordinateNodeName(recoverable.getXID(), TxControl.getXANodeName());
-		((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(recoverable);
+		((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(new XidImple(toRecover), null);
 	}
 
 	@Override

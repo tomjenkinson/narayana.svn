@@ -21,90 +21,26 @@
  */
 package com.arjuna.ats.jta.distributed.server.impl;
 
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import javax.transaction.xa.XAResource;
-import javax.transaction.xa.Xid;
 
 import org.jboss.tm.XAResourceRecovery;
-
-import com.arjuna.ats.jta.distributed.server.CompletionCounter;
-import com.arjuna.ats.jta.distributed.server.LookupProvider;
-import com.arjuna.ats.jta.xa.XidImple;
 
 public class ProxyXAResourceRecovery implements XAResourceRecovery {
 
 	private List<ProxyXAResource> resources = new ArrayList<ProxyXAResource>();
-	private String nodeName;
 
-	public ProxyXAResourceRecovery(CompletionCounter counter, LookupProvider lookupProvider, String nodeName) throws IOException {
-		this.nodeName = nodeName;
-		System.out.println(nodeName + " asked to recover ProxyXAResources");
-		File directory = new File(System.getProperty("user.dir") + "/distributedjta-tests/ProxyXAResource/" + nodeName + "/");
-		Map<String, Map<Xid, File>> savedData = new HashMap<String, Map<Xid, File>>();
-		if (directory.exists() && directory.isDirectory()) {
-			File[] listFiles = directory.listFiles();
-			for (int i = 0; i < listFiles.length; i++) {
-				File file = listFiles[i];
-				DataInputStream fis = new DataInputStream(new FileInputStream(file));
-				int remoteServerNameLength = fis.readInt();
-				final byte[] remoteServerNameBytes = new byte[remoteServerNameLength];
-				fis.read(remoteServerNameBytes, 0, remoteServerNameLength);
-				String remoteServerName = new String(remoteServerNameBytes);
-				
-
-				Map<Xid, File> map = savedData.get(remoteServerName);
-				if (map == null) {
-					map = new HashMap<Xid, File>();
-					savedData.put(remoteServerName, map);
-				}
-				final int formatId = fis.readInt();
-				int gtrid_length = fis.readInt();
-				final byte[] gtrid = new byte[gtrid_length];
-				fis.read(gtrid, 0, gtrid_length);
-
-				int bqual_length = fis.readInt();
-				final byte[] bqual = new byte[bqual_length];
-				fis.read(bqual, 0, bqual_length);
-				Xid xid = new XidImple(new Xid() {
-					@Override
-					public byte[] getBranchQualifier() {
-						return bqual;
-					}
-
-					@Override
-					public int getFormatId() {
-						return formatId;
-					}
-
-					@Override
-					public byte[] getGlobalTransactionId() {
-						return gtrid;
-					}
-				});
-				fis.close();
-				map.put(xid, file);
-			}
-		}
-		Iterator<String> iterator = savedData.keySet().iterator();
-		while (iterator.hasNext()) {
-			String remoteServerName = iterator.next();
-			Map<Xid, File> map = savedData.get(remoteServerName);
-			resources.add(new ProxyXAResource(counter, lookupProvider, nodeName, remoteServerName, map));
+	public ProxyXAResourceRecovery(String nodeName, String[] toRecoverFor) throws IOException {
+		for (int i = 0; i < toRecoverFor.length; i++) {
+			resources.add(new ProxyXAResource(nodeName, toRecoverFor[i]));
 		}
 	}
 
 	@Override
 	public XAResource[] getXAResources() {
-		System.out.println(nodeName + "Returning list of ProxyXAResources of length: " + resources.size());
 		return resources.toArray(new XAResource[] {});
 	}
 

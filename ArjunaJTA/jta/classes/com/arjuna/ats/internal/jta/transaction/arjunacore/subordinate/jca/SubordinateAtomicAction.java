@@ -33,10 +33,13 @@ import java.io.IOException;
 import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.arjuna.common.Uid;
+import com.arjuna.ats.arjuna.coordinator.TxControl;
 import com.arjuna.ats.arjuna.exceptions.ObjectStoreException;
 import com.arjuna.ats.arjuna.objectstore.StoreManager;
 import com.arjuna.ats.arjuna.state.InputObjectState;
 import com.arjuna.ats.arjuna.state.OutputObjectState;
+import com.arjuna.ats.internal.jta.xa.XID;
+import com.arjuna.ats.jta.xa.XATxConverter;
 import com.arjuna.ats.jta.xa.XidImple;
 
 /**
@@ -80,6 +83,7 @@ public class SubordinateAtomicAction extends
 				_theXid = new XidImple();
 
 				((XidImple) _theXid).unpackFrom(os);
+				_parentNodeName = os.unpackString();
 			}
 		} else {
 			_activated = activate();
@@ -90,7 +94,19 @@ public class SubordinateAtomicAction extends
 	{
 		super(timeout); // implicit start (done in base class)
 		
-		_theXid = new XidImple(xid);
+		if (xid.getFormatId() == XATxConverter.FORMAT_ID) {
+			XidImple toImport = new XidImple(xid);
+			XID toCheck = toImport.getXID();
+			_parentNodeName = XATxConverter.getSubordinateNodeName(toCheck);
+			if (_parentNodeName == null) {
+				_parentNodeName = XATxConverter.getNodeName(toCheck);
+			}
+			XATxConverter.setSubordinateNodeName(toImport.getXID(), TxControl.getXANodeName());
+			_theXid = new XidImple(toImport);
+		} else {
+			_theXid = new XidImple(xid);
+		}
+		
 		_activated = true;
 	}
 	
@@ -120,6 +136,10 @@ public class SubordinateAtomicAction extends
 	    
 		return _theXid;
 	}
+	
+	public String getParentNodeName() {
+		return _parentNodeName;
+	}
 
 	public boolean save_state (OutputObjectState os, int t)
 	{
@@ -130,6 +150,7 @@ public class SubordinateAtomicAction extends
 	            os.packBoolean(true);
 
 	            ((XidImple) _theXid).packInto(os);
+	            os.packString(_parentNodeName);
 	        }
 	        else
 	            os.packBoolean(false);
@@ -155,6 +176,7 @@ public class SubordinateAtomicAction extends
 				_theXid = new XidImple();
 				
 				((XidImple) _theXid).unpackFrom(os);
+				_parentNodeName = os.unpackString();
 			}
 		}
 		catch (IOException ex)
@@ -171,5 +193,6 @@ public class SubordinateAtomicAction extends
     }
 
 	private Xid _theXid;
+	private String _parentNodeName;
     private boolean _activated;
 }

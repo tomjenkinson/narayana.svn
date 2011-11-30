@@ -21,12 +21,8 @@
  */
 package com.arjuna.ats.jta.distributed.server.impl;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.Serializable;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -34,63 +30,51 @@ import javax.transaction.xa.Xid;
 
 import org.jboss.tm.XAResourceWrapper;
 
-import com.arjuna.ats.arjuna.common.Uid;
-import com.arjuna.ats.jta.distributed.server.CompletionCounter;
-import com.arjuna.ats.jta.distributed.server.LookupProvider;
+import com.arjuna.ats.jta.distributed.server.CompletionCounterImpl;
+import com.arjuna.ats.jta.distributed.server.LookupProviderImpl;
 
 /**
  * I chose for this class to implement XAResourceWrapper so that I can provide a
  * name to the Transaction manager for it to store in its XID.
  */
-public class ProxyXAResource implements XAResource, XAResourceWrapper {
+public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
 	private int transactionTimeout;
 	private String remoteServerName;
-	private Map<Xid, File> map;
 	private String localServerName;
-	private LookupProvider lookupProvider;
-	private CompletionCounter completionCounter;
-	private File file;
-	private boolean recover;
+	private transient boolean nonerecovered;
+
+	private Xid migratedXid;
 
 	/**
 	 * Create a new proxy to the remote server.
 	 * 
-	 * @param lookupProvider
+	 * @param LookupProviderImpl
+	 *            .getLookupProvider()
 	 * @param localServerName
 	 * @param remoteServerName
 	 */
-	public ProxyXAResource(CompletionCounter completionCounter, LookupProvider lookupProvider, String localServerName, String remoteServerName, File file) {
-		this.completionCounter = completionCounter;
-		this.lookupProvider = lookupProvider;
+	public ProxyXAResource(String localServerName, String remoteServerName, Xid migratedXid) {
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
-		this.file = file;
-		map = new HashMap<Xid, File>();
+		this.migratedXid = migratedXid;
+		this.nonerecovered = true;
 	}
 
 	/**
-	 * Used by recovery
+	 * Constructor for fallback bottom up recovery.
 	 * 
-	 * @param lookupProvider
 	 * @param localServerName
-	 * @param map
 	 * @param remoteServerName
-	 * @param file
-	 * @throws IOException
 	 */
-	public ProxyXAResource(CompletionCounter completionCounter, LookupProvider lookupProvider, String localServerName, String remoteServerName,
-			Map<Xid, File> map) throws IOException {
-		this.completionCounter = completionCounter;
-		this.lookupProvider = lookupProvider;
+	public ProxyXAResource(String localServerName, String remoteServerName) {
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
-		this.map = map;
-		this.recover = true;
-	}
-
-	public void deleteTemporaryFile() {
-		this.file.delete();
 	}
 
 	/**
@@ -118,80 +102,42 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	public synchronized int prepare(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARE [" + xid + "]");
 
-		// Persist a proxy for the remote server this can mean we try to recover
-		// a transaction at a remote server that did not get chance to
-		// prepare but the alternative is to orphan a prepared server
-
+		Xid toPropagate = migratedXid != null ? migratedXid : xid;
 		try {
-			File dir = new File(System.getProperty("user.dir") + "/distributedjta-tests/ProxyXAResource/" + localServerName + "/");
-			dir.mkdirs();
-			File file = new File(dir, new Uid().fileStringForm());
-			file.createNewFile();
-			DataOutputStream fos = new DataOutputStream(new FileOutputStream(file));
-			byte[] remoteServerNameBytes = remoteServerName.getBytes();
-			fos.writeInt(remoteServerNameBytes.length);
-			fos.write(remoteServerNameBytes);
-			fos.writeInt(xid.getFormatId());
-			fos.writeInt(xid.getGlobalTransactionId().length);
-			fos.write(xid.getGlobalTransactionId());
-			fos.writeInt(xid.getBranchQualifier().length);
-			fos.write(xid.getBranchQualifier());
-
-			if (map.containsKey(xid)) {
-				System.out.println(map.get(xid));
-				map.remove(xid).delete();
-			}
-			if (this.file != null) {
-				if (!this.file.delete()) {
-					throw new XAException();
-				}
-			}
-			fos.flush();
-			fos.close();
-
-			map.put(xid, file);
+			int propagatePrepare = LookupProviderImpl.getLookupProvider().lookup(remoteServerName).prepare(toPropagate, !nonerecovered);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARED");
+			return propagatePrepare;
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new XAException(XAException.XAER_RMERR);
+			throw new XAException(XAException.XA_RETRY);
 		}
-
-		int propagatePrepare = lookupProvider.lookup(remoteServerName).prepare(xid);
-		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARED");
-		return propagatePrepare;
 	}
 
 	@Override
 	public synchronized void commit(Xid xid, boolean onePhase) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
 
+		Xid toPropagate = migratedXid != null ? migratedXid : xid;
 		try {
-			lookupProvider.lookup(remoteServerName).commit(xid, onePhase, recover);
+			LookupProviderImpl.getLookupProvider().lookup(remoteServerName).commit(toPropagate, onePhase, !nonerecovered);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new XAException(XAException.XA_RETRY);
 		}
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
 
-		if (map.get(xid) != null) {
-			map.get(xid).delete();
-			map.remove(xid);
-		}
-
 		// THIS CAN ONLY HAPPEN IN 1PC OR ROLLBACK
-		if (file != null) {
-			file.delete();
-		}
-		if (completionCounter != null) {
-			completionCounter.incrementCommit();
-		}
+		CompletionCounterImpl.getCompletionCounter().incrementCommit(localServerName);
+
 	}
 
 	@Override
 	public synchronized void rollback(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
 
+		Xid toPropagate = migratedXid != null ? migratedXid : xid;
 		try {
-			lookupProvider.lookup(remoteServerName).rollback(xid, recover);
+			LookupProviderImpl.getLookupProvider().lookup(remoteServerName).rollback(toPropagate, !nonerecovered);
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
 		} catch (XAException e) {
 			// We know the remote side must have done a JBTM-917
@@ -204,18 +150,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 			throw new XAException(XAException.XA_RETRY);
 		}
 
-		if (map.get(xid) != null) {
-			map.get(xid).delete();
-			map.remove(xid);
-		}
-
-		// THIS CAN ONLY HAPPEN IN 1PC OR ROLLBACK
-		if (file != null) {
-			file.delete();
-		}
-		if (completionCounter != null) {
-			completionCounter.incrementRollback();
-		}
+		CompletionCounterImpl.getCompletionCounter().incrementRollback(localServerName);
 	}
 
 	/**
@@ -231,38 +166,37 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper {
 	@Override
 	public Xid[] recover(int flag) throws XAException {
 		if ((flag & XAResource.TMSTARTRSCAN) == XAResource.TMSTARTRSCAN) {
-			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMSTARTRSCAN]: "
-					+ remoteServerName);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMSTARTRSCAN]");
 		}
 		if ((flag & XAResource.TMENDRSCAN) == XAResource.TMENDRSCAN) {
-			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMENDRSCAN]: "
-					+ remoteServerName);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVER [XAResource.TMENDRSCAN]");
 		}
 
-		// Only done to wake up the other side - wonder what will happen
-		// try {
-		// lookupProvider.lookup(remoteServerName).recover(map.keySet().toArray(new
-		// Xid[0]));
-		// } catch (IOException e) {
-		// throw new XAException(XAException.XA_RETRY);
-		// }
+		Xid[] toReturn = LookupProviderImpl.getLookupProvider().lookup(remoteServerName).recoverFor(localServerName);
+
+		if (toReturn != null) {
+			for (int i = 0; i < toReturn.length; i++) {
+				System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD: " + toReturn[i]);
+			}
+		}
 
 		if ((flag & XAResource.TMSTARTRSCAN) == XAResource.TMSTARTRSCAN) {
-			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMSTARTRSCAN]: "
-					+ remoteServerName);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMSTARTRSCAN]");
 		}
 		if ((flag & XAResource.TMENDRSCAN) == XAResource.TMENDRSCAN) {
-			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMENDRSCAN]: "
-					+ remoteServerName);
+			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMENDRSCAN]");
 		}
-		return map.keySet().toArray(new Xid[0]);
+//		return null;
+		return toReturn;
 	}
 
 	@Override
 	public void forget(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGET  [" + xid + "]");
+
+		Xid toPropagate = migratedXid != null ? migratedXid : xid;
 		try {
-			lookupProvider.lookup(remoteServerName).forget(xid);
+			LookupProviderImpl.getLookupProvider().lookup(remoteServerName).forget(toPropagate, !nonerecovered);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new XAException(XAException.XA_RETRY);

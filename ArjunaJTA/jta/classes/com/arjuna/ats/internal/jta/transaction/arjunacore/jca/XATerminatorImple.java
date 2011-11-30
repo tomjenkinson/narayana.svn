@@ -48,6 +48,7 @@ import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.arjuna.coordinator.TwoPhaseOutcome;
+import com.arjuna.ats.arjuna.coordinator.TxControl;
 import com.arjuna.ats.arjuna.objectstore.RecoveryStore;
 import com.arjuna.ats.arjuna.objectstore.StoreManager;
 import com.arjuna.ats.arjuna.state.InputObjectState;
@@ -337,7 +338,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
         }
 
         // if we are here, then check the object store
-        return doRecover(null);
+        return doRecover(null, null);
     }
     
     /**
@@ -352,7 +353,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
      * @return a list of potentially indoubt transactions or <code>null</code>.
      */
 
-    public synchronized Xid[] doRecover (XidImple toRecover) throws XAException
+    public synchronized Xid[] doRecover (XidImple toRecover, String parentNodeName) throws XAException
     {
         /*
          * Requires going through the objectstore for the states of imported
@@ -392,7 +393,24 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
 
                     if (uid.notEquals(Uid.nullUid()))
                     {
-						if (toRecover == null) {
+						if (parentNodeName != null) {
+							SubordinateAtomicAction saa = new SubordinateAtomicAction(uid, true);
+							XidImple loadedXid = (XidImple) saa.getXid();
+							if (loadedXid.getFormatId() == XATxConverter.FORMAT_ID) {
+								String loadedXidSubordinateNodeName = XATxConverter.getSubordinateNodeName(loadedXid.getXID());
+								if (TxControl.getXANodeName().equals(loadedXidSubordinateNodeName)) {
+									if (parentNodeName.equals(saa.getParentNodeName())) {
+										if (jtaLogger.logger.isDebugEnabled()) {
+											jtaLogger.logger.debug("Found record for " + saa);
+										}
+//										TransactionImple tx = (TransactionImple) SubordinationManager.getTransactionImporter().recoverTransaction(uid);
+
+										values.push(loadedXid);
+									}
+								}
+							}
+
+						} else if (toRecover == null) {
 							TransactionImple tx = (TransactionImple) SubordinationManager.getTransactionImporter().recoverTransaction(uid);
 
 							if (tx != null)
@@ -409,8 +427,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
 										}
 										TransactionImple tx = (TransactionImple) SubordinationManager.getTransactionImporter().recoverTransaction(uid);
 
-										if (tx != null)
-											values.push(tx.baseXid());
+										values.push(loadedXid);
 									}
 								}
 							}

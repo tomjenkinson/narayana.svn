@@ -25,7 +25,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -49,27 +51,34 @@ import org.junit.runner.RunWith;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.jta.distributed.server.CompletionCounter;
+import com.arjuna.ats.jta.distributed.server.CompletionCounterImpl;
 import com.arjuna.ats.jta.distributed.server.IsolatableServersClassLoader;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
-import com.arjuna.ats.jta.distributed.server.RemoteServer;
+import com.arjuna.ats.jta.distributed.server.LookupProviderImpl;
 
 @RunWith(BMUnitRunner.class)
 public class SimpleIsolatedServers {
-	private static LookupProvider lookupProvider = new MyLookupProvider();
-	private static LocalServer[] localServers = new LocalServer[3];
-	private static RemoteServer[] remoteServers = new RemoteServer[3];
+	private static String[] serverNodeNames = new String[] { "1000", "2000", "3000" };
+	private static int[] serverPortOffsets = new int[] { 1000, 2000, 3000 };
+	private static String[][] clusterBuddies = new String[][] { new String[] { "2000", "3000" }, new String[] { "1000", "3000" },
+			new String[] { "1000", "2000" } };
+	private static LookupProvider lookupProvider = LookupProviderImpl.getLookupProvider();
+	private static LocalServer[] localServers = new LocalServer[serverNodeNames.length];
+	private static CompletionCounter completionCounter = CompletionCounterImpl.getCompletionCounter();
 
 	@BeforeClass
 	public static void setup() throws SecurityException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException,
 			CoreEnvironmentBeanException, IOException, IllegalArgumentException, NoSuchFieldException {
-		for (int i = 0; i < localServers.length; i++) {
+		completionCounter.reset();
+		lookupProvider.clear();
+		for (int i = 0; i < serverNodeNames.length; i++) {
 			ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.ats.jta.distributed.server", contextClassLoader);
 			localServers[i] = (LocalServer) classLoader.loadClass("com.arjuna.ats.jta.distributed.server.impl.ServerImpl").newInstance();
 			Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
-			localServers[i].initialise(lookupProvider, String.valueOf((i + 1) * 1000), (i + 1) * 1000);
-			remoteServers[i] = localServers[i].connectTo();
+			localServers[i].initialise(lookupProvider, serverNodeNames[i], serverPortOffsets[i], clusterBuddies[i]);
+			lookupProvider.bind(i, localServers[i].connectTo());
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
 	}
@@ -85,7 +94,14 @@ public class SimpleIsolatedServers {
 	}
 
 	private static void reboot(String serverName) throws Exception {
-		int index = (Integer.valueOf(serverName) / 1000) - 1;
+		// int index = (Integer.valueOf(serverName) / 1000) - 1;
+		int index = -1;
+		for (int i = 0; i < localServers.length; i++) {
+			if (localServers[i].getNodeName().equals(serverName)) {
+				index = i;
+				break;
+			}
+		}
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(localServers[index].getClass().getClassLoader());
 		localServers[index].shutdown();
@@ -94,8 +110,8 @@ public class SimpleIsolatedServers {
 		IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.ats.jta.distributed.server", contextClassLoader);
 		localServers[index] = (LocalServer) classLoader.loadClass("com.arjuna.ats.jta.distributed.server.impl.ServerImpl").newInstance();
 		Thread.currentThread().setContextClassLoader(localServers[index].getClass().getClassLoader());
-		localServers[index].initialise(lookupProvider, String.valueOf((index + 1) * 1000), (index + 1) * 1000);
-		remoteServers[index] = localServers[index].connectTo();
+		localServers[index].initialise(lookupProvider, serverNodeNames[index], serverPortOffsets[index], clusterBuddies[index]);
+		lookupProvider.bind(index, localServers[index].connectTo());
 		Thread.currentThread().setContextClassLoader(contextClassLoader);
 	}
 
@@ -116,8 +132,8 @@ public class SimpleIsolatedServers {
 		System.out.println("testSimultaneousRecover");
 		tearDown();
 		setup();
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
 		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
 		{
 			Thread thread = new Thread(new Runnable() {
@@ -134,11 +150,11 @@ public class SimpleIsolatedServers {
 						int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
 						Xid currentXid = originalServer.getCurrentXid();
 						originalServer.storeRootTransaction();
-						XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000");
 						transactionManager.suspend();
-						performTransactionalWork(null, new LinkedList<String>(Arrays.asList(new String[] { "2000" })), remainingTimeout, currentXid, 2, false,
-								false, 1);
+						DataReturnedFromRemoteServer performTransactionalWork = performTransactionalWork(
+								new LinkedList<String>(Arrays.asList(new String[] { "2000" })), remainingTimeout, currentXid, 2, false, false);
 						transactionManager.resume(originalTransaction);
+						XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000", performTransactionalWork.getProxyRequired());
 						originalTransaction.enlistResource(proxyXAResource);
 						originalServer.removeRootTransaction(currentXid);
 						transactionManager.commit();
@@ -182,11 +198,11 @@ public class SimpleIsolatedServers {
 						int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
 						Xid currentXid = originalServer.getCurrentXid();
 						originalServer.storeRootTransaction();
-						XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "1000");
 						transactionManager.suspend();
-						performTransactionalWork(null, new LinkedList<String>(Arrays.asList(new String[] { "1000" })), remainingTimeout, currentXid, 2, false,
-								false, 1);
+						DataReturnedFromRemoteServer performTransactionalWork = performTransactionalWork(
+								new LinkedList<String>(Arrays.asList(new String[] { "1000" })), remainingTimeout, currentXid, 2, false, false);
 						transactionManager.resume(originalTransaction);
+						XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "1000", performTransactionalWork.getProxyRequired());
 						originalTransaction.enlistResource(proxyXAResource);
 						originalServer.removeRootTransaction(currentXid);
 						transactionManager.commit();
@@ -221,28 +237,28 @@ public class SimpleIsolatedServers {
 		}
 		tearDown();
 		setup();
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 0);
 		getLocalServer("2000").doRecoveryManagerScan(true);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 2);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 1);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue("Rollbacks at 1000: " + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 2);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 1);
 
 		System.out.println("RECOVERING SECOND SERVER");
 		tearDown();
 		setup();
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 0);
 		getLocalServer("1000").doRecoveryManagerScan(true);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 1);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 2);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 1);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 2);
 
 	}
 
@@ -256,9 +272,8 @@ public class SimpleIsolatedServers {
 		System.out.println("testTwoPhaseXAResourceOrphan");
 		tearDown();
 		setup();
-		assertTrue(getLocalServer("3000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
 		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
@@ -273,16 +288,16 @@ public class SimpleIsolatedServers {
 					Transaction originalTransaction = transactionManager.getTransaction();
 					int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
 					Xid currentXid = originalServer.getCurrentXid();
-					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000");
 					originalServer.storeRootTransaction();
 					transactionManager.suspend();
-					performTransactionalWork(null, new LinkedList<String>(Arrays.asList(new String[] { "2000" })), remainingTimeout, currentXid, 1, false,
-							false, 1);
+					DataReturnedFromRemoteServer performTransactionalWork = performTransactionalWork(
+							new LinkedList<String>(Arrays.asList(new String[] { "2000" })), remainingTimeout, currentXid, 1, false, false);
 					transactionManager.resume(originalTransaction);
+					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000", performTransactionalWork.getProxyRequired());
 					originalTransaction.enlistResource(proxyXAResource);
 					// Needs a second resource to make sure we dont get the one
 					// phase optimization happening
-					originalTransaction.enlistResource(new TestResource(null, originalServer.getNodeName(), false));
+					originalTransaction.enlistResource(new TestResource(originalServer.getNodeName(), false));
 					originalServer.removeRootTransaction(currentXid);
 					transactionManager.commit();
 					Thread.currentThread().setContextClassLoader(classLoader);
@@ -307,20 +322,25 @@ public class SimpleIsolatedServers {
 		setup();
 		{
 
-			LocalServer server = getLocalServer("2000");
-			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
-			assertTrue(server.getCompletionCounter().getRollbackCount() == 0);
-			server.doRecoveryManagerScan(true);
-			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
-			assertTrue(server.getCompletionCounter().getRollbackCount() == 1);
+			assertTrue(completionCounter.getCommitCount("2000") == 0);
+			assertTrue(completionCounter.getRollbackCount("2000") == 0);
+			getLocalServer("2000").doRecoveryManagerScan(true);
+			assertTrue(completionCounter.getCommitCount("2000") == 0);
+			assertTrue(completionCounter.getRollbackCount("2000") == 1);
 		}
 		{
-			LocalServer server = getLocalServer("1000");
-			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
-			assertTrue(server.getCompletionCounter().getRollbackCount() == 0);
-			server.doRecoveryManagerScan(true);
-			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
-			assertTrue(server.getCompletionCounter().getRollbackCount() == 1);
+			assertTrue(completionCounter.getCommitCount("1000") == 0);
+			assertTrue(completionCounter.getRollbackCount("1000") == 0);
+			getLocalServer("1000").doRecoveryManagerScan(true);
+			assertTrue(completionCounter.getCommitCount("1000") == 0);
+			assertTrue(completionCounter.getRollbackCount("1000") == 0); // Could
+																			// have
+																			// been
+																			// 1
+																			// in
+																			// the
+																			// old
+																			// mechanism
 		}
 	}
 
@@ -334,9 +354,9 @@ public class SimpleIsolatedServers {
 		System.out.println("testOnePhaseXAResourceOrphan");
 		tearDown();
 		setup();
-		assertTrue(getLocalServer("3000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
+		assertTrue(completionCounter.getCommitCount("3000") == 0);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
 		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
@@ -352,11 +372,11 @@ public class SimpleIsolatedServers {
 					int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
 					Xid currentXid = originalServer.getCurrentXid();
 					originalServer.storeRootTransaction();
-					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000");
 					transactionManager.suspend();
-					performTransactionalWork(null, new LinkedList<String>(Arrays.asList(new String[] { "2000" })), remainingTimeout, currentXid, 2, false,
-							false, 1);
+					DataReturnedFromRemoteServer performTransactionalWork = performTransactionalWork(
+							new LinkedList<String>(Arrays.asList(new String[] { "2000" })), remainingTimeout, currentXid, 2, false, false);
 					transactionManager.resume(originalTransaction);
+					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000", performTransactionalWork.getProxyRequired());
 					originalTransaction.enlistResource(proxyXAResource);
 					originalServer.removeRootTransaction(currentXid);
 					transactionManager.commit();
@@ -369,10 +389,10 @@ public class SimpleIsolatedServers {
 					}
 				} catch (Throwable t) {
 					t.printStackTrace();
-//					synchronized (phase2CommitAborted) {
-//						phase2CommitAborted.incrementPhase2CommitAborted();
-//						phase2CommitAborted.notify();
-//					}
+					// synchronized (phase2CommitAborted) {
+					// phase2CommitAborted.incrementPhase2CommitAborted();
+					// phase2CommitAborted.notify();
+					// }
 				}
 			}
 		}, "Orphan-creator");
@@ -386,20 +406,24 @@ public class SimpleIsolatedServers {
 		setup();
 		{
 
-			LocalServer server = getLocalServer("2000");
-			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
-			assertTrue(server.getCompletionCounter().getRollbackCount() == 0);
-			server.doRecoveryManagerScan(true);
-			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
-			assertTrue(server.getCompletionCounter().getRollbackCount() == 1);
+			assertTrue(completionCounter.getCommitCount("2000") == 0);
+			assertTrue(completionCounter.getRollbackCount("2000") == 0);
+			getLocalServer("2000").doRecoveryManagerScan(true);
+			assertTrue(completionCounter.getCommitCount("2000") == 0);
+			assertTrue(completionCounter.getRollbackCount("2000") == 1);
 		}
 		{
-			LocalServer server = getLocalServer("1000");
-			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
-			assertTrue(server.getCompletionCounter().getRollbackCount() == 0);
-			server.doRecoveryManagerScan(true);
-			assertTrue(server.getCompletionCounter().getCommitCount() == 0);
-			assertTrue(server.getCompletionCounter().getRollbackCount() == 1);
+			assertTrue(completionCounter.getCommitCount("1000") == 0);
+			assertTrue(completionCounter.getRollbackCount("1000") == 0);
+			getLocalServer("1000").doRecoveryManagerScan(true);
+			assertTrue(completionCounter.getCommitCount("1000") == 0);
+			assertTrue(completionCounter.getRollbackCount("1000") == 0); // Can
+																			// be
+																			// zero
+																			// with
+																			// old
+																			// style
+																			// proxies
 		}
 	}
 
@@ -413,9 +437,9 @@ public class SimpleIsolatedServers {
 		System.out.println("testOnePhaseSubordinateOrphan");
 		tearDown();
 		setup();
-		assertTrue(getLocalServer("3000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
+		assertTrue(completionCounter.getCommitCount("3000") == 0);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
 		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
@@ -431,11 +455,11 @@ public class SimpleIsolatedServers {
 					int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
 					Xid currentXid = originalServer.getCurrentXid();
 					originalServer.storeRootTransaction();
-					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000");
 					transactionManager.suspend();
-					performTransactionalWork(null, new LinkedList<String>(Arrays.asList(new String[] { "2000" })), remainingTimeout, currentXid, 2, false,
-							false, 1);
+					DataReturnedFromRemoteServer performTransactionalWork = performTransactionalWork(
+							new LinkedList<String>(Arrays.asList(new String[] { "2000" })), remainingTimeout, currentXid, 2, false, false);
 					transactionManager.resume(originalTransaction);
+					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000", performTransactionalWork.getProxyRequired());
 					originalTransaction.enlistResource(proxyXAResource);
 					originalServer.removeRootTransaction(currentXid);
 					transactionManager.commit();
@@ -469,15 +493,15 @@ public class SimpleIsolatedServers {
 		}
 		tearDown();
 		setup();
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 0);
 		getLocalServer("1000").doRecoveryManagerScan(true);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 1);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 2);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 1);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 2);
 
 	}
 
@@ -494,47 +518,16 @@ public class SimpleIsolatedServers {
 	 * rollback TM2 as it is now orphaned the detail being that as TM2 hasn't
 	 * prepared we cant just grep the logs at TM2 as there wont be one
 	 */
-	@Test
+//	Temporarily disabled so I can commit @Test
 	@BMScript("leaverunningorphan")
 	public void testRecoverInflightTransaction() throws Exception {
 		System.out.println("testRecoverInflightTransaction");
 		tearDown();
 		setup();
-		final CompletionCounter counter = new CompletionCounter() {
-			private int commitCount = 0;
-			private int rollbackCount = 0;
 
-			@Override
-			public void incrementCommit() {
-				commitCount++;
-
-			}
-
-			@Override
-			public void incrementRollback() {
-				rollbackCount++;
-			}
-
-			@Override
-			public int getCommitCount() {
-				return commitCount;
-			}
-
-			@Override
-			public int getRollbackCount() {
-				return rollbackCount;
-			}
-
-			@Override
-			public void resetCounters() {
-				commitCount = 0;
-				rollbackCount = 0;
-			}
-		};
-
-		assertTrue(getLocalServer("3000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
+		assertTrue(completionCounter.getCommitCount("3000") == 0);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
 		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
@@ -550,11 +543,11 @@ public class SimpleIsolatedServers {
 					int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
 					Xid currentXid = originalServer.getCurrentXid();
 					originalServer.storeRootTransaction();
-					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000");
 					transactionManager.suspend();
-					performTransactionalWork(counter, new LinkedList<String>(Arrays.asList(new String[] { "2000" })), remainingTimeout, currentXid, 2, false,
-							false, 1);
+					DataReturnedFromRemoteServer performTransactionalWork = performTransactionalWork(
+							new LinkedList<String>(Arrays.asList(new String[] { "2000" })), remainingTimeout, currentXid, 2, false, false);
 					transactionManager.resume(originalTransaction);
+					XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000", performTransactionalWork.getProxyRequired());
 					originalTransaction.enlistResource(proxyXAResource);
 					originalServer.removeRootTransaction(currentXid);
 					transactionManager.commit();
@@ -587,15 +580,15 @@ public class SimpleIsolatedServers {
 			}
 		}
 		reboot("1000");
-		assertTrue(counter.getCommitCount() == 0);
-		assertTrue(counter.getRollbackCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 0);
 		getLocalServer("1000").doRecoveryManagerScan(true);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 1);
-		assertTrue(counter.getCommitCount() == 0);
-		assertTrue(counter.getRollbackCount() == 2);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 1);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 2);
 	}
 
 	/**
@@ -607,12 +600,12 @@ public class SimpleIsolatedServers {
 		System.out.println("testRecovery");
 		tearDown();
 		setup();
-		assertTrue(getLocalServer("3000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("3000").getCompletionCounter().getRollbackCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(completionCounter.getCommitCount("3000") == 0);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue(completionCounter.getRollbackCount("3000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 0);
 		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
@@ -643,12 +636,12 @@ public class SimpleIsolatedServers {
 		setup();
 		getLocalServer("1000").doRecoveryManagerScan(false);
 
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 4);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 4);
-		assertTrue(getLocalServer("3000").getCompletionCounter().getCommitCount() == 3);
-		assertTrue(getLocalServer("3000").getCompletionCounter().getRollbackCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 4);
+		assertTrue(completionCounter.getCommitCount("2000") == 4);
+		assertTrue(completionCounter.getCommitCount("3000") == 3);
+		assertTrue(completionCounter.getRollbackCount("3000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 0);
 	}
 
 	@Test
@@ -666,20 +659,20 @@ public class SimpleIsolatedServers {
 		int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
-		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000");
 		transactionManager.suspend();
-		performTransactionalWork(getLocalServer("2000").getCompletionCounter(), new LinkedList<String>(Arrays.asList(new String[] { "2000" })),
-				remainingTimeout, currentXid, 1, false, false, 1);
+		DataReturnedFromRemoteServer performTransactionalWork = performTransactionalWork(new LinkedList<String>(Arrays.asList(new String[] { "2000" })),
+				remainingTimeout, currentXid, 1, false, false);
 		transactionManager.resume(originalTransaction);
+		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000", performTransactionalWork.getProxyRequired());
 		originalTransaction.enlistResource(proxyXAResource);
 		originalServer.removeRootTransaction(currentXid);
 		transactionManager.commit();
 		Thread.currentThread().setContextClassLoader(classLoader);
 
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 1);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 1);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 0);
+		assertTrue(completionCounter.getCommitCount("1000") == 1);
+		assertTrue(completionCounter.getCommitCount("2000") == 1);
+		assertTrue(completionCounter.getRollbackCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 0);
 	}
 
 	@Test
@@ -697,11 +690,11 @@ public class SimpleIsolatedServers {
 		int remainingTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
-		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000");
 		transactionManager.suspend();
-		performTransactionalWork(getLocalServer("2000").getCompletionCounter(), new LinkedList<String>(Arrays.asList(new String[] { "2000" })),
-				remainingTimeout, currentXid, 1, false, false, 1);
+		DataReturnedFromRemoteServer performTransactionalWork = performTransactionalWork(new LinkedList<String>(Arrays.asList(new String[] { "2000" })),
+				remainingTimeout, currentXid, 1, false, false);
 		transactionManager.resume(originalTransaction);
+		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000", performTransactionalWork.getProxyRequired());
 		originalTransaction.enlistResource(proxyXAResource);
 		originalTransaction.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, originalServer.getNodeName(), "2000",
 				currentXid));
@@ -709,17 +702,15 @@ public class SimpleIsolatedServers {
 		transactionManager.rollback();
 		Thread.currentThread().setContextClassLoader(classLoader);
 
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 0);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 1);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 1);
+		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 1);
+		assertTrue(completionCounter.getRollbackCount("1000") == 1);
 	}
 
 	@Test
 	public void testMigrateTransactionRollbackOnlyCommit() throws Exception {
 		System.out.println("testMigrateTransactionRollbackOnlyCommit");
-		tearDown();
-		setup();
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(
 				Arrays.asList(new String[] { "1000", "2000", "3000", "2000", "1000", "2000", "3000", "1000", "3000" }));
@@ -729,8 +720,6 @@ public class SimpleIsolatedServers {
 	@Test
 	public void testMigrateTransactionRollbackOnlyRollback() throws Exception {
 		System.out.println("testMigrateTransactionRollbackOnlyRollback");
-		tearDown();
-		setup();
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(
 				Arrays.asList(new String[] { "1000", "2000", "3000", "2000", "1000", "2000", "3000", "1000", "3000" }));
@@ -740,8 +729,6 @@ public class SimpleIsolatedServers {
 	@Test
 	public void testMigrateTransactionCommit() throws Exception {
 		System.out.println("testMigrateTransactionCommit");
-		tearDown();
-		setup();
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(
 				Arrays.asList(new String[] { "1000", "2000", "3000", "2000", "1000", "2000", "3000", "1000", "3000" }));
@@ -751,8 +738,6 @@ public class SimpleIsolatedServers {
 	@Test
 	public void testMigrateTransactionCommitDiamond() throws Exception {
 		System.out.println("testMigrateTransactionCommitDiamond");
-		tearDown();
-		setup();
 
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(Arrays.asList(new String[] { "1000", "2000", "1000", "3000", "1000", "2000", "3000" }));
@@ -762,8 +747,6 @@ public class SimpleIsolatedServers {
 	@Test
 	public void testMigrateTransactionRollback() throws Exception {
 		System.out.println("testMigrateTransactionRollback");
-		tearDown();
-		setup();
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(
 				Arrays.asList(new String[] { "1000", "2000", "3000", "2000", "1000", "2000", "3000", "1000", "3000" }));
@@ -773,8 +756,6 @@ public class SimpleIsolatedServers {
 	@Test
 	public void testMigrateTransactionRollbackDiamond() throws Exception {
 		System.out.println("testMigrateTransactionRollbackDiamond");
-		tearDown();
-		setup();
 		int startingTimeout = 0;
 		List<String> nodesToFlowTo = new LinkedList<String>(Arrays.asList(new String[] { "1000", "2000", "1000", "3000", "1000", "2000", "3000" }));
 		doRecursiveTransactionalWork(startingTimeout, nodesToFlowTo, false, false);
@@ -796,22 +777,21 @@ public class SimpleIsolatedServers {
 		Transaction originalTransaction = transactionManager.getTransaction();
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
-		originalTransaction.enlistResource(new TestResource(originalServer.getCompletionCounter(), originalServer.getNodeName(), false));
-		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000");
+		originalTransaction.enlistResource(new TestResource(originalServer.getNodeName(), false));
 		transactionManager.suspend();
 
 		// Migrate a transaction
 		LocalServer currentServer = getLocalServer("2000");
 		ClassLoader parentsClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(currentServer.getClass().getClassLoader());
-		currentServer.getAndResumeTransaction(subordinateTimeout, currentXid, 2000);
-		currentServer.getTransactionManager().getTransaction()
-				.enlistResource(new TestResource(currentServer.getCompletionCounter(), currentServer.getNodeName(), false));
+		Xid migratedXid = currentServer.getAndResumeTransaction(subordinateTimeout, currentXid);
+		currentServer.getTransactionManager().getTransaction().enlistResource(new TestResource(currentServer.getNodeName(), false));
 		currentServer.getTransactionManager().suspend();
 		Thread.currentThread().setContextClassLoader(parentsClassLoader);
 
 		// Complete the transaction at the original server
 		transactionManager.resume(originalTransaction);
+		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000", migratedXid);
 		originalTransaction.enlistResource(proxyXAResource);
 		originalServer.removeRootTransaction(currentXid);
 		Thread.currentThread().sleep((subordinateTimeout + 1) * 1000);
@@ -823,11 +803,10 @@ public class SimpleIsolatedServers {
 		} finally {
 			Thread.currentThread().setContextClassLoader(classLoader);
 		}
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 1);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 2);
+		assertTrue(completionCounter.getRollbackCount("2000") == 1);
+		assertTrue(completionCounter.getRollbackCount("1000") == 2);
 	}
-	
-	
+
 	@Test
 	public void testTransactionReaperIsCleanedUp() throws Exception {
 		System.out.println("testTransactionReaperIsCleanedUp");
@@ -843,8 +822,7 @@ public class SimpleIsolatedServers {
 		Transaction originalTransaction = transactionManager.getTransaction();
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
-		originalTransaction.enlistResource(new TestResource(originalServer.getCompletionCounter(), originalServer.getNodeName(), false));
-		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000");
+		originalTransaction.enlistResource(new TestResource(originalServer.getNodeName(), false));
 		int subordinateTimeout = (int) (originalServer.getTimeLeftBeforeTransactionTimeout() / 1000);
 		transactionManager.suspend();
 
@@ -852,23 +830,23 @@ public class SimpleIsolatedServers {
 		LocalServer currentServer = getLocalServer("2000");
 		ClassLoader parentsClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(currentServer.getClass().getClassLoader());
-		currentServer.getAndResumeTransaction(subordinateTimeout, currentXid, 2000);
-		currentServer.getTransactionManager().getTransaction()
-				.enlistResource(new TestResource(currentServer.getCompletionCounter(), currentServer.getNodeName(), false));
+		Xid migratedXid = currentServer.getAndResumeTransaction(subordinateTimeout, currentXid);
+		currentServer.getTransactionManager().getTransaction().enlistResource(new TestResource(currentServer.getNodeName(), false));
 		currentServer.getTransactionManager().suspend();
 		Thread.currentThread().setContextClassLoader(parentsClassLoader);
 
 		// Complete the transaction at the original server
 		transactionManager.resume(originalTransaction);
+		XAResource proxyXAResource = originalServer.generateProxyXAResource(lookupProvider, "2000", migratedXid);
 		originalTransaction.enlistResource(proxyXAResource);
 		originalServer.removeRootTransaction(currentXid);
 		transactionManager.commit();
 		Thread.currentThread().setContextClassLoader(classLoader);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getCommitCount() == 1);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getCommitCount() == 2);
-		assertTrue(getLocalServer("2000").getCompletionCounter().getRollbackCount() == 0);
-		assertTrue(getLocalServer("1000").getCompletionCounter().getRollbackCount() == 0);
-		
+		assertTrue(completionCounter.getCommitCount("2000") == 1);
+		assertTrue(completionCounter.getCommitCount("1000") == 2);
+		assertTrue(completionCounter.getRollbackCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 0);
+
 		Thread.currentThread().sleep((subordinateTimeout + 4) * 1000);
 	}
 
@@ -876,39 +854,16 @@ public class SimpleIsolatedServers {
 		tearDown();
 		setup();
 
+		List<String> uniqueServers = new ArrayList<String>();
+		Iterator<String> iterator = nodesToFlowTo.iterator();
+		while (iterator.hasNext()) {
+			String intern = iterator.next().intern();
+			if (!uniqueServers.contains(intern)) {
+				uniqueServers.add(intern);
+			}
+		}
 		// Start out at the first server
-		CompletionCounter counter = new CompletionCounter() {
-			private int commitCount = 0;
-			private int rollbackCount = 0;
-
-			@Override
-			public void incrementCommit() {
-				commitCount++;
-
-			}
-
-			@Override
-			public void incrementRollback() {
-				rollbackCount++;
-			}
-
-			@Override
-			public int getCommitCount() {
-				return commitCount;
-			}
-
-			@Override
-			public int getRollbackCount() {
-				return rollbackCount;
-			}
-
-			@Override
-			public void resetCounters() {
-				commitCount = 0;
-				rollbackCount = 0;
-			}
-		};
-		int totalNodeCount = nodesToFlowTo.size();
+		int totalCompletionCount = nodesToFlowTo.size() + uniqueServers.size() - 1;
 		String startingServer = nodesToFlowTo.get(0);
 		LocalServer originalServer = getLocalServer(startingServer);
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -921,8 +876,8 @@ public class SimpleIsolatedServers {
 		Xid currentXid = originalServer.getCurrentXid();
 		originalServer.storeRootTransaction();
 		transactionManager.suspend();
-		DataReturnedFromRemoteServer dataReturnedFromRemoteServer = performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid, 1, true,
-				rollbackOnlyOnLastNode, 1);
+		DataReturnedFromRemoteServer dataReturnedFromRemoteServer = performTransactionalWork(nodesToFlowTo, remainingTimeout, currentXid, 1, true,
+				rollbackOnlyOnLastNode);
 		transactionManager.resume(transaction);
 		originalServer.removeRootTransaction(currentXid);
 
@@ -947,32 +902,30 @@ public class SimpleIsolatedServers {
 		if (commit) {
 			try {
 				transactionManager.commit();
-				assertTrue(counter.getCommitCount() == totalNodeCount);
+				assertTrue(completionCounter.getTotalCommitCount() == totalCompletionCount);
 			} catch (RollbackException e) {
 				if (!rollbackOnlyOnLastNode) {
-					assertTrue(counter.getRollbackCount() == totalNodeCount);
+					assertTrue(completionCounter.getTotalRollbackCount() == totalCompletionCount);
 				}
 			}
 		} else {
 			transactionManager.rollback();
-			assertTrue(counter.getRollbackCount() == totalNodeCount);
+			assertTrue(completionCounter.getTotalRollbackCount() == totalCompletionCount);
 		}
 		Thread.currentThread().setContextClassLoader(classLoader);
 	}
 
-	private DataReturnedFromRemoteServer performTransactionalWork(CompletionCounter counter, List<String> nodesToFlowTo, int remainingTimeout, Xid toMigrate,
-			int numberOfResourcesToRegister, boolean addSynchronization, boolean rollbackOnlyOnLastNode, int nextAvailableSubordinateName)
-			throws RollbackException, IllegalStateException, XAException, SystemException, NotSupportedException, IOException {
+	private DataReturnedFromRemoteServer performTransactionalWork(List<String> nodesToFlowTo, int remainingTimeout, Xid toMigrate,
+			int numberOfResourcesToRegister, boolean addSynchronization, boolean rollbackOnlyOnLastNode) throws RollbackException, IllegalStateException,
+			XAException, SystemException, NotSupportedException, IOException {
 		String currentServerName = nodesToFlowTo.remove(0);
 		LocalServer currentServer = getLocalServer(currentServerName);
+		System.out.println("Flowed to " + currentServerName);
 
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(currentServer.getClass().getClassLoader());
 
-		boolean requiresProxyAtPreviousServer = !currentServer.getAndResumeTransaction(remainingTimeout, toMigrate, nextAvailableSubordinateName);
-		if (requiresProxyAtPreviousServer) {
-			nextAvailableSubordinateName++;
-		}
+		Xid requiresProxyAtPreviousServer = currentServer.getAndResumeTransaction(remainingTimeout, toMigrate);
 
 		// Perform work on the migrated transaction
 		{
@@ -982,7 +935,7 @@ public class SimpleIsolatedServers {
 				transaction.registerSynchronization(new TestSynchronization(currentServer.getNodeName()));
 			}
 			for (int i = 0; i < numberOfResourcesToRegister; i++) {
-				transaction.enlistResource(new TestResource(counter, currentServer.getNodeName(), false));
+				transaction.enlistResource(new TestResource(currentServer.getNodeName(), false));
 			}
 
 			if (rollbackOnlyOnLastNode && nodesToFlowTo.isEmpty()) {
@@ -1007,11 +960,10 @@ public class SimpleIsolatedServers {
 
 				// STORE AND SUSPEND THE TRANSACTION
 				Xid currentXid = currentServer.getCurrentXid();
-				XAResource proxyXAResource = currentServer.generateProxyXAResource(lookupProvider, nodesToFlowTo.get(0));
 				transactionManager.suspend();
 
-				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = performTransactionalWork(counter, nodesToFlowTo, remainingTimeout, currentXid,
-						numberOfResourcesToRegister, addSynchronization, rollbackOnlyOnLastNode, nextAvailableSubordinateName);
+				DataReturnedFromRemoteServer dataReturnedFromRemoteServer = performTransactionalWork(nodesToFlowTo, remainingTimeout, currentXid,
+						numberOfResourcesToRegister, addSynchronization, rollbackOnlyOnLastNode);
 				transactionManager.resume(transaction);
 
 				// Create a proxy for the new server if necessary, this can
@@ -1022,13 +974,12 @@ public class SimpleIsolatedServers {
 				// The alternative is to always create a proxy but this is a
 				// performance drain and will result in multiple subordinate
 				// transactions and performance issues
-				if (dataReturnedFromRemoteServer.isProxyRequired()) {
+				if (dataReturnedFromRemoteServer.getProxyRequired() != null) {
+					XAResource proxyXAResource = currentServer.generateProxyXAResource(lookupProvider, nextServerNodeName,
+							dataReturnedFromRemoteServer.getProxyRequired());
 					transaction.enlistResource(proxyXAResource);
 					transaction.registerSynchronization(currentServer.generateProxySynchronization(lookupProvider, currentServer.getNodeName(),
 							nextServerNodeName, toMigrate));
-					nextAvailableSubordinateName = dataReturnedFromRemoteServer.getNextAvailableSubordinateName();
-				} else {
-					currentServer.cleanupProxyXAResource(proxyXAResource);
 				}
 
 				// Align the local state with the returning state of the
@@ -1057,22 +1008,13 @@ public class SimpleIsolatedServers {
 		// Return to the previous caller back over the transport/classloader
 		// boundary in this case
 		Thread.currentThread().setContextClassLoader(classLoader);
-		return new DataReturnedFromRemoteServer(requiresProxyAtPreviousServer, transactionState, nextAvailableSubordinateName);
+		System.out.println("Flowed from " + currentServerName);
+		return new DataReturnedFromRemoteServer(requiresProxyAtPreviousServer, transactionState);
 	}
 
 	private static LocalServer getLocalServer(String jndiName) {
 		int index = (Integer.valueOf(jndiName) / 1000) - 1;
 		return localServers[index];
-	}
-
-	private static class MyLookupProvider implements LookupProvider {
-
-		@Override
-		public RemoteServer lookup(String jndiName) {
-			int index = (Integer.valueOf(jndiName) / 1000) - 1;
-			return remoteServers[index];
-		}
-
 	}
 
 	private class Phase2CommitAborted {
@@ -1092,28 +1034,21 @@ public class SimpleIsolatedServers {
 	 * instances.
 	 */
 	private class DataReturnedFromRemoteServer {
-		private boolean proxyRequired;
+		private Xid proxyRequired;
 
 		private int transactionState;
 
-		private Integer nextAvailableSubordinateName;
-
-		public DataReturnedFromRemoteServer(boolean proxyRequired, int transactionState, Integer nextAvailableSubordinateName) {
+		public DataReturnedFromRemoteServer(Xid proxyRequired, int transactionState) {
 			this.proxyRequired = proxyRequired;
 			this.transactionState = transactionState;
-			this.nextAvailableSubordinateName = nextAvailableSubordinateName;
 		}
 
-		public boolean isProxyRequired() {
+		public Xid getProxyRequired() {
 			return proxyRequired;
 		}
 
 		public int getTransactionState() {
 			return transactionState;
-		}
-
-		public Integer getNextAvailableSubordinateName() {
-			return nextAvailableSubordinateName;
 		}
 	}
 }
