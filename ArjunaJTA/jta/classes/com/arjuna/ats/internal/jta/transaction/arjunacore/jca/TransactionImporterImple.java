@@ -32,6 +32,7 @@
 package com.arjuna.ats.internal.jta.transaction.arjunacore.jca;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -89,7 +90,7 @@ public class TransactionImporterImple implements TransactionImporter
 		 * Check to see if we haven't already imported this thing.
 		 */
 
-		SubordinateTransaction imported = getImportedTransaction(xid);
+		TransactionImple imported = (TransactionImple) getImportedTransaction(xid);
 
 		if (imported == null)
 		{
@@ -209,13 +210,18 @@ public class TransactionImporterImple implements TransactionImporter
 		_transactions.remove(new SubordinateXidImple(xid));
 	}
 	
-	public Set<SubordinateXidImple> getInflightXids() {
-		Set<SubordinateXidImple> keySet = _transactions.keySet();
-		Set<SubordinateXidImple> toReturn = new HashSet<SubordinateXidImple>();
-		toReturn.addAll(keySet);
+	public Set<Xid> getInflightXids(String parentNodeName) {
+		Iterator<TransactionImple> iterator = _transactions.values().iterator();
+		Set<Xid> toReturn = new HashSet<Xid>();
+		while (iterator.hasNext()) {
+			TransactionImple next = iterator.next();
+			if (next.getParentNodeName().equals(parentNodeName)) {
+				toReturn.add(next.baseXid());
+			}
+		}
 		return toReturn;
 	}
 
-	private static ConcurrentHashMap<SubordinateXidImple, SubordinateTransaction> _transactions = new ConcurrentHashMap<SubordinateXidImple, SubordinateTransaction>();
+	private static ConcurrentHashMap<SubordinateXidImple, TransactionImple> _transactions = new ConcurrentHashMap<SubordinateXidImple, TransactionImple>();
 }
 

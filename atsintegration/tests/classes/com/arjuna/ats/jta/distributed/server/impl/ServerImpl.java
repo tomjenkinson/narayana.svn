@@ -25,9 +25,11 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
@@ -54,6 +56,7 @@ import com.arjuna.ats.internal.jta.recovery.arjunacore.RecoveryXids;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateXidImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinationManager;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.TransactionImporterImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.XATerminatorImple;
 import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 import com.arjuna.ats.jbossatx.jta.TransactionManagerService;
@@ -62,7 +65,6 @@ import com.arjuna.ats.jta.distributed.TestResourceRecovery;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 import com.arjuna.ats.jta.distributed.server.RemoteServer;
-import com.arjuna.ats.jta.xa.XATxConverter;
 import com.arjuna.ats.jta.xa.XidImple;
 
 public class ServerImpl implements LocalServer, RemoteServer {
@@ -339,6 +341,11 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public Xid[] recoverFor(String localServerName) throws XAException {
-		return ((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(null, localServerName);
+		Set<Xid> toReturn = ((TransactionImporterImple) SubordinationManager.getTransactionImporter()).getInflightXids(localServerName);
+		Xid[] doRecover = ((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(null, localServerName);
+		if (doRecover != null) {
+			toReturn.addAll(Arrays.asList(doRecover));
+		}
+		return toReturn.toArray(new Xid[0]);
 	}
 }

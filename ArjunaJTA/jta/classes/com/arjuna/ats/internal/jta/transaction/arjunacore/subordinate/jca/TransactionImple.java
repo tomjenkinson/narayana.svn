@@ -71,6 +71,10 @@ public class TransactionImple
 
 		// don't put it into list here: it may already be there!
 	}
+	
+	public String getParentNodeName() {
+		return ((SubordinateAtomicAction)_theTransaction).getParentNodeName();
+	}
 
 	public final void recordTransaction()
 	{

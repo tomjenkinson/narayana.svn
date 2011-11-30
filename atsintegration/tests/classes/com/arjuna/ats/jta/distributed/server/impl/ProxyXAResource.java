@@ -186,7 +186,6 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 		if ((flag & XAResource.TMENDRSCAN) == XAResource.TMENDRSCAN) {
 			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_RECOVERD[XAResource.TMENDRSCAN]");
 		}
-//		return null;
 		return toReturn;
 	}
 
