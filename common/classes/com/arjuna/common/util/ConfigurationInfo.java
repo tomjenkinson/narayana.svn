@@ -123,7 +123,7 @@ public class ConfigurationInfo
             }
 
         } catch(Exception exception) {
-//            exception.printStackTrace();
+            exception.printStackTrace();
         } finally {
             if(is!= null) {
                 try {
