@@ -120,16 +120,8 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
 
 		Xid toPropagate = migratedXid != null ? migratedXid : xid;
-		try {
-			LookupProvider.getInstance().lookup(remoteServerName).rollback(toPropagate, !nonerecovered);
-			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
-		} catch (XAException e) {
-			// We know the remote side must have done a JBTM-917
-			if (e.errorCode == XAException.XAER_INVAL) {
-				// We know that this means that the transaction is not known at
-				// the remote side
-			}
-		}
+		LookupProvider.getInstance().lookup(remoteServerName).rollback(toPropagate, !nonerecovered);
+		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACKED");
 	}
 
 	/**
