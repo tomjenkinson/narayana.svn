@@ -1580,14 +1580,14 @@ public class ArjunaTransactionImple extends
 	            }
 	        }
 	    }
-	    
+
 	    /*
 	     * If there's no problem so far then call beforeCompletion on the underlying TwoPhaseCoordinator.
 	     */
 
         if (!problem)
             problem = !super.beforeCompletion();
-	    
+
 	    if (problem)
 	    {
 	        if (exp != null)
@@ -1729,13 +1729,10 @@ public class ArjunaTransactionImple extends
 	        _synchs = null;
 	    }
 
-        /*
-        * If there's no problem so far then call afterCompletion on the underlying TwoPhaseCoordinator.
-        */
 
-        problem = !super.afterCompletion(myStatus == Status.StatusCommitted ? ActionStatus.COMMITTED : ActionStatus.ABORTED);
+        boolean superProblem = !super.afterCompletion(myStatus == Status.StatusCommitted ? ActionStatus.COMMITTED : ActionStatus.ABORTED);
 
-        if (problem)
+        if (problem || superProblem)
 	    {
 	        if (exp != null)
 	            throw exp;
