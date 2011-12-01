@@ -353,7 +353,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
      * @return a list of potentially indoubt transactions or <code>null</code>.
      */
 
-    public synchronized Xid[] doRecover (XidImple toRecover, String parentNodeName) throws XAException
+    public synchronized Xid[] doRecover (Xid xid, String parentNodeName) throws XAException
     {
         /*
          * Requires going through the objectstore for the states of imported
@@ -410,7 +410,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
 								}
 							}
 
-						} else if (toRecover == null) {
+						} else if (xid == null) {
 							TransactionImple tx = (TransactionImple) SubordinationManager.getTransactionImporter().recoverTransaction(uid);
 
 							if (tx != null)
@@ -420,8 +420,8 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
 							XidImple loadedXid = (XidImple) saa.getXid();
 							if (loadedXid.getFormatId() == XATxConverter.FORMAT_ID) {
 								String loadedXidSubordinateNodeName = XATxConverter.getSubordinateNodeName(loadedXid.getXID());
-								if (XATxConverter.getSubordinateNodeName(toRecover.getXID()).equals(loadedXidSubordinateNodeName)) {
-									if (Arrays.equals(loadedXid.getGlobalTransactionId(), toRecover.getGlobalTransactionId())) {
+								if (XATxConverter.getSubordinateNodeName(new XidImple(xid).getXID()).equals(loadedXidSubordinateNodeName)) {
+									if (Arrays.equals(loadedXid.getGlobalTransactionId(), xid.getGlobalTransactionId())) {
 										if (jtaLogger.logger.isDebugEnabled()) {
 											jtaLogger.logger.debug("Found record for " + saa);
 										}

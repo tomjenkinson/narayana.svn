@@ -111,8 +111,8 @@ public interface LocalServer {
 	 * and a potential method of persisting this data). This is important when a
 	 * proxy xa resource is involved in recovery and invokes commit or rollback
 	 * as the transaction must be reloaded by the remote server before the
-	 * commit/rollback – if it was prepared - before we attempt to complete
-	 * the transaction.
+	 * commit/rollback – if it was prepared - before we attempt to complete the
+	 * transaction.
 	 * 
 	 * @param remainingTimeout
 	 * @param toImport
@@ -135,8 +135,7 @@ public interface LocalServer {
 	 * @throws IOException
 	 * @throws SystemException
 	 */
-	public XAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName, Xid migratedTransaction) throws IOException,
-			SystemException;
+	public XAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName, Xid migratedTransaction) throws SystemException;
 
 	/**
 	 * Generate a proxy synchronization

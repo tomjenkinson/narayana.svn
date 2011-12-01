@@ -24,12 +24,11 @@ package com.arjuna.jta.distributed.example.server.impl;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import javax.transaction.InvalidTransactionException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -50,18 +49,15 @@ import com.arjuna.ats.internal.jbossatx.jta.XAResourceRecordWrappingPluginImpl;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateXidImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinationManager;
-import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.TransactionImporterImple;
-import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.XATerminatorImple;
 import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 import com.arjuna.ats.jbossatx.jta.TransactionManagerService;
 import com.arjuna.ats.jta.common.JTAEnvironmentBean;
-import com.arjuna.ats.jta.xa.XidImple;
 import com.arjuna.jta.distributed.example.TestResourceRecovery;
 import com.arjuna.jta.distributed.example.server.LocalServer;
 import com.arjuna.jta.distributed.example.server.LookupProvider;
 import com.arjuna.jta.distributed.example.server.RemoteServer;
 
-public class ServerImpl implements LocalServer, RemoteServer {
+public class ServerImpl implements LocalServer {
 
 	private String nodeName;
 	private RecoveryManagerService recoveryManagerService;
@@ -162,7 +158,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public Xid getAndResumeTransaction(int remainingTimeout, Xid toResume) throws XAException, IllegalStateException, SystemException, IOException {
+	public Xid getAndResumeTransaction(int remainingTimeout, Xid toResume) throws XAException, IllegalStateException, SystemException, InvalidTransactionException {
 		Xid toReturn = null;
 		Transaction transaction = rootTransactionsAsSubordinate.get(new SubordinateXidImple(toResume));
 		if (transaction == null) {
@@ -200,7 +196,7 @@ public class ServerImpl implements LocalServer, RemoteServer {
 	}
 
 	@Override
-	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName, Xid migratedXid) throws SystemException, IOException {
+	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName, Xid migratedXid) throws SystemException {
 		return new ProxyXAResource(getNodeName(), remoteServerName, migratedXid);
 	}
 
@@ -211,88 +207,6 @@ public class ServerImpl implements LocalServer, RemoteServer {
 
 	@Override
 	public RemoteServer connectTo() {
-		return this;
-	}
-
-	@Override
-	public int prepare(Xid xid, boolean recover) throws XAException, IOException {
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		try {
-			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			if (recover) {
-				recover(xid);
-			}
-			return SubordinationManager.getXATerminator().prepare(xid);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
-		}
-	}
-
-	@Override
-	public void commit(Xid xid, boolean onePhase, boolean recover) throws XAException, IOException {
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		try {
-			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			if (recover) {
-				recover(xid);
-			}
-			SubordinationManager.getXATerminator().commit(xid, onePhase);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
-		}
-	}
-
-	@Override
-	public void rollback(Xid xid, boolean recover) throws XAException, IOException {
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		try {
-			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			if (recover) {
-				recover(xid);
-			}
-			SubordinationManager.getXATerminator().rollback(xid);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
-		}
-	}
-
-	protected void recover(Xid toRecover) throws XAException, IOException {
-		((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(new XidImple(toRecover), null);
-	}
-
-	@Override
-	public void forget(Xid xid, boolean recover) throws XAException, IOException {
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		try {
-			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			if (recover) {
-				recover(xid);
-			}
-			SubordinationManager.getXATerminator().forget(xid);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
-		}
-
-	}
-
-	@Override
-	public void beforeCompletion(Xid xid) throws XAException, SystemException {
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		try {
-			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-			((XATerminatorImple) SubordinationManager.getXATerminator()).beforeCompletion(xid);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
-		}
-	}
-
-	@Override
-	public Xid[] recoverFor(String localServerName) throws XAException {
-		Set<Xid> toReturn = ((TransactionImporterImple) SubordinationManager.getTransactionImporter()).getInflightXids(localServerName);
-		Xid[] doRecover = ((XATerminatorImple) SubordinationManager.getXATerminator()).doRecover(null, localServerName);
-		if (doRecover != null) {
-			toReturn.addAll(Arrays.asList(doRecover));
-		}
-		return toReturn.toArray(new Xid[0]);
+		return new RemoteServerImpl();
 	}
 }

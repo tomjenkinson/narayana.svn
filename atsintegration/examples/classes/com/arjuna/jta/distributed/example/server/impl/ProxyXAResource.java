@@ -21,7 +21,6 @@
  */
 package com.arjuna.jta.distributed.example.server.impl;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 import javax.transaction.xa.XAException;
@@ -102,13 +101,9 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARE [" + xid + "]");
 
 		Xid toPropagate = migratedXid != null ? migratedXid : xid;
-		try {
-			int propagatePrepare = LookupProvider.getInstance().lookup(remoteServerName).prepare(toPropagate, !nonerecovered);
-			System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARED");
-			return propagatePrepare;
-		} catch (IOException e) {
-			throw new XAException(XAException.XA_RETRY);
-		}
+		int propagatePrepare = LookupProvider.getInstance().lookup(remoteServerName).prepare(toPropagate, !nonerecovered);
+		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARED");
+		return propagatePrepare;
 	}
 
 	@Override
@@ -116,12 +111,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
 
 		Xid toPropagate = migratedXid != null ? migratedXid : xid;
-		try {
-			LookupProvider.getInstance().lookup(remoteServerName).commit(toPropagate, onePhase, !nonerecovered);
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new XAException(XAException.XA_RETRY);
-		}
+		LookupProvider.getInstance().lookup(remoteServerName).commit(toPropagate, onePhase, !nonerecovered);
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
 	}
 
@@ -139,9 +129,6 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 				// We know that this means that the transaction is not known at
 				// the remote side
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new XAException(XAException.XA_RETRY);
 		}
 	}
 
@@ -186,11 +173,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGET  [" + xid + "]");
 
 		Xid toPropagate = migratedXid != null ? migratedXid : xid;
-		try {
-			LookupProvider.getInstance().lookup(remoteServerName).forget(toPropagate, !nonerecovered);
-		} catch (IOException e) {
-			throw new XAException(XAException.XA_RETRY);
-		}
+		LookupProvider.getInstance().lookup(remoteServerName).forget(toPropagate, !nonerecovered);
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_FORGETED[" + xid + "]");
 	}
 
