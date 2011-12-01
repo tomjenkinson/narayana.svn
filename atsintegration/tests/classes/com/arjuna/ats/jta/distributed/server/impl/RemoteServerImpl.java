@@ -92,7 +92,7 @@ public class RemoteServerImpl implements RemoteServer {
 	}
 
 	@Override
-	public void beforeCompletion(Xid xid) throws XAException, SystemException {
+	public void beforeCompletion(Xid xid) throws SystemException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());

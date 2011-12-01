@@ -39,6 +39,13 @@ import com.arjuna.jta.distributed.example.server.RemoteServer;
  * is to remove the classloader behavior as that is purely to allow the test to
  * run multiple servers within a single VM. When reading this class, tend to
  * ignore the classloader work as that is test scaffolding.
+ * 
+ * <p>
+ * In the normal situation, a ProxyXAResource is Serialized, therefore we do not
+ * get the chance to recover the transactions in a call to
+ * XAResource::recover(), therefore the ProxyXAResource must tell us when it
+ * calls each method, whether or not to attempt to recover the transaction
+ * before invoking its transactional directive.
  */
 public class RemoteServerImpl implements RemoteServer {
 	/**
@@ -132,9 +139,10 @@ public class RemoteServerImpl implements RemoteServer {
 	 * @param recover
 	 *            Should be set by the clients ProxyXAResource when the client
 	 *            knows the remote side needs the transaction loading.
+	 * @throws SystemException
 	 */
 	@Override
-	public void beforeCompletion(Xid xid) throws XAException, SystemException {
+	public void beforeCompletion(Xid xid) throws SystemException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());

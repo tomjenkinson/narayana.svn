@@ -35,7 +35,7 @@ public interface RemoteServer {
 
 	public void forget(Xid xid, boolean recover) throws XAException;
 
-	public void beforeCompletion(Xid xid) throws XAException, SystemException;
+	public void beforeCompletion(Xid xid) throws SystemException;
 
 	public Xid[] recoverFor(String localServerName) throws XAException;
 

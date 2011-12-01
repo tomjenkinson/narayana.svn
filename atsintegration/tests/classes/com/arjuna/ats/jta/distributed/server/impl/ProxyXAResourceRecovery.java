@@ -21,7 +21,6 @@
  */
 package com.arjuna.ats.jta.distributed.server.impl;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +32,7 @@ public class ProxyXAResourceRecovery implements XAResourceRecovery {
 
 	private List<ProxyXAResource> resources = new ArrayList<ProxyXAResource>();
 
-	public ProxyXAResourceRecovery(String nodeName, String[] toRecoverFor) throws IOException {
+	public ProxyXAResourceRecovery(String nodeName, String[] toRecoverFor) {
 		for (int i = 0; i < toRecoverFor.length; i++) {
 			resources.add(new ProxyXAResource(nodeName, toRecoverFor[i]));
 		}

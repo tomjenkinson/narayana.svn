@@ -229,13 +229,12 @@ public class ExampleDistributedJTATestCase {
 				// that
 				// it can propagate the transaction completion events to the
 				// subordinate
-				transaction.enlistResource(originalServer.generateProxyXAResource(lookupProvider, nextServerNodeName,
-						dataReturnedFromRemoteServer.getRemoteXidCreated()));
+				transaction.enlistResource(originalServer.generateProxyXAResource(nextServerNodeName, dataReturnedFromRemoteServer.getRemoteXidCreated()));
 				// Register a synchronization that can proxy the
 				// beforeCompletion
 				// event to the remote side, after completion events are the
 				// responsibility of the remote server to initiate
-				transaction.registerSynchronization(originalServer.generateProxySynchronization(lookupProvider, nextServerNodeName, currentXid));
+				transaction.registerSynchronization(originalServer.generateProxySynchronization(nextServerNodeName, currentXid));
 
 				// Deference the local copy of the current transaction so the GC
 				// can
@@ -302,7 +301,7 @@ public class ExampleDistributedJTATestCase {
 		// Check if this server has seen this transaction before - this is
 		// crucial to ensure that calling servers will only lay down a proxy if
 		// they are the first visitor to this server.
-		Xid requiresProxyAtPreviousServer = currentServer.getAndResumeTransaction(remainingTimeout, toMigrate);
+		Xid requiresProxyAtPreviousServer = currentServer.locateOrImportTransactionThenResumeIt(remainingTimeout, toMigrate);
 
 		{
 			// Perform work on the migrated transaction
@@ -350,10 +349,9 @@ public class ExampleDistributedJTATestCase {
 				// to the remote server
 				if (dataReturnedFromRemoteServer.getRemoteXidCreated() != null) {
 					// Formally enlist the resource
-					transaction.enlistResource(currentServer.generateProxyXAResource(lookupProvider, nextServerNodeName,
-							dataReturnedFromRemoteServer.getRemoteXidCreated()));
+					transaction.enlistResource(currentServer.generateProxyXAResource(nextServerNodeName, dataReturnedFromRemoteServer.getRemoteXidCreated()));
 					// Register a sync
-					transaction.registerSynchronization(currentServer.generateProxySynchronization(lookupProvider, nextServerNodeName, toMigrate));
+					transaction.registerSynchronization(currentServer.generateProxySynchronization(nextServerNodeName, toMigrate));
 				}
 
 				// Align the local state with the returning state of the

@@ -52,14 +52,14 @@ public interface LocalServer {
 
 	public void removeRootTransaction(Xid toMigrate);
 
-	public Xid getAndResumeTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException,
-			SystemException, IOException;
+	public Xid locateOrImportTransactionThenResumeIt(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException,
+			IllegalStateException, SystemException, IOException;
 
 	public RemoteServer connectTo();
 
-	public XAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName, Xid xid) throws SystemException, IOException;
+	public XAResource generateProxyXAResource(String remoteServerName, Xid xid) throws SystemException, IOException;
 
-	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, String localServerName, String remoteServerName, Xid toRegisterAgainst);
+	public Synchronization generateProxySynchronization(String remoteServerName, Xid toRegisterAgainst);
 
 	public Xid getCurrentXid() throws SystemException;
 

@@ -23,7 +23,6 @@ package com.arjuna.ats.jta.distributed.server.impl;
 
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
-import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
@@ -33,10 +32,8 @@ public class ProxySynchronization implements Synchronization {
 	private String localServerName;
 	private String remoteServerName;
 	private Xid toRegisterAgainst;
-	private LookupProvider lookupProvider;
 
-	public ProxySynchronization(LookupProvider lookupProvider, String localServerName, String remoteServerName, Xid toRegisterAgainst) {
-		this.lookupProvider = lookupProvider;
+	public ProxySynchronization(String localServerName, String remoteServerName, Xid toRegisterAgainst) {
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
 		this.toRegisterAgainst = toRegisterAgainst;
@@ -46,10 +43,9 @@ public class ProxySynchronization implements Synchronization {
 	public void beforeCompletion() {
 		System.out.println("ProxySynchronization (" + localServerName + ":" + remoteServerName + ") beforeCompletion");
 		try {
-			lookupProvider.lookup(remoteServerName).beforeCompletion(toRegisterAgainst);
-		} catch (XAException e) {
-			e.printStackTrace();
+			LookupProvider.getInstance().lookup(remoteServerName).beforeCompletion(toRegisterAgainst);
 		} catch (SystemException e) {
+			// Nothing we can really do here
 			e.printStackTrace();
 		}
 	}

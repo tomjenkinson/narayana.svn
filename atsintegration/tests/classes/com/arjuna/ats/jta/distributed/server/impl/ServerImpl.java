@@ -25,11 +25,9 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
@@ -56,8 +54,6 @@ import com.arjuna.ats.internal.jta.recovery.arjunacore.RecoveryXids;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateXidImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinationManager;
-import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.TransactionImporterImple;
-import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.XATerminatorImple;
 import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 import com.arjuna.ats.jbossatx.jta.TransactionManagerService;
 import com.arjuna.ats.jta.common.JTAEnvironmentBean;
@@ -65,7 +61,6 @@ import com.arjuna.ats.jta.distributed.TestResourceRecovery;
 import com.arjuna.ats.jta.distributed.server.LocalServer;
 import com.arjuna.ats.jta.distributed.server.LookupProvider;
 import com.arjuna.ats.jta.distributed.server.RemoteServer;
-import com.arjuna.ats.jta.xa.XidImple;
 
 public class ServerImpl implements LocalServer {
 
@@ -210,7 +205,8 @@ public class ServerImpl implements LocalServer {
 	}
 
 	@Override
-	public Xid getAndResumeTransaction(int remainingTimeout, Xid toResume) throws XAException, IllegalStateException, SystemException, IOException {
+	public Xid locateOrImportTransactionThenResumeIt(int remainingTimeout, Xid toResume) throws XAException, IllegalStateException, SystemException,
+			IOException {
 		Xid toReturn = null;
 		Transaction transaction = rootTransactionsAsSubordinate.get(new SubordinateXidImple(toResume));
 		if (transaction == null) {
@@ -253,19 +249,18 @@ public class ServerImpl implements LocalServer {
 	}
 
 	@Override
-	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName, Xid migratedXid) throws SystemException, IOException {
-		return new ProxyXAResource(getNodeName(), remoteServerName, migratedXid);
+	public ProxyXAResource generateProxyXAResource(String remoteServerName, Xid migratedXid) throws SystemException, IOException {
+		return new ProxyXAResource(nodeName, remoteServerName, migratedXid);
 	}
 
 	@Override
-	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, String localServerName, String remoteServerName, Xid toRegisterAgainst) {
-		return new ProxySynchronization(lookupProvider, localServerName, remoteServerName, toRegisterAgainst);
+	public Synchronization generateProxySynchronization(String remoteServerName, Xid toRegisterAgainst) {
+		return new ProxySynchronization(nodeName, remoteServerName, toRegisterAgainst);
 	}
 
 	@Override
 	public RemoteServer connectTo() {
 		return new RemoteServerImpl();
 	}
-
 
 }

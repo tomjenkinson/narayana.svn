@@ -35,13 +35,14 @@ import com.arjuna.ats.jta.distributed.server.LookupProvider;
 /**
  * I chose for this class to implement XAResourceWrapper so that I can provide a
  * name to the Transaction manager for it to store in its XID.
+ * <p>
+ * In the normal situation, a ProxyXAResource is Serialized, therefore we do not
+ * get the chance to recover the transactions in a call to
+ * XAResource::recover(), therefore the ProxyXAResource must tell the remote
+ * side when it calls each method, whether or not to attempt to recover the
+ * transaction before invoking its transactional directive.
  */
 public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializable {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
 
 	private int transactionTimeout;
 	private String remoteServerName;

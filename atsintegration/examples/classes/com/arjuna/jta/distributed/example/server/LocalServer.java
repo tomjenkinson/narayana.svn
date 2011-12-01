@@ -123,29 +123,29 @@ public interface LocalServer {
 	 * @throws SystemException
 	 * @throws IOException
 	 */
-	public Xid getAndResumeTransaction(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException, IllegalStateException,
-			SystemException, IOException;
+	public Xid locateOrImportTransactionThenResumeIt(int remainingTimeout, Xid toImport) throws XAException, InvalidTransactionException,
+			IllegalStateException, SystemException, IOException;
 
 	/**
 	 * Transport specific function to generate a proxy for a remote server.
 	 * 
-	 * @param lookupProvider
 	 * @param remoteServerName
+	 * 
 	 * @return
 	 * @throws IOException
 	 * @throws SystemException
 	 */
-	public XAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName, Xid migratedTransaction) throws SystemException;
+	public XAResource generateProxyXAResource(String remoteServerName, Xid migratedTransaction) throws SystemException;
 
 	/**
 	 * Generate a proxy synchronization
 	 * 
-	 * @param lookupProvider
 	 * @param remoteServerName
 	 * @param toRegisterAgainst
+	 * 
 	 * @return
 	 */
-	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, String remoteServerName, Xid toRegisterAgainst);
+	public Synchronization generateProxySynchronization(String remoteServerName, Xid toRegisterAgainst);
 
 	/**
 	 * Get the current Xid - this is what will be propagated to the remote

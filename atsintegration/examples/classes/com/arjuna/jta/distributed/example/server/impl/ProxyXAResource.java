@@ -34,13 +34,16 @@ import com.arjuna.jta.distributed.example.server.LookupProvider;
 /**
  * I chose for this class to implement XAResourceWrapper so that I can provide a
  * name to the Transaction manager for it to store in its XID.
+ * 
+ * <p>
+ * In the normal situation, a ProxyXAResource is Serialized, therefore we do not
+ * get the chance to recover the transactions in a call to
+ * XAResource::recover(), therefore the ProxyXAResource must tell the remote
+ * side when it calls each method, whether or not to attempt to recover the
+ * transaction before invoking its transactional directive, this may be seen in
+ * the prepare, commit, rollback and forget method.
  */
 public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializable {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
 
 	private int transactionTimeout;
 	private String remoteServerName;
@@ -92,9 +95,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 	}
 
 	/**
-	 * Prepare the resource, save the XID locally first, the propagate the
-	 * prepare. This ensures that in recovery we know the XID to ask a remote
-	 * server about.
+	 * This propagates the transaction directive in a transport specific manner.
 	 */
 	@Override
 	public synchronized int prepare(Xid xid) throws XAException {
@@ -106,6 +107,9 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 		return propagatePrepare;
 	}
 
+	/**
+	 * This propagates the transaction directive in a transport specific manner.
+	 */
 	@Override
 	public synchronized void commit(Xid xid, boolean onePhase) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
@@ -115,6 +119,9 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMITED");
 	}
 
+	/**
+	 * This propagates the transaction directive in a transport specific manner.
+	 */
 	@Override
 	public synchronized void rollback(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
@@ -125,14 +132,9 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 	}
 
 	/**
-	 * This will ensure that the remote server has loaded the subordinate
-	 * transaction.
-	 * 
-	 * @return It returns the proxies view of the XID state, returning the
-	 *         remote servers view of the XID would present an XID to the local
-	 *         server that it knows nothing about and indeed potentially the
-	 *         remote server does not have a corresponding record of the XID in
-	 *         case of failure during prepare.
+	 * This method is used when the local side is attempting to detect
+	 * subordinate transactions that prepared remotely but the local
+	 * ProxyXAResource has not prepared and are therefore orphaned.
 	 */
 	@Override
 	public Xid[] recover(int flag) throws XAException {

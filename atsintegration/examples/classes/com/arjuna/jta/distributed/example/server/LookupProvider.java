@@ -21,6 +21,9 @@
  */
 package com.arjuna.jta.distributed.example.server;
 
+/**
+ * Simulates a JNDI environment. Should be considered a black box.
+ */
 public class LookupProvider {
 	private static LookupProvider instance;
 

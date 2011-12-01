@@ -23,33 +23,39 @@ package com.arjuna.jta.distributed.example.server.impl;
 
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
-import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import com.arjuna.jta.distributed.example.server.LookupProvider;
 
+/**
+ * An example to show how the transport can register a proxy synchronization.
+ * 
+ * <p>
+ * Note that we do not proxy the afterCompletion, this is left to run locally
+ * per subordinate.
+ */
 public class ProxySynchronization implements Synchronization {
 
 	private String localServerName;
 	private String remoteServerName;
 	private Xid toRegisterAgainst;
-	private LookupProvider lookupProvider;
 
-	public ProxySynchronization(LookupProvider lookupProvider, String localServerName, String remoteServerName, Xid toRegisterAgainst) {
-		this.lookupProvider = lookupProvider;
+	public ProxySynchronization(String localServerName, String remoteServerName, Xid toRegisterAgainst) {
 		this.localServerName = localServerName;
 		this.remoteServerName = remoteServerName;
 		this.toRegisterAgainst = toRegisterAgainst;
 	}
 
+	/**
+	 * Propagate the before completion in a transport specific manner.
+	 */
 	@Override
 	public void beforeCompletion() {
 		System.out.println("ProxySynchronization (" + localServerName + ":" + remoteServerName + ") beforeCompletion");
 		try {
-			lookupProvider.lookup(remoteServerName).beforeCompletion(toRegisterAgainst);
-		} catch (XAException e) {
-			e.printStackTrace();
+			LookupProvider.getInstance().lookup(remoteServerName).beforeCompletion(toRegisterAgainst);
 		} catch (SystemException e) {
+			// Unfortunately we cannot do much else here
 			e.printStackTrace();
 		}
 	}

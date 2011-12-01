@@ -57,6 +57,18 @@ import com.arjuna.jta.distributed.example.server.LocalServer;
 import com.arjuna.jta.distributed.example.server.LookupProvider;
 import com.arjuna.jta.distributed.example.server.RemoteServer;
 
+/**
+ * Most of this class is self explanatory, the main part to take note of is how
+ * <code>locateOrImportTransactionThenResumeIt</code>,
+ * <code>storeRootTransaction</code> and <code>remoteRootTransaction</code>
+ * interact with each other.
+ * 
+ * <p>
+ * It is the responsibility of the root transaction manager to cache the root
+ * transaction in a manner that incoming subordinates may be able to resume the
+ * root transaction at that node, rather than creating a subordinate which would
+ * be inefficient.
+ */
 public class ServerImpl implements LocalServer {
 
 	private String nodeName;
@@ -65,6 +77,9 @@ public class ServerImpl implements LocalServer {
 	private Map<SubordinateXidImple, TransactionImple> rootTransactionsAsSubordinate = new HashMap<SubordinateXidImple, TransactionImple>();
 	private RecoveryManager _recoveryManager;
 
+	/**
+	 * This is typically done by the application server.
+	 */
 	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset, String[] clusterBuddies) throws CoreEnvironmentBeanException,
 			IOException, SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
 		this.nodeName = nodeName;
@@ -153,12 +168,52 @@ public class ServerImpl implements LocalServer {
 	}
 
 	@Override
+	public RemoteServer connectTo() {
+		return new RemoteServerImpl();
+	}
+
+	@Override
+	public String getNodeName() {
+		return nodeName;
+	}
+
+	@Override
 	public TransactionManager getTransactionManager() {
 		return transactionManagerService.getTransactionManager();
 	}
 
 	@Override
-	public Xid getAndResumeTransaction(int remainingTimeout, Xid toResume) throws XAException, IllegalStateException, SystemException, InvalidTransactionException {
+	public Xid getCurrentXid() throws SystemException {
+		TransactionImple transaction = ((TransactionImple) transactionManagerService.getTransactionManager().getTransaction());
+		return transaction.getTxId();
+	}
+
+	/**
+	 * This factory method is provided purely for the test purposes to ensure
+	 * the correct classloader is used.
+	 */
+	@Override
+	public ProxyXAResource generateProxyXAResource(String remoteServerName, Xid migratedXid) throws SystemException {
+		return new ProxyXAResource(nodeName, remoteServerName, migratedXid);
+	}
+
+	/**
+	 * This factory method is provided purely for the test purposes to ensure
+	 * the correct classloader is used.
+	 */
+	@Override
+	public Synchronization generateProxySynchronization(String remoteServerName, Xid toRegisterAgainst) {
+		return new ProxySynchronization(nodeName, remoteServerName, toRegisterAgainst);
+	}
+
+	/**
+	 * This method first checks a local <code>Map</code> to ensure that if the
+	 * server being flowed to is actually where the root transaction resides
+	 * then that transaction is resumed, rather than a subordinate created.
+	 */
+	@Override
+	public Xid locateOrImportTransactionThenResumeIt(int remainingTimeout, Xid toResume) throws XAException, IllegalStateException, SystemException,
+			InvalidTransactionException {
 		Xid toReturn = null;
 		Transaction transaction = rootTransactionsAsSubordinate.get(new SubordinateXidImple(toResume));
 		if (transaction == null) {
@@ -172,11 +227,11 @@ public class ServerImpl implements LocalServer {
 		return toReturn;
 	}
 
-	@Override
-	public String getNodeName() {
-		return nodeName;
-	}
-
+	/**
+	 * Cache the root transaction, this is important if the transaction flows
+	 * back to this node, then we want to associate resources with the root
+	 * transaction, rather than a subordinate.
+	 */
 	@Override
 	public void storeRootTransaction() throws SystemException {
 		TransactionImple transaction = ((TransactionImple) transactionManagerService.getTransactionManager().getTransaction());
@@ -184,29 +239,12 @@ public class ServerImpl implements LocalServer {
 		rootTransactionsAsSubordinate.put(new SubordinateXidImple(txId), transaction);
 	}
 
-	@Override
-	public Xid getCurrentXid() throws SystemException {
-		TransactionImple transaction = ((TransactionImple) transactionManagerService.getTransactionManager().getTransaction());
-		return transaction.getTxId();
-	}
-
+	/**
+	 * After the transaction completes, remove the transaction from the local
+	 * cache. This could have been done by a <code>Synchronization</code>.
+	 */
 	@Override
 	public void removeRootTransaction(Xid toMigrate) {
 		rootTransactionsAsSubordinate.remove(new SubordinateXidImple(toMigrate));
-	}
-
-	@Override
-	public ProxyXAResource generateProxyXAResource(LookupProvider lookupProvider, String remoteServerName, Xid migratedXid) throws SystemException {
-		return new ProxyXAResource(getNodeName(), remoteServerName, migratedXid);
-	}
-
-	@Override
-	public Synchronization generateProxySynchronization(LookupProvider lookupProvider, String remoteServerName, Xid toRegisterAgainst) {
-		return new ProxySynchronization(lookupProvider, nodeName, remoteServerName, toRegisterAgainst);
-	}
-
-	@Override
-	public RemoteServer connectTo() {
-		return new RemoteServerImpl();
 	}
 }
