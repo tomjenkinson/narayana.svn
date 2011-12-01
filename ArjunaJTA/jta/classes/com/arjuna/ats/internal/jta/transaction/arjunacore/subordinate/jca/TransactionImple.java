@@ -44,6 +44,8 @@ public class TransactionImple
 
 	/**
 	 * Create a new transaction with the specified timeout.
+	 * 
+	 * @deprecated Only used by tests
 	 */
 
 	public TransactionImple(int timeout)

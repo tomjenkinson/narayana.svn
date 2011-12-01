@@ -94,7 +94,7 @@ public class SubordinateAtomicAction extends
 	{
 		super(timeout); // implicit start (done in base class)
 		
-		if (xid.getFormatId() == XATxConverter.FORMAT_ID) {
+		if (xid != null && xid.getFormatId() == XATxConverter.FORMAT_ID) {
 			XidImple toImport = new XidImple(xid);
 			XID toCheck = toImport.getXID();
 			_parentNodeName = XATxConverter.getSubordinateNodeName(toCheck);
