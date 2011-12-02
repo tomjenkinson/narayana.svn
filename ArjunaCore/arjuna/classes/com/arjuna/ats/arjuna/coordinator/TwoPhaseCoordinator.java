@@ -212,8 +212,11 @@ public class TwoPhaseCoordinator extends BasicAction implements Reapable
 	 * @message com.arjuna.ats.arjuna.coordinator.TwoPhaseCoordinator_2
 	 *          [com.arjuna.ats.arjuna.coordinator.TwoPhaseCoordinator_2]
 	 *          TwoPhaseCoordinator.beforeCompletion - failed for {0}
-	 */
-
+     *
+     * Drive beforeCompletion participants.
+     *
+     * @return true if successful, false otherwise.
+     */
 	protected boolean beforeCompletion ()
 	{
 		boolean problem = false;
@@ -238,7 +241,7 @@ public class TwoPhaseCoordinator extends BasicAction implements Reapable
 					 * and we will rollback. Hence we don't then bother to call beforeCompletion
 					 * on the remaining records (it's not done for rollabcks anyhow).
 					 *
-					 * Since Synchronizations may add register other Synchronizations, we can't simply
+					 * Since Synchronizations may register other Synchronizations, we can't simply
 					 * iterate the collection. Instead we work from an ordered copy, which we periodically
 					 * check for freshness. The addSynchronization method uses _currentRecord to disallow
 					 * adding records in the part of the array we have already traversed, thus all
@@ -337,8 +340,13 @@ public class TwoPhaseCoordinator extends BasicAction implements Reapable
 	 * @message com.arjuna.ats.arjuna.coordinator.TwoPhaseCoordinator_4b
 	 *          [com.arjuna.ats.arjuna.coordinator.TwoPhaseCoordinator_4b]
 	 *          TwoPhaseCoordinator.afterCompletion - failed for {0} with error {1}
-	 */
-
+     *
+     * Drive afterCompletion participants.
+     *
+     * @param myStatus the outcome of the transaction (ActionStatus.COMMITTED or ActionStatus.ABORTED).
+     *
+     * @return true if successful, false otherwise.
+     */
 	protected boolean afterCompletion (int myStatus)
 	{
 		if (myStatus == ActionStatus.RUNNING)
