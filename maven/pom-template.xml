@@ -155,10 +155,10 @@
         <dependencies>
 
             <dependency>
-                <!-- https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/as/jboss-as-parent/7.0.0.Final/jboss-as-parent-7.0.0.Final.pom -->
+                <!-- https://repository.jboss.org/nexus/service/local/repositories/releases/content/org/jboss/as/jboss-as-parent/7.1.0.Beta1b/jboss-as-parent-7.1.0.Beta1b.pom -->
                 <groupId>org.jboss.as</groupId>
                 <artifactId>jboss-as-parent</artifactId>
-                <version>7.0.2.Final</version>
+                <version>7.1.0.Beta1b</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -325,7 +325,7 @@
         <dependency>
             <groupId>org.jboss.integration</groupId>
             <artifactId>jboss-corba-ots-spi</artifactId>
-            <version>6.0.0.CR1</version><!-- TODO AS7 -->
+            <version>6.0.0.CR1</version><!-- TODO AS7 src includes newer version of this, so its pom does not. -->
         </dependency>
 
         <!-- qa test suite - JBossAS integration code. (no longer used)
