@@ -1,6 +1,6 @@
 
-JBossTS 4.15 is designed for use standalone.
-It is also used by JBossAS 7 beta releases, but manual upgrading of the component inside JBossAS is not recommended.
+JBossTS 4.16 is designed for use standalone.
+It may also be used by JBossAS 7.1 releases, but manual upgrading of the component inside JBossAS is not recommended.
 Integration with JBossAS 6 or earlier is no longer supported.
 
 

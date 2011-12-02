@@ -12,7 +12,7 @@
     are presented here so that you can see the whole picture. Often, developers produce services, or applications that
     consume services, and system administrators run the transaction-management infrastructure.
   </para>
-  
+
   <section>
     <title>Transaction manager overview</title>
     <para>
@@ -30,7 +30,7 @@
     </note>
   </section>
 
-  
+
   <section>
     <title>Configuring the transaction manager</title>
     <para>
@@ -58,9 +58,9 @@
       sometimes need to appear in more than one configuration file. Except in special circumstances, maintain consistent
       values for properties that are defined in more than one file.
     </para>
-    
+
   </section>
-  
+
   <section>
     <title>Deploying the transaction manager</title>
     <para>
@@ -87,7 +87,7 @@
       <title>Using the <filename>coordinator/</filename> diretory to configure and deploy a stand-alone transaction manager</title>
       <step>
         <para>
-          Install JBossTS 4.15.
+          Install JBossTS
         </para>
       </step>
       <step>
