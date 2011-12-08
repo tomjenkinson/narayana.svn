@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -71,13 +72,7 @@ public class SimpleIsolatedServers {
 		completionCounter.reset();
 		lookupProvider.clear();
 		for (int i = 0; i < serverNodeNames.length; i++) {
-			ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.ats.jta.distributed.server", contextClassLoader);
-			localServers[i] = (LocalServer) classLoader.loadClass("com.arjuna.ats.jta.distributed.server.impl.ServerImpl").newInstance();
-			Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
-			localServers[i].initialise(lookupProvider, serverNodeNames[i], serverPortOffsets[i], clusterBuddies[i]);
-			lookupProvider.bind(i, localServers[i].connectTo());
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
+			boot(i);
 		}
 	}
 
@@ -93,18 +88,22 @@ public class SimpleIsolatedServers {
 
 	private static void reboot(String serverName) throws Exception {
 		// int index = (Integer.valueOf(serverName) / 1000) - 1;
-		int index = -1;
 		for (int i = 0; i < localServers.length; i++) {
 			if (localServers[i].getNodeName().equals(serverName)) {
-				index = i;
+				ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+				Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
+				localServers[i].shutdown();
+				Thread.currentThread().setContextClassLoader(contextClassLoader);
+
+				boot(i);
 				break;
 			}
 		}
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(localServers[index].getClass().getClassLoader());
-		localServers[index].shutdown();
-		Thread.currentThread().setContextClassLoader(contextClassLoader);
 
+	}
+
+	private static void boot(int index) throws SecurityException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException, IllegalArgumentException, CoreEnvironmentBeanException, IOException, NoSuchFieldException {
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.ats.jta.distributed.server", contextClassLoader);
 		localServers[index] = (LocalServer) classLoader.loadClass("com.arjuna.ats.jta.distributed.server.impl.ServerImpl").newInstance();
 		Thread.currentThread().setContextClassLoader(localServers[index].getClass().getClassLoader());
