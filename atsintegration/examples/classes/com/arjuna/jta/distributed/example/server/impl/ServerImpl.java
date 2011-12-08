@@ -76,13 +76,18 @@ public class ServerImpl implements LocalServer {
 	private TransactionManagerService transactionManagerService;
 	private Map<SubordinateXidImple, TransactionImple> rootTransactionsAsSubordinate = new HashMap<SubordinateXidImple, TransactionImple>();
 	private RecoveryManager _recoveryManager;
+	private ClassLoader classLoaderForTransactionManager;
 
 	/**
 	 * This is typically done by the application server.
+	 * 
+	 * The addition required for the distributed JTA code is:
+	 * RecoveryManagerService::addSerializableXAResourceDeserializer()
 	 */
-	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset, String[] clusterBuddies) throws CoreEnvironmentBeanException,
-			IOException, SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset, String[] clusterBuddies, ClassLoader classLoaderForTransactionManager)
+			throws CoreEnvironmentBeanException, IOException, SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
 		this.nodeName = nodeName;
+		this.classLoaderForTransactionManager = classLoaderForTransactionManager;
 
 		RecoveryEnvironmentBean recoveryEnvironmentBean = com.arjuna.ats.arjuna.common.recoveryPropertyManager.getRecoveryEnvironmentBean();
 		recoveryEnvironmentBean.setRecoveryBackoffPeriod(1);
@@ -154,6 +159,7 @@ public class ServerImpl implements LocalServer {
 		recoveryManagerService.create();
 		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(nodeName, clusterBuddies));
 		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(nodeName));
+		recoveryManagerService.addSerializableXAResourceDeserializer(new ProxyXAResourceDeserializer());
 
 		// recoveryManagerService.start();
 		_recoveryManager = RecoveryManager.manager();
@@ -165,6 +171,11 @@ public class ServerImpl implements LocalServer {
 		transactionManagerService
 				.setTransactionSynchronizationRegistry(new com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple());
 		transactionManagerService.create();
+	}
+
+	@Override
+	public ClassLoader getClassLoader() {
+		return classLoaderForTransactionManager;
 	}
 
 	@Override

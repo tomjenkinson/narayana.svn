@@ -121,10 +121,13 @@ public class ExampleDistributedJTATestCase {
 			// done within the scope of this classloader, this is to simulate a
 			// transports different address space
 			ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.jta.distributed.example.server", contextClassLoader);
+			IsolatableServersClassLoader classLoaderForTransactionManager = new IsolatableServersClassLoader(null, ExampleDistributedJTATestCase.class
+					.getPackage().getName(), contextClassLoader);
+			IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader(ExampleDistributedJTATestCase.class.getPackage().getName(), null,
+					classLoaderForTransactionManager);
 			localServers[i] = (LocalServer) classLoader.loadClass("com.arjuna.jta.distributed.example.server.impl.ServerImpl").newInstance();
-			Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
-			localServers[i].initialise(lookupProvider, serverNodeNames[i], serverPortOffsets[i], clusterBuddies[i]);
+			Thread.currentThread().setContextClassLoader(localServers[i].getClassLoader());
+			localServers[i].initialise(lookupProvider, serverNodeNames[i], serverPortOffsets[i], clusterBuddies[i], classLoaderForTransactionManager);
 			// This is a short cut, normally remote servers would not be the
 			// same as the local servers and would be a tranport layer
 			// abstraction
@@ -171,7 +174,7 @@ public class ExampleDistributedJTATestCase {
 		// Access to this local server must be done by its own classloader to
 		// ensure the servers remain separate
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+		Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 
 		// THIS SIMULATES NORMAL BUSINESS LOGIC IN BMT/CMT (interceptors?)
 		{
@@ -296,7 +299,7 @@ public class ExampleDistributedJTATestCase {
 		int index = (Integer.valueOf(currentServerName) / 1000) - 1;
 		LocalServer currentServer = localServers[index];
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(currentServer.getClass().getClassLoader());
+		Thread.currentThread().setContextClassLoader(currentServer.getClassLoader());
 
 		// Check if this server has seen this transaction before - this is
 		// crucial to ensure that calling servers will only lay down a proxy if

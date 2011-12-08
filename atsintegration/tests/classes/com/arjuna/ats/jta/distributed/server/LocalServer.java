@@ -37,8 +37,10 @@ import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 
 public interface LocalServer {
 
-	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset, String[] clusterBuddies) throws CoreEnvironmentBeanException,
-			IOException, SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException;
+	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset, String[] clusterBuddies, ClassLoader classLoaderForTransactionManager)
+			throws CoreEnvironmentBeanException, IOException, SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException;
+
+	public ClassLoader getClassLoader();
 
 	public String getNodeName();
 

@@ -25,7 +25,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -80,7 +79,7 @@ public class SimpleIsolatedServers {
 	public static void tearDown() throws Exception {
 		for (int i = 0; i < localServers.length; i++) {
 			ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-			Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
+			Thread.currentThread().setContextClassLoader(localServers[i].getClassLoader());
 			localServers[i].shutdown();
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
@@ -91,7 +90,7 @@ public class SimpleIsolatedServers {
 		for (int i = 0; i < localServers.length; i++) {
 			if (localServers[i].getNodeName().equals(serverName)) {
 				ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-				Thread.currentThread().setContextClassLoader(localServers[i].getClass().getClassLoader());
+				Thread.currentThread().setContextClassLoader(localServers[i].getClassLoader());
 				localServers[i].shutdown();
 				Thread.currentThread().setContextClassLoader(contextClassLoader);
 
@@ -102,12 +101,17 @@ public class SimpleIsolatedServers {
 
 	}
 
-	private static void boot(int index) throws SecurityException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException, IllegalArgumentException, CoreEnvironmentBeanException, IOException, NoSuchFieldException {
+	private static void boot(int index) throws SecurityException, NoSuchMethodException, InstantiationException, IllegalAccessException,
+			ClassNotFoundException, IllegalArgumentException, CoreEnvironmentBeanException, IOException, NoSuchFieldException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader("com.arjuna.ats.jta.distributed.server", contextClassLoader);
+		IsolatableServersClassLoader classLoaderForTransactionManager = new IsolatableServersClassLoader(null, SimpleIsolatedServers.class.getPackage()
+				.getName(), contextClassLoader);
+		IsolatableServersClassLoader classLoader = new IsolatableServersClassLoader(SimpleIsolatedServers.class.getPackage().getName(), null,
+				classLoaderForTransactionManager);
 		localServers[index] = (LocalServer) classLoader.loadClass("com.arjuna.ats.jta.distributed.server.impl.ServerImpl").newInstance();
-		Thread.currentThread().setContextClassLoader(localServers[index].getClass().getClassLoader());
-		localServers[index].initialise(lookupProvider, serverNodeNames[index], serverPortOffsets[index], clusterBuddies[index]);
+		Thread.currentThread().setContextClassLoader(localServers[index].getClassLoader());
+		localServers[index].initialise(lookupProvider, serverNodeNames[index], serverPortOffsets[index], clusterBuddies[index],
+				classLoaderForTransactionManager);
 		lookupProvider.bind(index, localServers[index].connectTo());
 		Thread.currentThread().setContextClassLoader(contextClassLoader);
 	}
@@ -139,7 +143,7 @@ public class SimpleIsolatedServers {
 					try {
 						LocalServer originalServer = getLocalServer("1000");
 						ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-						Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+						Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 						TransactionManager transactionManager = originalServer.getTransactionManager();
 						transactionManager.setTransactionTimeout(startingTimeout);
 						transactionManager.begin();
@@ -187,7 +191,7 @@ public class SimpleIsolatedServers {
 					try {
 						LocalServer originalServer = getLocalServer("2000");
 						ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-						Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+						Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 						TransactionManager transactionManager = originalServer.getTransactionManager();
 						transactionManager.setTransactionTimeout(startingTimeout);
 						transactionManager.begin();
@@ -278,7 +282,7 @@ public class SimpleIsolatedServers {
 				try {
 					LocalServer originalServer = getLocalServer("1000");
 					ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-					Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+					Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 					TransactionManager transactionManager = originalServer.getTransactionManager();
 					transactionManager.setTransactionTimeout(startingTimeout);
 					transactionManager.begin();
@@ -361,7 +365,7 @@ public class SimpleIsolatedServers {
 				try {
 					LocalServer originalServer = getLocalServer("1000");
 					ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-					Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+					Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 					TransactionManager transactionManager = originalServer.getTransactionManager();
 					transactionManager.setTransactionTimeout(startingTimeout);
 					transactionManager.begin();
@@ -444,7 +448,7 @@ public class SimpleIsolatedServers {
 				try {
 					LocalServer originalServer = getLocalServer("1000");
 					ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-					Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+					Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 					TransactionManager transactionManager = originalServer.getTransactionManager();
 					transactionManager.setTransactionTimeout(startingTimeout);
 					transactionManager.begin();
@@ -532,7 +536,7 @@ public class SimpleIsolatedServers {
 				try {
 					LocalServer originalServer = getLocalServer("1000");
 					ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-					Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+					Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 					TransactionManager transactionManager = originalServer.getTransactionManager();
 					transactionManager.setTransactionTimeout(startingTimeout);
 					transactionManager.begin();
@@ -648,7 +652,7 @@ public class SimpleIsolatedServers {
 		setup();
 		LocalServer originalServer = getLocalServer("1000");
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+		Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 		TransactionManager transactionManager = originalServer.getTransactionManager();
 		transactionManager.setTransactionTimeout(0);
 		transactionManager.begin();
@@ -679,7 +683,7 @@ public class SimpleIsolatedServers {
 		setup();
 		LocalServer originalServer = getLocalServer("1000");
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+		Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 		TransactionManager transactionManager = originalServer.getTransactionManager();
 		transactionManager.setTransactionTimeout(0);
 		transactionManager.begin();
@@ -766,7 +770,7 @@ public class SimpleIsolatedServers {
 		int subordinateTimeout = 1;
 		LocalServer originalServer = getLocalServer("1000");
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+		Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 		TransactionManager transactionManager = originalServer.getTransactionManager();
 		transactionManager.setTransactionTimeout(rootTimeout);
 		transactionManager.begin();
@@ -779,7 +783,7 @@ public class SimpleIsolatedServers {
 		// Migrate a transaction
 		LocalServer currentServer = getLocalServer("2000");
 		ClassLoader parentsClassLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(currentServer.getClass().getClassLoader());
+		Thread.currentThread().setContextClassLoader(currentServer.getClassLoader());
 		Xid migratedXid = currentServer.locateOrImportTransactionThenResumeIt(subordinateTimeout, currentXid);
 		currentServer.getTransactionManager().getTransaction().enlistResource(new TestResource(currentServer.getNodeName(), false));
 		currentServer.getTransactionManager().suspend();
@@ -811,7 +815,7 @@ public class SimpleIsolatedServers {
 		int rootTimeout = 5;
 		LocalServer originalServer = getLocalServer("1000");
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+		Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 		TransactionManager transactionManager = originalServer.getTransactionManager();
 		transactionManager.setTransactionTimeout(rootTimeout);
 		transactionManager.begin();
@@ -825,7 +829,7 @@ public class SimpleIsolatedServers {
 		// Migrate a transaction
 		LocalServer currentServer = getLocalServer("2000");
 		ClassLoader parentsClassLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(currentServer.getClass().getClassLoader());
+		Thread.currentThread().setContextClassLoader(currentServer.getClassLoader());
 		Xid migratedXid = currentServer.locateOrImportTransactionThenResumeIt(subordinateTimeout, currentXid);
 		currentServer.getTransactionManager().getTransaction().enlistResource(new TestResource(currentServer.getNodeName(), false));
 		currentServer.getTransactionManager().suspend();
@@ -863,7 +867,7 @@ public class SimpleIsolatedServers {
 		String startingServer = nodesToFlowTo.get(0);
 		LocalServer originalServer = getLocalServer(startingServer);
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(originalServer.getClass().getClassLoader());
+		Thread.currentThread().setContextClassLoader(originalServer.getClassLoader());
 		TransactionManager transactionManager = originalServer.getTransactionManager();
 		transactionManager.setTransactionTimeout(startingTimeout);
 		transactionManager.begin();
@@ -919,7 +923,7 @@ public class SimpleIsolatedServers {
 		System.out.println("Flowed to " + currentServerName);
 
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(currentServer.getClass().getClassLoader());
+		Thread.currentThread().setContextClassLoader(currentServer.getClassLoader());
 
 		Xid requiresProxyAtPreviousServer = currentServer.locateOrImportTransactionThenResumeIt(remainingTimeout, toMigrate);
 

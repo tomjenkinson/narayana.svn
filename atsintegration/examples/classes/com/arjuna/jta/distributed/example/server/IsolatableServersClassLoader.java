@@ -36,10 +36,11 @@ import sun.misc.URLClassPath;
  * basically).
  */
 public class IsolatableServersClassLoader extends ClassLoader {
-
 	private Map<String, Class<?>> clazzMap = new HashMap<String, Class<?>>();
 	private URLClassPath ucp;
 	private String ignoredPackage;
+	private String includedPackage;
+	private String otherIgnoredPackage;
 
 	/**
 	 * Create the classloader.
@@ -53,9 +54,13 @@ public class IsolatableServersClassLoader extends ClassLoader {
 	 * @throws NoSuchMethodException
 	 * @throws MalformedURLException
 	 */
-	public IsolatableServersClassLoader(String ignoredPackage, ClassLoader parent) throws SecurityException, NoSuchMethodException, MalformedURLException {
+
+	public IsolatableServersClassLoader(String includedPackage, String ignoredPackage, ClassLoader parent) throws SecurityException, NoSuchMethodException,
+			MalformedURLException {
 		super(parent);
-		this.ignoredPackage = ignoredPackage;
+		this.includedPackage = includedPackage;
+		this.otherIgnoredPackage = ignoredPackage;
+		this.ignoredPackage = IsolatableServersClassLoader.class.getPackage().getName();
 		String property = System.getProperty("java.class.path");
 		String[] split = property.split(System.getProperty("path.separator"));
 		URL[] urls = new URL[split.length];
@@ -79,6 +84,9 @@ public class IsolatableServersClassLoader extends ClassLoader {
 	}
 
 	public Class<?> loadClass(String name) throws ClassNotFoundException {
+		if (!name.matches(ignoredPackage + ".[A-Za-z0-9]*") && otherIgnoredPackage != null && name.startsWith(otherIgnoredPackage)) {
+			throw new ClassNotFoundException(name);
+		}
 		Class<?> clazz = null;
 		if (clazzMap.containsKey(name)) {
 			clazz = clazzMap.get(name);
@@ -87,8 +95,9 @@ public class IsolatableServersClassLoader extends ClassLoader {
 		if (clazz != null) {
 			System.err.println("Already loaded: " + name);
 		} else {
-			if (!name.startsWith("com.arjuna") || (ignoredPackage != null && name.matches(ignoredPackage + ".[A-Za-z0-9]*"))) {
-				clazz = super.loadClass(name);
+			if (!name.startsWith("com.arjuna") || name.matches(ignoredPackage + ".[A-Za-z0-9]*")
+					|| (includedPackage != null && !name.startsWith(includedPackage))) {
+				clazz = getParent().loadClass(name);
 			} else {
 
 				String path = name.replace('.', '/').concat(".class");

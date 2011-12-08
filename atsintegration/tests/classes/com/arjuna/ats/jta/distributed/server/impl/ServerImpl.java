@@ -69,10 +69,12 @@ public class ServerImpl implements LocalServer {
 	private TransactionManagerService transactionManagerService;
 	private Map<SubordinateXidImple, TransactionImple> rootTransactionsAsSubordinate = new HashMap<SubordinateXidImple, TransactionImple>();
 	private RecoveryManager _recoveryManager;
+	private ClassLoader classLoaderForTransactionManager;
 
-	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset, String[] clusterBuddies) throws CoreEnvironmentBeanException,
-			IOException, SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset, String[] clusterBuddies, ClassLoader classLoaderForTransactionManager)
+			throws CoreEnvironmentBeanException, IOException, SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
 		this.nodeName = nodeName;
+		this.classLoaderForTransactionManager = classLoaderForTransactionManager;
 
 		RecoveryEnvironmentBean recoveryEnvironmentBean = com.arjuna.ats.arjuna.common.recoveryPropertyManager.getRecoveryEnvironmentBean();
 		recoveryEnvironmentBean.setRecoveryBackoffPeriod(1);
@@ -144,6 +146,7 @@ public class ServerImpl implements LocalServer {
 		recoveryManagerService.create();
 		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(nodeName, clusterBuddies));
 		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(nodeName));
+		recoveryManagerService.addSerializableXAResourceDeserializer(new ProxyXAResourceDeserializer());
 
 		// recoveryManagerService.start();
 		_recoveryManager = RecoveryManager.manager();
@@ -158,6 +161,11 @@ public class ServerImpl implements LocalServer {
 	}
 
 	@Override
+	public ClassLoader getClassLoader() {
+		return classLoaderForTransactionManager;
+	}
+
+	@Override
 	public void shutdown() throws Exception {
 		recoveryManagerService.stop();
 		TransactionReaper.transactionReaper().terminate(false);
@@ -166,8 +174,7 @@ public class ServerImpl implements LocalServer {
 	@Override
 	public void doRecoveryManagerScan(boolean hackSafetyInterval) {
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		ClassLoader serversClassLoader = this.getClass().getClassLoader();
-		Thread.currentThread().setContextClassLoader(serversClassLoader);
+		Thread.currentThread().setContextClassLoader(getClassLoader());
 		int originalSafetyInterval = -1;
 
 		if (hackSafetyInterval) {

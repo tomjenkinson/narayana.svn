@@ -46,8 +46,10 @@ public interface LocalServer {
 	 * Initialize this server, this will create a transaction manager service
 	 * and a recovery manager service.
 	 * 
-	 * @param lookupProvider
-	 * @param nodeName
+	 * @param classLoaderForTransactionManager
+	 *            This is the classloader that the transaction manager would
+	 *            normally have access to.
+	 * 
 	 * @throws CoreEnvironmentBeanException
 	 * @throws IOException
 	 * @throws SecurityException
@@ -55,8 +57,9 @@ public interface LocalServer {
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 */
-	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset, String[] clusterCompatriots) throws CoreEnvironmentBeanException,
-			IOException, SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException;
+	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset, String[] clusterCompatriots,
+			ClassLoader classLoaderForTransactionManager) throws CoreEnvironmentBeanException, IOException, SecurityException, NoSuchFieldException,
+			IllegalArgumentException, IllegalAccessException;
 
 	/**
 	 * Get the local transaction managers node name.
@@ -163,4 +166,12 @@ public interface LocalServer {
 	 * @return
 	 */
 	public RemoteServer connectTo();
+
+	/**
+	 * This is used by the test to ensure that the servers classloader is set on
+	 * a thread.
+	 * 
+	 * @return
+	 */
+	public ClassLoader getClassLoader();
 }
