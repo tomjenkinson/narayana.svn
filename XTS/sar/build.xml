@@ -87,6 +87,7 @@
         <mkdir dir="${build.webinf.dir}"/>
         <mkdir dir="${build.metainf.dir}"/>
         <mkdir dir="${build.conf.dir}"/>
+        <copy file="${metainf.dir}/jax-ws-catalog.xml" tofile="${build.metainf.dir}/jax-ws-catalog.xml"/>
     </target>
 
     <!-- compile just 1.1 classes in the sar source -->
@@ -147,7 +148,9 @@
         <unjar src="${lib.dir}/recovery.jar" dest="${build.dir}/tmp/impl"/>
         <unjar src="${lib.dir}/service.jar" dest="${build.dir}/tmp/impl"/>
         <unjar src="${lib.dir}/config.jar" dest="${build.dir}/tmp/impl"/>
-        <jar file="${build.dir}/jbossxts.jar" basedir="${build.dir}/tmp/impl"/>
+		<jar file="${build.dir}/jbossxts.jar" basedir="${build.dir}/tmp/impl">
+			<metainf dir="${build.metainf.dir}"/>
+		</jar>
         <copy file="${build.dir}/jbossxts.jar" tofile="${lib.dir}/jbossxts.jar"/>
         <delete dir="${build.dir}/tmp/impl"/>
     </target>
