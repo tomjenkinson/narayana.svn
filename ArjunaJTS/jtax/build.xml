@@ -47,7 +47,7 @@
         <idl-compiler orb="JacORB"
                       buildlist="${idl.buildlist}"
                       destdir="${basedir}/${build.dir}/tests/generatedclasses"
-                      parameters="include='idl/omg/;idl/arjuna;${jacorb.home}/idl/omg',classpath='${jacorb.classpath}'"/>
+                      parameters="include='idl/omg/;idl/arjuna;${jacorb.home}/idl/omg',classpath='${jacorb.classpath}',generate_helper='portable'"/>
     </target>
 
     <target name="run.tests">

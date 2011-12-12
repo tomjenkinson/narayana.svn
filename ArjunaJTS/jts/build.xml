@@ -65,7 +65,7 @@
         <idl-compiler orb="JacORB"
                       buildlist="${idl.buildlist}" verbose="true"
                       destdir="${basedir}/${build.dir}/generatedclasses"
-                      parameters="include='${basedir}/idl/omg/;${basedir}/idl/arjuna;${jacorb.home}/idl/omg',classpath='${jacorb.classpath}'"/>
+                      parameters="include='${basedir}/idl/omg/;${basedir}/idl/arjuna;${jacorb.home}/idl/omg',classpath='${jacorb.classpath}',generate_helper='deprecated'"/>
     </target>
 
     <target name="compile-tests-idl" depends="sharedbuild-jts.compile-tests-idl">
@@ -78,7 +78,7 @@
         <idl-compiler orb="JacORB"
                       buildlist="${idl.buildlist}"
                       destdir="${basedir}/${build.dir}/tests/generatedclasses"
-                      parameters="include='${basedir}/idl/omg/;${basedir}/idl/arjuna;${jacorb.home}/idl/omg',classpath='${jacorb.classpath}'"/>
+                      parameters="include='${basedir}/idl/omg/;${basedir}/idl/arjuna;${jacorb.home}/idl/omg',classpath='${jacorb.classpath}',generate_helper='portable'"/>
     </target>
 
     <target name="run.tests">
@@ -119,7 +119,7 @@
         </run.tests.macro>
 
         <emma.report.macro/>
-        
+
     </target>
 
 </project>

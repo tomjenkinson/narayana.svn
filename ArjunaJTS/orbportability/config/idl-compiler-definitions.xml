@@ -30,6 +30,7 @@
 	    <param name="filename" required="true"/>
 	    <param name="classpath" required="true" delimiter=";" classpath="true"/>
 	    <param name="mapping" required="false" delimiter=";"/>
+        <param name="generate_helper" required="true"/>
 	</in-parameters>
 
 	<idl-executable>java -cp ${classpath} org.jacorb.idl.parser</idl-executable>
@@ -39,6 +40,8 @@
 	    <param>${destdir}</param>
 	    <param>-DORB_OTS_SUPPORT=1</param>
 	    <param>-DORB_CURRENT_SUPPORT=1</param>
+        <param>-generate_helper</param>
+        <param>${generate_helper}</param>
 	    <param foreach="include">-I${include}</param>
 	    <param foreach="mapping">
 		<sub-param>-i2jpackage</sub-param>
