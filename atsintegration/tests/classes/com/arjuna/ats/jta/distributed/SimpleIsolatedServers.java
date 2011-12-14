@@ -68,8 +68,6 @@ public class SimpleIsolatedServers {
 	@BeforeClass
 	public static void setup() throws SecurityException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException,
 			CoreEnvironmentBeanException, IOException, IllegalArgumentException, NoSuchFieldException {
-		completionCounter.reset();
-		lookupProvider.clear();
 		for (int i = 0; i < serverNodeNames.length; i++) {
 			boot(i);
 		}
@@ -83,6 +81,8 @@ public class SimpleIsolatedServers {
 			localServers[i].shutdown();
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 		}
+		completionCounter.reset();
+		lookupProvider.clear();
 	}
 
 	private static void reboot(String serverName) throws Exception {
@@ -236,8 +236,11 @@ public class SimpleIsolatedServers {
 				phase2CommitAborted.wait();
 			}
 		}
-		tearDown();
-		setup();
+
+		reboot("1000");
+		reboot("2000");
+		reboot("3000");
+		
 		assertTrue(completionCounter.getCommitCount("2000") == 0);
 		assertTrue(completionCounter.getRollbackCount("2000") == 0);
 		assertTrue(completionCounter.getCommitCount("1000") == 0);
@@ -249,17 +252,12 @@ public class SimpleIsolatedServers {
 		assertTrue(completionCounter.getRollbackCount("2000") == 1);
 
 		System.out.println("RECOVERING SECOND SERVER");
-		tearDown();
-		setup();
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 0);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 0);
+		
 		getLocalServer("1000").doRecoveryManagerScan(true);
 		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 1);
+		assertTrue(completionCounter.getRollbackCount("1000") == 3);
 		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 2);
+		assertTrue("Server 2000 rollback count: " + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 3);
 
 	}
 
@@ -319,8 +317,11 @@ public class SimpleIsolatedServers {
 				phase2CommitAborted.wait();
 			}
 		}
-		tearDown();
-		setup();
+
+		reboot("1000");
+		reboot("2000");
+		reboot("3000");
+		
 		{
 
 			assertTrue(completionCounter.getCommitCount("2000") == 0);
@@ -403,8 +404,11 @@ public class SimpleIsolatedServers {
 				phase2CommitAborted.wait();
 			}
 		}
-		tearDown();
-		setup();
+
+		reboot("1000");
+		reboot("2000");
+		reboot("3000");
+		
 		{
 
 			assertTrue(completionCounter.getCommitCount("2000") == 0);
@@ -492,8 +496,9 @@ public class SimpleIsolatedServers {
 				phase2CommitAborted.wait();
 			}
 		}
-		tearDown();
-		setup();
+		reboot("1000");
+		reboot("2000");
+		reboot("3000");
 		assertTrue(completionCounter.getCommitCount("2000") == 0);
 		assertTrue(completionCounter.getRollbackCount("2000") == 0);
 		assertTrue(completionCounter.getCommitCount("1000") == 0);
@@ -633,8 +638,11 @@ public class SimpleIsolatedServers {
 				phase2CommitAborted.wait();
 			}
 		}
-		tearDown();
-		setup();
+
+		reboot("1000");
+		reboot("2000");
+		reboot("3000");
+		
 		getLocalServer("1000").doRecoveryManagerScan(false);
 
 		assertTrue(completionCounter.getCommitCount("1000") == 4);

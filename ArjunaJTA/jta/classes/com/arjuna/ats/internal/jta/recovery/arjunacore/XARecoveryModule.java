@@ -192,9 +192,10 @@ public class XARecoveryModule implements RecoveryModule
 
 	private XAResource getNewXAResource(Xid xid)
 	{
-		if (_xidScans == null) {
+		// JBTM-895 updated to always call bottomUpRecovery when server is not bounced and subordinate calls recover before we have chance to
+//		if (_xidScans == null) {
 			bottomUpRecovery();
-        }
+//        }
 
         if (_xidScans != null)
 		{

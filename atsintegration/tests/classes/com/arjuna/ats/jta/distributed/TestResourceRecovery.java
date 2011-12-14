@@ -45,6 +45,7 @@ public class TestResourceRecovery implements XAResourceRecovery {
 				File currentFile = listFiles[i];
 				if (currentFile.getAbsolutePath().endsWith("_")) {
 					resources.add(new TestResource(nodeName, currentFile));
+					System.out.println("Added TestResource: " + currentFile.getName());
 				}
 			}
 		}
