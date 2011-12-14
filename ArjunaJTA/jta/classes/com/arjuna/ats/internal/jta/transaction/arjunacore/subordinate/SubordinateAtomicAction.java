@@ -183,6 +183,8 @@ public class SubordinateAtomicAction extends
 
 		super.afterCompletion(toReturn);
 
+		TransactionReaper.transactionReaper().remove(this);
+
 		return toReturn;
 	}
 
@@ -215,6 +217,8 @@ public class SubordinateAtomicAction extends
 
 		super.afterCompletion(toReturn);
 
+		TransactionReaper.transactionReaper().remove(this);
+
 		return toReturn;
 	}
 
@@ -238,6 +242,8 @@ public class SubordinateAtomicAction extends
 	    }
 
 	    afterCompletion(status);
+
+		TransactionReaper.transactionReaper().remove(this);
 	    
 	    return status;
 	}
