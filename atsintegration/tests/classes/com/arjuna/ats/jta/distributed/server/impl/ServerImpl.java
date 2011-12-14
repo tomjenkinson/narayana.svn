@@ -182,8 +182,6 @@ public class ServerImpl implements LocalServer {
 				Field safetyIntervalMillis = RecoveryXids.class.getDeclaredField("safetyIntervalMillis");
 				safetyIntervalMillis.setAccessible(true);
 				originalSafetyInterval = (Integer) safetyIntervalMillis.get(null);
-				Field modifiersField = Field.class.getDeclaredField("modifiers");
-				modifiersField.setAccessible(true);
 				safetyIntervalMillis.set(null, 0);
 			} catch (Throwable t) {
 				t.printStackTrace();
@@ -196,8 +194,6 @@ public class ServerImpl implements LocalServer {
 			try {
 				Field safetyIntervalMillis = RecoveryXids.class.getDeclaredField("safetyIntervalMillis");
 				safetyIntervalMillis.setAccessible(true);
-				Field modifiersField = Field.class.getDeclaredField("modifiers");
-				modifiersField.setAccessible(true);
 				safetyIntervalMillis.set(null, originalSafetyInterval);
 			} catch (Throwable t) {
 				t.printStackTrace();
