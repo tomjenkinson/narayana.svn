@@ -134,7 +134,9 @@ public class SimpleIsolatedServers {
 		tearDown();
 		setup();
 		assertTrue(completionCounter.getCommitCount("2000") == 0);
+		assertTrue(completionCounter.getRollbackCount("2000") == 0);
 		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue(completionCounter.getRollbackCount("1000") == 0);
 		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
 		{
 			Thread thread = new Thread(new Runnable() {
@@ -241,23 +243,14 @@ public class SimpleIsolatedServers {
 		reboot("2000");
 		reboot("3000");
 		
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 0);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 0);
 		getLocalServer("2000").doRecoveryManagerScan(true);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		assertTrue("Rollbacks at 1000: " + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 2);
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 1);
 
-		System.out.println("RECOVERING SECOND SERVER");
-		
 		getLocalServer("1000").doRecoveryManagerScan(true);
+		
 		assertTrue(completionCounter.getCommitCount("1000") == 0);
 		assertTrue(completionCounter.getRollbackCount("1000") == 3);
 		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue("Server 2000 rollback count: " + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 3);
+		assertTrue(completionCounter.getRollbackCount("2000") == 3);
 
 	}
 
