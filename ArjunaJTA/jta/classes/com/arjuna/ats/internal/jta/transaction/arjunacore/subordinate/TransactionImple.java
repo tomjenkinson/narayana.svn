@@ -241,6 +241,12 @@ public class TransactionImple extends
 		}
 	}
 
+	/**
+	 * 
+	 * @throws IllegalStateException
+	 * 
+	 * @deprecated Only called from a test
+	 */
 	public void doForget () throws IllegalStateException
 	{
 		try

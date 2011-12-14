@@ -242,6 +242,9 @@ public class SubordinateAtomicAction extends
 	    return status;
 	}
 
+	/**
+	 * @deprecated Only called via tests
+	 */
 	public void doForget ()
 	{
 		super.forgetHeuristics();
