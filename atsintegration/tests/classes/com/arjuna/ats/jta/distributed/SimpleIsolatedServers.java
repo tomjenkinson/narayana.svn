@@ -137,7 +137,7 @@ public class SimpleIsolatedServers {
 		assertTrue(completionCounter.getRollbackCount("2000") == 0);
 		assertTrue(completionCounter.getCommitCount("1000") == 0);
 		assertTrue(completionCounter.getRollbackCount("1000") == 0);
-		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
+		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		{
 			Thread thread = new Thread(new Runnable() {
 				public void run() {
@@ -165,19 +165,19 @@ public class SimpleIsolatedServers {
 					} catch (ExecuteException e) {
 						System.err.println("Should be a thread death but cest la vie");
 						synchronized (phase2CommitAborted) {
-							phase2CommitAborted.incrementPhase2CommitAborted();
+							phase2CommitAborted.incrementCount();
 							phase2CommitAborted.notify();
 						}
 					} catch (LinkageError t) {
 						System.err.println("Should be a thread death but cest la vie");
 						synchronized (phase2CommitAborted) {
-							phase2CommitAborted.incrementPhase2CommitAborted();
+							phase2CommitAborted.incrementCount();
 							phase2CommitAborted.notify();
 						}
 					} catch (Throwable t) {
 						System.err.println("Should be a thread death but cest la vie");
 						synchronized (phase2CommitAborted) {
-							phase2CommitAborted.incrementPhase2CommitAborted();
+							phase2CommitAborted.incrementCount();
 							phase2CommitAborted.notify();
 						}
 					}
@@ -213,19 +213,19 @@ public class SimpleIsolatedServers {
 					} catch (ExecuteException e) {
 						System.err.println("Should be a thread death but cest la vie");
 						synchronized (phase2CommitAborted) {
-							phase2CommitAborted.incrementPhase2CommitAborted();
+							phase2CommitAborted.incrementCount();
 							phase2CommitAborted.notify();
 						}
 					} catch (LinkageError t) {
 						System.err.println("Should be a thread death but cest la vie");
 						synchronized (phase2CommitAborted) {
-							phase2CommitAborted.incrementPhase2CommitAborted();
+							phase2CommitAborted.incrementCount();
 							phase2CommitAborted.notify();
 						}
 					} catch (Throwable t) {
 						System.err.println("Should be a thread death but cest la vie");
 						synchronized (phase2CommitAborted) {
-							phase2CommitAborted.incrementPhase2CommitAborted();
+							phase2CommitAborted.incrementCount();
 							phase2CommitAborted.notify();
 						}
 					}
@@ -234,7 +234,7 @@ public class SimpleIsolatedServers {
 			thread.start();
 		}
 		synchronized (phase2CommitAborted) {
-			if (phase2CommitAborted.getPhase2CommitAbortedCount() < 2) {
+			if (phase2CommitAborted.getCount() < 2) {
 				phase2CommitAborted.wait();
 			}
 		}
@@ -243,10 +243,20 @@ public class SimpleIsolatedServers {
 		reboot("2000");
 		reboot("3000");
 		
+		final CompletionCountLock lock = new CompletionCountLock();
+		
 		getLocalServer("2000").doRecoveryManagerScan(true);
+		lock.incrementCount();
 
 		getLocalServer("1000").doRecoveryManagerScan(true);
-		
+		lock.incrementCount();
+
+		synchronized (lock) {
+			while (lock.getCount() < 2) {
+				lock.wait();
+			}
+		}
+
 		assertTrue(completionCounter.getCommitCount("1000") == 0);
 		assertTrue(completionCounter.getRollbackCount("1000") == 3);
 		assertTrue(completionCounter.getCommitCount("2000") == 0);
@@ -266,7 +276,7 @@ public class SimpleIsolatedServers {
 		setup();
 		assertTrue(completionCounter.getCommitCount("2000") == 0);
 		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
+		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
 				int startingTimeout = 0;
@@ -296,7 +306,7 @@ public class SimpleIsolatedServers {
 				} catch (Error t) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
+						phase2CommitAborted.incrementCount();
 						phase2CommitAborted.notify();
 					}
 				} catch (Throwable t) {
@@ -306,7 +316,7 @@ public class SimpleIsolatedServers {
 		}, "Orphan-creator");
 		thread.start();
 		synchronized (phase2CommitAborted) {
-			if (phase2CommitAborted.getPhase2CommitAbortedCount() < 1) {
+			if (phase2CommitAborted.getCount() < 1) {
 				phase2CommitAborted.wait();
 			}
 		}
@@ -352,7 +362,7 @@ public class SimpleIsolatedServers {
 		assertTrue(completionCounter.getCommitCount("3000") == 0);
 		assertTrue(completionCounter.getCommitCount("2000") == 0);
 		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
+		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
 				int startingTimeout = 0;
@@ -379,7 +389,7 @@ public class SimpleIsolatedServers {
 				} catch (Error t) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
+						phase2CommitAborted.incrementCount();
 						phase2CommitAborted.notify();
 					}
 				} catch (Throwable t) {
@@ -393,7 +403,7 @@ public class SimpleIsolatedServers {
 		}, "Orphan-creator");
 		thread.start();
 		synchronized (phase2CommitAborted) {
-			if (phase2CommitAborted.getPhase2CommitAbortedCount() < 1) {
+			if (phase2CommitAborted.getCount() < 1) {
 				phase2CommitAborted.wait();
 			}
 		}
@@ -438,7 +448,7 @@ public class SimpleIsolatedServers {
 		assertTrue(completionCounter.getCommitCount("3000") == 0);
 		assertTrue(completionCounter.getCommitCount("2000") == 0);
 		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
+		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
 				int startingTimeout = 0;
@@ -465,19 +475,19 @@ public class SimpleIsolatedServers {
 				} catch (ExecuteException e) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
+						phase2CommitAborted.incrementCount();
 						phase2CommitAborted.notify();
 					}
 				} catch (LinkageError t) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
+						phase2CommitAborted.incrementCount();
 						phase2CommitAborted.notify();
 					}
 				} catch (Throwable t) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
+						phase2CommitAborted.incrementCount();
 						phase2CommitAborted.notify();
 					}
 				}
@@ -485,7 +495,7 @@ public class SimpleIsolatedServers {
 		}, "Orphan-creator");
 		thread.start();
 		synchronized (phase2CommitAborted) {
-			if (phase2CommitAborted.getPhase2CommitAbortedCount() < 1) {
+			if (phase2CommitAborted.getCount() < 1) {
 				phase2CommitAborted.wait();
 			}
 		}
@@ -527,7 +537,7 @@ public class SimpleIsolatedServers {
 		assertTrue(completionCounter.getCommitCount("3000") == 0);
 		assertTrue(completionCounter.getCommitCount("2000") == 0);
 		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
+		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
 				int startingTimeout = 0;
@@ -554,19 +564,19 @@ public class SimpleIsolatedServers {
 				} catch (ExecuteException e) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
+						phase2CommitAborted.incrementCount();
 						phase2CommitAborted.notify();
 					}
 				} catch (LinkageError t) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
+						phase2CommitAborted.incrementCount();
 						phase2CommitAborted.notify();
 					}
 				} catch (Throwable t) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
+						phase2CommitAborted.incrementCount();
 						phase2CommitAborted.notify();
 					}
 				}
@@ -574,7 +584,7 @@ public class SimpleIsolatedServers {
 		}, "Orphan-creator");
 		thread.start();
 		synchronized (phase2CommitAborted) {
-			if (phase2CommitAborted.getPhase2CommitAbortedCount() < 1) {
+			if (phase2CommitAborted.getCount() < 1) {
 				phase2CommitAborted.wait();
 			}
 		}
@@ -605,7 +615,7 @@ public class SimpleIsolatedServers {
 		assertTrue(completionCounter.getRollbackCount("3000") == 0);
 		assertTrue(completionCounter.getRollbackCount("2000") == 0);
 		assertTrue(completionCounter.getRollbackCount("1000") == 0);
-		final Phase2CommitAborted phase2CommitAborted = new Phase2CommitAborted();
+		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
 				int startingTimeout = 0;
@@ -616,7 +626,7 @@ public class SimpleIsolatedServers {
 				} catch (ExecuteException e) {
 					System.err.println("Should be a thread death but cest la vie");
 					synchronized (phase2CommitAborted) {
-						phase2CommitAborted.incrementPhase2CommitAborted();
+						phase2CommitAborted.incrementCount();
 						phase2CommitAborted.notify();
 					}
 				} catch (Exception e) {
@@ -627,7 +637,7 @@ public class SimpleIsolatedServers {
 		});
 		thread.start();
 		synchronized (phase2CommitAborted) {
-			if (phase2CommitAborted.getPhase2CommitAbortedCount() < 1) {
+			if (phase2CommitAborted.getCount() < 1) {
 				phase2CommitAborted.wait();
 			}
 		}
@@ -1016,15 +1026,15 @@ public class SimpleIsolatedServers {
 		return localServers[index];
 	}
 
-	private class Phase2CommitAborted {
-		private int phase2CommitAborted;
+	private class CompletionCountLock {
+		private int count;
 
-		public int getPhase2CommitAbortedCount() {
-			return phase2CommitAborted;
+		public int getCount() {
+			return count;
 		}
 
-		public void incrementPhase2CommitAborted() {
-			this.phase2CommitAborted++;
+		public void incrementCount() {
+			this.count++;
 		}
 	}
 
