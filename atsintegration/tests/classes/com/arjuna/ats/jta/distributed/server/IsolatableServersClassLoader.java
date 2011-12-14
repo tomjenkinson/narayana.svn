@@ -75,9 +75,7 @@ public class IsolatableServersClassLoader extends ClassLoader {
 			clazz = clazzMap.get(name);
 		}
 
-		if (clazz != null) {
-			System.err.println("Already loaded: " + name);
-		} else {
+		if (clazz == null) {
 			if (!name.startsWith("com.arjuna") || name.matches(ignoredPackage + ".[A-Za-z0-9]*")
 					|| (includedPackage != null && !name.startsWith(includedPackage))) {
 				clazz = getParent().loadClass(name);
