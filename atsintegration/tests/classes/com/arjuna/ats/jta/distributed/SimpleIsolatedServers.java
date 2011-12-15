@@ -24,6 +24,7 @@ package com.arjuna.ats.jta.distributed;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,8 +74,31 @@ public class SimpleIsolatedServers {
 		}
 	}
 
+	public static boolean deleteDir(File dir) {
+		if (dir.isDirectory()) {
+			String[] children = dir.list();
+			for (int i = 0; i < children.length; i++) {
+				boolean success = deleteDir(new File(dir, children[i]));
+				if (!success) {
+					return false;
+				}
+			}
+		}
+
+		// The directory is now empty so delete it
+		return dir.delete();
+	}
+
 	@AfterClass
 	public static void tearDown() throws Exception {
+		// Enable it if you need to ensure the folder is empty for some reason
+		if (false) {
+			File file = new File(System.getProperty("user.dir") + "/distributedjta-tests/");
+			boolean delete = !file.exists() ? true : deleteDir(file);
+			if (!delete) {
+				throw new Exception("Could not delete folder");
+			}
+		}
 		for (int i = 0; i < localServers.length; i++) {
 			ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 			Thread.currentThread().setContextClassLoader(localServers[i].getClassLoader());
@@ -242,14 +266,25 @@ public class SimpleIsolatedServers {
 		reboot("1000");
 		reboot("2000");
 		reboot("3000");
-		
-		final CompletionCountLock lock = new CompletionCountLock();
-		
-		getLocalServer("2000").doRecoveryManagerScan(true);
-		lock.incrementCount();
 
-		getLocalServer("1000").doRecoveryManagerScan(true);
-		lock.incrementCount();
+		final CompletionCountLock lock = new CompletionCountLock();
+		{
+			new Thread(new Runnable() {
+				public void run() {
+					getLocalServer("2000").doRecoveryManagerScan(true);
+					lock.incrementCount();
+				}
+			}).start();
+		}
+
+		{
+			new Thread(new Runnable() {
+				public void run() {
+					getLocalServer("1000").doRecoveryManagerScan(true);
+					lock.incrementCount();
+				}
+			}).start();
+		}
 
 		synchronized (lock) {
 			while (lock.getCount() < 2) {
@@ -324,7 +359,7 @@ public class SimpleIsolatedServers {
 		reboot("1000");
 		reboot("2000");
 		reboot("3000");
-		
+
 		{
 
 			assertTrue(completionCounter.getCommitCount("2000") == 0);
@@ -411,7 +446,7 @@ public class SimpleIsolatedServers {
 		reboot("1000");
 		reboot("2000");
 		reboot("3000");
-		
+
 		{
 
 			assertTrue(completionCounter.getCommitCount("2000") == 0);
@@ -645,7 +680,7 @@ public class SimpleIsolatedServers {
 		reboot("1000");
 		reboot("2000");
 		reboot("3000");
-		
+
 		getLocalServer("1000").doRecoveryManagerScan(false);
 
 		assertTrue(completionCounter.getCommitCount("1000") == 4);
@@ -931,7 +966,6 @@ public class SimpleIsolatedServers {
 			XAException, SystemException, NotSupportedException, IOException {
 		String currentServerName = nodesToFlowTo.remove(0);
 		LocalServer currentServer = getLocalServer(currentServerName);
-		System.out.println("Flowed to " + currentServerName);
 
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(currentServer.getClassLoader());
@@ -1017,7 +1051,6 @@ public class SimpleIsolatedServers {
 		// Return to the previous caller back over the transport/classloader
 		// boundary in this case
 		Thread.currentThread().setContextClassLoader(classLoader);
-		System.out.println("Flowed from " + currentServerName);
 		return new DataReturnedFromRemoteServer(requiresProxyAtPreviousServer, transactionState);
 	}
 
@@ -1033,8 +1066,9 @@ public class SimpleIsolatedServers {
 			return count;
 		}
 
-		public void incrementCount() {
+		public synchronized void incrementCount() {
 			this.count++;
+			this.notify();
 		}
 	}
 

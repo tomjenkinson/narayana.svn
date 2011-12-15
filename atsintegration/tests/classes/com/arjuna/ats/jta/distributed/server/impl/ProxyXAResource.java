@@ -99,7 +99,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 	 * server about.
 	 */
 	@Override
-	public  int prepare(Xid xid) throws XAException {
+	public int prepare(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_PREPARE [" + xid + "]");
 
 		Xid toPropagate = migratedXid != null ? migratedXid : xid;
@@ -109,7 +109,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 	}
 
 	@Override
-	public  void commit(Xid xid, boolean onePhase) throws XAException {
+	public void commit(Xid xid, boolean onePhase) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_COMMIT  [" + xid + "]");
 
 		Xid toPropagate = migratedXid != null ? migratedXid : xid;
@@ -121,7 +121,7 @@ public class ProxyXAResource implements XAResource, XAResourceWrapper, Serializa
 	}
 
 	@Override
-	public  void rollback(Xid xid) throws XAException {
+	public void rollback(Xid xid) throws XAException {
 		System.out.println("     ProxyXAResource (" + localServerName + ":" + remoteServerName + ") XA_ROLLBACK[" + xid + "]");
 
 		Xid toPropagate = migratedXid != null ? migratedXid : xid;

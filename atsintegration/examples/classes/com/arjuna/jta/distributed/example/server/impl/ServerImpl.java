@@ -36,6 +36,8 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
+import org.jboss.tm.XAResourceRecovery;
+
 import com.arjuna.ats.arjuna.common.CoordinatorEnvironmentBean;
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBean;
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
@@ -83,6 +85,10 @@ public class ServerImpl implements LocalServer {
 	 * 
 	 * The addition required for the distributed JTA code is:
 	 * RecoveryManagerService::addSerializableXAResourceDeserializer()
+	 * 
+	 * You must also register with RecoveryManagerService::addXAResourceRecovery
+	 * an {@link XAResourceRecovery} for your Proxy XA Resources so that they
+	 * can find orphan subordinate transactions.
 	 */
 	public void initialise(LookupProvider lookupProvider, String nodeName, int portOffset, String[] clusterBuddies, ClassLoader classLoaderForTransactionManager)
 			throws CoreEnvironmentBeanException, IOException, SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
@@ -157,8 +163,11 @@ public class ServerImpl implements LocalServer {
 
 		recoveryManagerService = new RecoveryManagerService();
 		recoveryManagerService.create();
-		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(nodeName, clusterBuddies));
 		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(nodeName));
+		// This MUST be the last XAResourceRecovery class registered or you will
+		// get unexpected recovery results, could add a specific interface for
+		// this?
+		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(nodeName, clusterBuddies));
 		recoveryManagerService.addSerializableXAResourceDeserializer(new ProxyXAResourceDeserializer());
 
 		// recoveryManagerService.start();

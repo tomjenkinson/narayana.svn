@@ -353,7 +353,7 @@ public class XATerminatorImple implements javax.resource.spi.XATerminator, XATer
      * @return a list of potentially indoubt transactions or <code>null</code>.
      */
 
-    public synchronized Xid[] doRecover (Xid xid, String parentNodeName) throws XAException
+    public Xid[] doRecover (Xid xid, String parentNodeName) throws XAException
     {
         /*
          * Requires going through the objectstore for the states of imported

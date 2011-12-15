@@ -144,8 +144,11 @@ public class ServerImpl implements LocalServer {
 
 		recoveryManagerService = new RecoveryManagerService();
 		recoveryManagerService.create();
-		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(nodeName, clusterBuddies));
 		recoveryManagerService.addXAResourceRecovery(new TestResourceRecovery(nodeName));
+		// This MUST be the last XAResourceRecovery class registered or you will
+		// get unexpected recovery results, could add a specific interface for
+		// this?
+		recoveryManagerService.addXAResourceRecovery(new ProxyXAResourceRecovery(nodeName, clusterBuddies));
 		recoveryManagerService.addSerializableXAResourceDeserializer(new ProxyXAResourceDeserializer());
 
 		// recoveryManagerService.start();
