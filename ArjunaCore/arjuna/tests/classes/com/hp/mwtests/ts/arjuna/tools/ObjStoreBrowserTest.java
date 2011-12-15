@@ -73,14 +73,10 @@ public class ObjStoreBrowserTest {
 	 * @return An object that maintains MBeans representing completing transactions
 	 */
 	private ObjStoreBrowser createObjStoreBrowser() {
-		ObjStoreBrowser osb = new ObjStoreBrowser();
-
 		// define which object store types we are prepared to represent by mbeans
-		osb.setTypes( new HashMap<String, String>() {{
-			put("StateManager/BasicAction/TwoPhaseCoordinator/AtomicAction", "com.arjuna.ats.arjuna.tools.osb.mbean.ActionBean");
-		}});
+        System.setProperty("ObjStoreBrowserHandlers", "com.arjuna.ats.arjuna.AtomicAction=com.arjuna.ats.arjuna.tools.osb.mbean.ActionBean");
 
-		return osb;
+		return new ObjStoreBrowser();
 	}
 
 	@Test
