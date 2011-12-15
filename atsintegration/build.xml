@@ -78,7 +78,7 @@
     </target>
 
     <target name="run.tests">
-        <run.tests.macro>
+        <run.tests.macro showoutput="true">
             <tests>
                 <fileset dir="tests/classes">
                     <include name="**/SimpleIsolatedServers.java"/>
