@@ -274,7 +274,7 @@ public class SimpleIsolatedServers {
 					getLocalServer("2000").doRecoveryManagerScan(true);
 					lock.incrementCount();
 				}
-			}).start();
+			}, "RecMan2000").start();
 		}
 
 		{
@@ -283,7 +283,7 @@ public class SimpleIsolatedServers {
 					getLocalServer("1000").doRecoveryManagerScan(true);
 					lock.incrementCount();
 				}
-			}).start();
+			}, "RecMan1000").start();
 		}
 
 		synchronized (lock) {

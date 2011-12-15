@@ -37,7 +37,7 @@ public class TestResourceRecovery implements XAResourceRecovery {
 
 	public TestResourceRecovery(String nodeName) throws IOException {
 		this.nodeName = nodeName;
-		System.out.println(nodeName + " asked to recover TestResource");
+		System.out.println("[" + Thread.currentThread().getName() + "] TestResourceRecovery (" + nodeName + ")");
 		File file = new File(System.getProperty("user.dir") + "/distributedjta-tests/TestResource/" + nodeName + "/");
 		if (file.exists() && file.isDirectory()) {
 			File[] listFiles = file.listFiles();
@@ -45,7 +45,7 @@ public class TestResourceRecovery implements XAResourceRecovery {
 				File currentFile = listFiles[i];
 				if (currentFile.getAbsolutePath().endsWith("_")) {
 					resources.add(new TestResource(nodeName, currentFile));
-					System.out.println("Added TestResource: " + currentFile.getName());
+					System.out.println("[" + Thread.currentThread().getName() + "] TestResourceRecovery (" + nodeName + ") Added TestResource: " + currentFile.getName());
 				}
 			}
 		}
@@ -53,7 +53,7 @@ public class TestResourceRecovery implements XAResourceRecovery {
 
 	@Override
 	public XAResource[] getXAResources() {
-		System.out.println(nodeName + "Returning list of TestResources of length: " + resources.size());
+		System.out.println("[" + Thread.currentThread().getName() + "] TestResourceRecovery (" + nodeName + ") returning list of TestResources of length: " + resources.size());
 		return resources.toArray(new XAResource[] {});
 	}
 
