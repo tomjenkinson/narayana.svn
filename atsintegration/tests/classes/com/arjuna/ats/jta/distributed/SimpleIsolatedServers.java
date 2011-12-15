@@ -157,10 +157,10 @@ public class SimpleIsolatedServers {
 		System.out.println("testSimultaneousRecover");
 		tearDown();
 		setup();
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 0);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 0);
 		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		{
 			Thread thread = new Thread(new Runnable() {
@@ -292,10 +292,10 @@ public class SimpleIsolatedServers {
 			}
 		}
 
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 3);
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 3);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 3);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 3);
 
 	}
 
@@ -309,8 +309,8 @@ public class SimpleIsolatedServers {
 		System.out.println("testTwoPhaseXAResourceOrphan");
 		tearDown();
 		setup();
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
 		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
@@ -362,25 +362,18 @@ public class SimpleIsolatedServers {
 
 		{
 
-			assertTrue(completionCounter.getCommitCount("2000") == 0);
-			assertTrue(completionCounter.getRollbackCount("2000") == 0);
+			assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+			assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 0);
 			getLocalServer("2000").doRecoveryManagerScan(true);
-			assertTrue(completionCounter.getCommitCount("2000") == 0);
-			assertTrue(completionCounter.getRollbackCount("2000") == 1);
+			assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+			assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 1);
 		}
 		{
-			assertTrue(completionCounter.getCommitCount("1000") == 0);
-			assertTrue(completionCounter.getRollbackCount("1000") == 0);
+			assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
+			assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 0);
 			getLocalServer("1000").doRecoveryManagerScan(true);
-			assertTrue(completionCounter.getCommitCount("1000") == 0);
-			assertTrue(completionCounter.getRollbackCount("1000") == 0); // Could
-																			// have
-																			// been
-																			// 1
-																			// in
-																			// the
-																			// old
-																			// mechanism
+			assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
+			assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 0);
 		}
 	}
 
@@ -394,9 +387,9 @@ public class SimpleIsolatedServers {
 		System.out.println("testOnePhaseXAResourceOrphan");
 		tearDown();
 		setup();
-		assertTrue(completionCounter.getCommitCount("3000") == 0);
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("3000"), completionCounter.getCommitCount("3000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
 		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
@@ -449,24 +442,18 @@ public class SimpleIsolatedServers {
 
 		{
 
-			assertTrue(completionCounter.getCommitCount("2000") == 0);
-			assertTrue(completionCounter.getRollbackCount("2000") == 0);
+			assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+			assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 0);
 			getLocalServer("2000").doRecoveryManagerScan(true);
-			assertTrue(completionCounter.getCommitCount("2000") == 0);
-			assertTrue(completionCounter.getRollbackCount("2000") == 1);
+			assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+			assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 1);
 		}
 		{
-			assertTrue(completionCounter.getCommitCount("1000") == 0);
-			assertTrue(completionCounter.getRollbackCount("1000") == 0);
+			assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
+			assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 0);
 			getLocalServer("1000").doRecoveryManagerScan(true);
-			assertTrue(completionCounter.getCommitCount("1000") == 0);
-			assertTrue(completionCounter.getRollbackCount("1000") == 0); // Can
-																			// be
-																			// zero
-																			// with
-																			// old
-																			// style
-																			// proxies
+			assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
+			assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 0);
 		}
 	}
 
@@ -480,9 +467,9 @@ public class SimpleIsolatedServers {
 		System.out.println("testOnePhaseSubordinateOrphan");
 		tearDown();
 		setup();
-		assertTrue(completionCounter.getCommitCount("3000") == 0);
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("3000"), completionCounter.getCommitCount("3000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
 		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
@@ -537,15 +524,15 @@ public class SimpleIsolatedServers {
 		reboot("1000");
 		reboot("2000");
 		reboot("3000");
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 0);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 0);
 		getLocalServer("1000").doRecoveryManagerScan(true);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 1);
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 2);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 1);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 2);
 
 	}
 
@@ -569,9 +556,9 @@ public class SimpleIsolatedServers {
 		tearDown();
 		setup();
 
-		assertTrue(completionCounter.getCommitCount("3000") == 0);
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("3000"), completionCounter.getCommitCount("3000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
 		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
@@ -624,15 +611,15 @@ public class SimpleIsolatedServers {
 			}
 		}
 		reboot("1000");
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 0);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 0);
 		getLocalServer("1000").doRecoveryManagerScan(true);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
 		assertTrue("Rollback count at 1000: " + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 1);
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 2);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 2);
 	}
 
 	/**
@@ -644,12 +631,12 @@ public class SimpleIsolatedServers {
 		System.out.println("testRecovery");
 		tearDown();
 		setup();
-		assertTrue(completionCounter.getCommitCount("3000") == 0);
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		assertTrue(completionCounter.getRollbackCount("3000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("3000"), completionCounter.getCommitCount("3000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("3000"), completionCounter.getRollbackCount("3000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 0);
 		final CompletionCountLock phase2CommitAborted = new CompletionCountLock();
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
@@ -683,12 +670,12 @@ public class SimpleIsolatedServers {
 
 		getLocalServer("1000").doRecoveryManagerScan(false);
 
-		assertTrue(completionCounter.getCommitCount("1000") == 4);
-		assertTrue(completionCounter.getCommitCount("2000") == 4);
-		assertTrue(completionCounter.getCommitCount("3000") == 3);
-		assertTrue(completionCounter.getRollbackCount("3000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 4);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 4);
+		assertTrue("" + completionCounter.getCommitCount("3000"), completionCounter.getCommitCount("3000") == 3);
+		assertTrue("" + completionCounter.getRollbackCount("3000"), completionCounter.getRollbackCount("3000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 0);
 	}
 
 	@Test
@@ -716,10 +703,10 @@ public class SimpleIsolatedServers {
 		transactionManager.commit();
 		Thread.currentThread().setContextClassLoader(classLoader);
 
-		assertTrue(completionCounter.getCommitCount("1000") == 1);
-		assertTrue(completionCounter.getCommitCount("2000") == 1);
-		assertTrue(completionCounter.getRollbackCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 1);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 1);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 0);
 	}
 
 	@Test
@@ -748,10 +735,10 @@ public class SimpleIsolatedServers {
 		transactionManager.rollback();
 		Thread.currentThread().setContextClassLoader(classLoader);
 
-		assertTrue(completionCounter.getCommitCount("1000") == 0);
-		assertTrue(completionCounter.getCommitCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("2000") == 1);
-		assertTrue(completionCounter.getRollbackCount("1000") == 1);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 1);
+		assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 1);
 	}
 
 	@Test
@@ -849,8 +836,8 @@ public class SimpleIsolatedServers {
 		} finally {
 			Thread.currentThread().setContextClassLoader(classLoader);
 		}
-		assertTrue(completionCounter.getRollbackCount("2000") == 1);
-		assertTrue(completionCounter.getRollbackCount("1000") == 2);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 1);
+		assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 2);
 	}
 
 	@Test
@@ -888,10 +875,10 @@ public class SimpleIsolatedServers {
 		originalServer.removeRootTransaction(currentXid);
 		transactionManager.commit();
 		Thread.currentThread().setContextClassLoader(classLoader);
-		assertTrue(completionCounter.getCommitCount("2000") == 1);
-		assertTrue(completionCounter.getCommitCount("1000") == 2);
-		assertTrue(completionCounter.getRollbackCount("2000") == 0);
-		assertTrue(completionCounter.getRollbackCount("1000") == 0);
+		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 1);
+		assertTrue("" + completionCounter.getCommitCount("1000"), completionCounter.getCommitCount("1000") == 2);
+		assertTrue("" + completionCounter.getRollbackCount("2000"), completionCounter.getRollbackCount("2000") == 0);
+		assertTrue("" + completionCounter.getRollbackCount("1000"), completionCounter.getRollbackCount("1000") == 0);
 
 		Thread.currentThread().sleep((subordinateTimeout + 4) * 1000);
 	}
