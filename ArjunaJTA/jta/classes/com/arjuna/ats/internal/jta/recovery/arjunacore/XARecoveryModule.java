@@ -196,6 +196,10 @@ public class XARecoveryModule implements RecoveryModule
 			bottomUpRecovery();
         }
 
+		// JBTM-895 updated so that retrieving an XAResource triggers garbage collection, this is required because garbage collecting
+		// The XA resources in a bottom up scenario (e.g. resourceInitiatedRecoveryForRecoveryHelpers) means that any xids that are
+		// not eligible for recovery after the first scan may be removed as stale and due to the undocumented _xidScans check above will not be
+		// reloaded
         if (_xidScans != null)
 		{
 			Enumeration<XAResource> keys = _xidScans.keys();
@@ -205,8 +209,12 @@ public class XARecoveryModule implements RecoveryModule
 				XAResource theKey = keys.nextElement();
 				RecoveryXids xids = _xidScans.get(theKey);
 
-				if (xids.contains(xid))
+				if (xids.remove(xid)) {
+					if (xids.isEmpty()) {
+						_xidScans.remove(theKey);
+					}
 					return theKey;
+				}
 			}
 		}
 
@@ -364,6 +372,11 @@ public class XARecoveryModule implements RecoveryModule
 		return true;
 	}
 
+	/**
+	 * 
+	 * JBTM-895 garbage collection is now done when we return XAResources {@see XARecoveryModule#getNewXAResource(XAResourceRecord)}
+	 * @see XARecoveryModule#getNewXAResource(XAResourceRecord)
+	 */
     private void bottomUpRecovery() {
 
         // scan using statically configured plugins;
@@ -371,16 +384,7 @@ public class XARecoveryModule implements RecoveryModule
         // scan using dynamically configured plugins:
         resourceInitiatedRecoveryForRecoveryHelpers();
 
-        // garbage collection:
-        if (_xidScans != null) {
-            Set<XAResource> keys = new HashSet<XAResource>(_xidScans.keySet());
-            for(XAResource theKey : keys) {
-                RecoveryXids recoveryXids = _xidScans.get(theKey);
-                if(recoveryXids.isStale()) {
-                    _xidScans.remove(theKey);
-                }
-            }
-        }
+        // JBTM-895 garbage collection is now done when we return XAResources {@see XARecoveryModule#getNewXAResource(XAResourceRecord)}
     }
 
 	/**

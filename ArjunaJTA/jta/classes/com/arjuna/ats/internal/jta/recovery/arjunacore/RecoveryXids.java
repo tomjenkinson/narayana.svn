@@ -135,14 +135,23 @@ public class RecoveryXids
 
         return _whenFirstSeen.containsKey(xidImple);
     }
-
-    public boolean isStale() {
-        long now = System.currentTimeMillis();
-        long threshold = _lastValidated+(2*safetyIntervalMillis);
-        long diff = now - threshold;
-        boolean result = diff > 0;
-        return result;
+    
+    public boolean remove (Xid xid)
+    {
+        XidImple xidImple = new XidImple(xid);
+        
+        if (_whenFirstSeen.containsKey(xidImple)) {
+        	_whenFirstSeen.remove(xidImple);
+        	_whenLastSeen.remove(xidImple);
+        	return true;
+        } else {
+        	return false;
+        }
     }
+
+	public boolean isEmpty() {
+		return _whenFirstSeen.isEmpty();
+	}
 
     /**
      * If supplied xids contains any values seen on prev scans, replace the existing
