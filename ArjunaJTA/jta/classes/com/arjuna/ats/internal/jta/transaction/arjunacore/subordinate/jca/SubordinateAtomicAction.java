@@ -38,6 +38,8 @@ import com.arjuna.ats.arjuna.exceptions.ObjectStoreException;
 import com.arjuna.ats.arjuna.objectstore.StoreManager;
 import com.arjuna.ats.arjuna.state.InputObjectState;
 import com.arjuna.ats.arjuna.state.OutputObjectState;
+import com.arjuna.ats.arjuna.utils.Utility;
+import com.arjuna.ats.internal.arjuna.Header;
 import com.arjuna.ats.internal.jta.xa.XID;
 import com.arjuna.ats.jta.xa.XATxConverter;
 import com.arjuna.ats.jta.xa.XidImple;
@@ -77,6 +79,7 @@ public class SubordinateAtomicAction extends
 		super(actId);
 		if (peekXidOnly) {
 			InputObjectState os = StoreManager.getParticipantStore().read_committed(objectUid, type());
+			unpackHeader(os, new Header());
 			boolean haveXid = os.unpackBoolean();
 
 			if (haveXid) {
@@ -145,6 +148,9 @@ public class SubordinateAtomicAction extends
 	{
 	    try
 	    {
+	        // pack the header first for the benefit of the tooling
+	        packHeader(os, new Header(get_uid(), Utility.getProcessUid()));
+
 	        if (_theXid != null)
 	        {
 	            os.packBoolean(true);
@@ -169,6 +175,8 @@ public class SubordinateAtomicAction extends
 	    
 		try
 		{
+			unpackHeader(os, new Header());
+
 			boolean haveXid = os.unpackBoolean();
 			
 			if (haveXid)

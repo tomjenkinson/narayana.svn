@@ -20,44 +20,46 @@ import com.arjuna.ats.arjuna.tools.osb.util.JMXServer;
  */
 public class ObjStoreBrowser implements ObjStoreBrowserMBean {
     public static final String OBJ_STORE_BROWSER_HANDLERS = "com.arjuna.ats.arjuna.tools.osb.mbean.ObjStoreBrowserHandlers";
-	private static final String STORE_MBEAN_NAME = "jboss.jta:type=ObjectStore";
+    private static final String STORE_MBEAN_NAME = "jboss.jta:type=ObjectStore";
 
     // defines a (default) map of object store types to the corresponding MBean for instrumentation.
     // The format is OSType1=BeanType1,OSType2=BeanType2,etc
     // Can be over-ridden by setting a system property called com.arjuna.ats.arjuna.tools.osb.mbean.ObjStoreBrowserHandlers
+    private static final String saaStateType = "com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.SubordinateAtomicAction";
+    private static final String saaBeanType = "com.arjuna.ats.internal.jta.tools.osb.mbean.jta.SubordinateActionBean";
     private static final String defaultStateHandlers =
             "com.arjuna.ats.arjuna.AtomicAction=com.arjuna.ats.internal.jta.tools.osb.mbean.jta.JTAActionBean"
 //            + ",com.arjuna.ats.internal.jta.transaction.arjunacore.subordinate.jca.SubordinateAtomicAction=com.arjuna.ats.internal.jta.tools.osb.mbean.jta.SubordinateActionBean"
-            + ",com.arjuna.ats.internal.jta.tools.osb.mbean.jts.ArjunaTransactionImpleWrapper=com.arjuna.ats.arjuna.tools.osb.mbean.ActionBean";
+                    + ",com.arjuna.ats.internal.jta.tools.osb.mbean.jts.ArjunaTransactionImpleWrapper=com.arjuna.ats.arjuna.tools.osb.mbean.ActionBean";
 
     private Map<String, String> stateTypes = null; // defines which object store types will be instrumented
     private Map<String, String> beanTypes = null;  // defines which bean types are used to represent object store types
-	private Map<String, List<UidWrapper>> allUids;
+    private Map<String, List<UidWrapper>> allUids;
 
     /**
      * Initialise the MBean
      */
-	public void start()
-	{
-		JMXServer.getAgent().registerMBean(STORE_MBEAN_NAME, this);
-	}
+    public void start()
+    {
+        JMXServer.getAgent().registerMBean(STORE_MBEAN_NAME, this);
+    }
 
     /**
      * Unregister all MBeans representing objects in the ObjectStore
      * represented by this MBean
      */
-	public void stop()
-	{
-		for (List<UidWrapper> uids : allUids.values()) {
-			for (Iterator<UidWrapper> i = uids.iterator(); i.hasNext(); ) {
-				UidWrapper w = i.next();
-				i.remove();
-				w.unregister();
-			}
-		}
+    public void stop()
+    {
+        for (List<UidWrapper> uids : allUids.values()) {
+            for (Iterator<UidWrapper> i = uids.iterator(); i.hasNext(); ) {
+                UidWrapper w = i.next();
+                i.remove();
+                w.unregister();
+            }
+        }
 
-		JMXServer.getAgent().unregisterMBean(STORE_MBEAN_NAME);
-	}
+        JMXServer.getAgent().unregisterMBean(STORE_MBEAN_NAME);
+    }
 
     /**
      * This method is deprecated in favour of @setType
@@ -69,8 +71,8 @@ public class ObjStoreBrowser implements ObjStoreBrowserMBean {
      * as MBeans
      */
     @Deprecated
-	public void setTypes(Map<String, String> types) {
-	}
+    public void setTypes(Map<String, String> types) {
+    }
 
     /**
      * Tell the browser which beans to use for particular Object Store Action type
@@ -114,39 +116,39 @@ public class ObjStoreBrowser implements ObjStoreBrowserMBean {
         }
     }
 
-	private void init(String logDir) {
-		if (logDir != null)
-			arjPropertyManager.getObjectStoreEnvironmentBean().setObjectStoreDir(logDir);
+    private void init(String logDir) {
+        if (logDir != null)
+            arjPropertyManager.getObjectStoreEnvironmentBean().setObjectStoreDir(logDir);
 
-		if (tsLogger.logger.isTraceEnabled())
-			tsLogger.logger.trace("ObjectStoreDir: " + arjPropertyManager.getObjectStoreEnvironmentBean().getObjectStoreDir());
+        if (tsLogger.logger.isTraceEnabled())
+            tsLogger.logger.trace("ObjectStoreDir: " + arjPropertyManager.getObjectStoreEnvironmentBean().getObjectStoreDir());
 
-		allUids = new HashMap<String, List<UidWrapper>> ();
+        allUids = new HashMap<String, List<UidWrapper>> ();
         stateTypes = new HashMap<String, String>();
         beanTypes = new HashMap<String, String>();
 
         initTypeHandlers(defaultStateHandlers);
         initTypeHandlers(System.getProperty(OBJ_STORE_BROWSER_HANDLERS, ""));
-	}
+    }
 
-	public ObjStoreBrowser() {
-		init(null);
-	}
+    public ObjStoreBrowser() {
+        init(null);
+    }
 
-	public ObjStoreBrowser(String logDir) {
-		init(logDir);
-	}
+    public ObjStoreBrowser(String logDir) {
+        init(logDir);
+    }
 
-	public StringBuilder dump(StringBuilder sb) {
-		for (Map.Entry<String, List<UidWrapper>> typeEntry : allUids.entrySet()) {
-			sb.append(typeEntry.getKey()).append('\n');
+    public StringBuilder dump(StringBuilder sb) {
+        for (Map.Entry<String, List<UidWrapper>> typeEntry : allUids.entrySet()) {
+            sb.append(typeEntry.getKey()).append('\n');
 
-			for (UidWrapper uid : typeEntry.getValue())
-				uid.toString("\t", sb);
-		}
+            for (UidWrapper uid : typeEntry.getValue())
+                uid.toString("\t", sb);
+        }
 
-		return sb;
-	}
+        return sb;
+    }
 
     /**
      * See if the given uid has previously been registered as an MBean
@@ -154,19 +156,19 @@ public class ObjStoreBrowser implements ObjStoreBrowserMBean {
      * @return the MBean wrapper corresponding to the requested Uid (or null
      * if it hasn't been registered)
      */
-	public UidWrapper findUid(Uid uid) {
-		return findUid(uid.stringForm());
-	}
+    public UidWrapper findUid(Uid uid) {
+        return findUid(uid.stringForm());
+    }
 
-	public UidWrapper findUid(String uid) {
-		for (Map.Entry<String, List<UidWrapper>> typeEntry : allUids.entrySet())
-			for (UidWrapper w : typeEntry.getValue())
-				if (w.getUid().stringForm().equals(uid))
-					return w;
+    public UidWrapper findUid(String uid) {
+        for (Map.Entry<String, List<UidWrapper>> typeEntry : allUids.entrySet())
+            for (UidWrapper w : typeEntry.getValue())
+                if (w.getUid().stringForm().equals(uid))
+                    return w;
 
-		return null;
-	}
-;
+        return null;
+    }
+    ;
     private String getOSType(String classType) {
         try {
             Class cls = Class.forName(classType);
@@ -184,38 +186,65 @@ public class ObjStoreBrowser implements ObjStoreBrowserMBean {
      * See if any new MBeans need to be registered or if any existing MBeans no longer exist
      * as ObjectStore entries.
      */
-	public void probe() {
-		InputObjectState types = new InputObjectState();
+    public void probe() {
+        InputObjectState types = new InputObjectState();
 
-		try {
-			if (StoreManager.getRecoveryStore().allTypes(types)) {
-				String tname;
+        try {
+            if (StoreManager.getRecoveryStore().allTypes(types)) {
+                String tname;
 
-				do {
-					try {
-						tname = types.unpackString();
+                do {
+                    try {
+                        tname = types.unpackString();
 
-						if (tname.length() != 0) {
-							List<UidWrapper> uids = allUids.get(tname);
+                        if (tname.length() != 0) {
+                            List<UidWrapper> uids = allUids.get(tname);
 
-							if (uids == null) {
-								uids = new ArrayList<UidWrapper> ();
-								allUids.put(tname, uids);
-							}
+                            if (uids == null) {
+                                uids = new ArrayList<UidWrapper> ();
+                                allUids.put(tname, uids);
+                            }
 
                             if (beanTypes.containsKey(tname))
-								updateMBeans(uids, System.currentTimeMillis(), true, tname);
-						}
-					} catch (IOException e1) {
-						tname = "";
-					}
-				} while (tname.length() != 0);
-			}
-		} catch (ObjectStoreException e2) {
-			if (tsLogger.logger.isTraceEnabled())
-				tsLogger.logger.trace(e2.toString());
-		}
-	}
+                                updateMBeans(uids, System.currentTimeMillis(), true, tname);
+                        }
+                    } catch (IOException e1) {
+                        tname = "";
+                    }
+                } while (tname.length() != 0);
+            }
+        } catch (ObjectStoreException e2) {
+            if (tsLogger.logger.isTraceEnabled())
+                tsLogger.logger.trace(e2.toString());
+        }
+    }
+
+    public void viewSubordinateAtomicActions(boolean enable) {
+        if (enable) {
+            setType(saaStateType, saaBeanType);
+        } else {
+            String typeName = getOSType(saaStateType);
+
+            if (typeName != null) {
+
+                if (typeName.startsWith("/"))
+                    typeName = typeName.substring(1);
+
+                stateTypes.remove(typeName);
+                beanTypes.remove(typeName);
+
+                for (List<UidWrapper> uids : allUids.values()) {
+                    for (Iterator<UidWrapper> i = uids.iterator(); i.hasNext(); ) {
+                        UidWrapper w = i.next();
+                        if (saaStateType.equals(w.getClassName())) {
+                            i.remove();
+                            w.unregister();
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Register new MBeans of the requested type (or unregister ones whose
@@ -225,48 +254,48 @@ public class ObjStoreBrowser implements ObjStoreBrowserMBean {
      * the request type
      * @return the list of MBeans representing the requested ObjectStore type
      */
-	public List<UidWrapper> probe(String type, String beantype) {
-		if (!allUids.containsKey(type))
-			return null;
+    public List<UidWrapper> probe(String type, String beantype) {
+        if (!allUids.containsKey(type))
+            return null;
 
-		List<UidWrapper> uids = allUids.get(type);
+        List<UidWrapper> uids = allUids.get(type);
 
-		updateMBeans(uids, System.currentTimeMillis(), false, type);
+        updateMBeans(uids, System.currentTimeMillis(), false, type);
 
-		return uids;
-	}
+        return uids;
+    }
 
-	private void updateMBeans(List<UidWrapper> uids, long tstamp, boolean register, String type) {
-		ObjectStoreIterator iter = new ObjectStoreIterator(StoreManager.getRecoveryStore(), type);
+    private void updateMBeans(List<UidWrapper> uids, long tstamp, boolean register, String type) {
+        ObjectStoreIterator iter = new ObjectStoreIterator(StoreManager.getRecoveryStore(), type);
 
-		while (true) {
-			Uid u = iter.iterate();
-			if (u == null || Uid.nullUid().equals(u))
-				break;
+        while (true) {
+            Uid u = iter.iterate();
+            if (u == null || Uid.nullUid().equals(u))
+                break;
 
 
-			UidWrapper w = new UidWrapper(this, beanTypes.get(type), type, stateTypes.get(type), u);
-			int i = uids.indexOf(w);
+            UidWrapper w = new UidWrapper(this, beanTypes.get(type), type, stateTypes.get(type), u);
+            int i = uids.indexOf(w);
 
-			if (i == -1) {
-				w.setTimestamp(tstamp);
-				uids.add(w);
-				w.createMBean();
-				if (register)
-					w.register();
-			} else {
-				uids.get(i).setTimestamp(tstamp);
-			}
-		}
+            if (i == -1) {
+                w.setTimestamp(tstamp);
+                uids.add(w);
+                w.createMBean();
+                if (register)
+                    w.register();
+            } else {
+                uids.get(i).setTimestamp(tstamp);
+            }
+        }
 
-		for (Iterator<UidWrapper> i = uids.iterator(); i.hasNext(); ) {
-			UidWrapper w = i.next();
+        for (Iterator<UidWrapper> i = uids.iterator(); i.hasNext(); ) {
+            UidWrapper w = i.next();
 
-			if (w.getTimestamp() != tstamp) {
-				if (register)
-					w.unregister();
-				i.remove();
-			}
-		}
-	}
+            if (w.getTimestamp() != tstamp) {
+                if (register)
+                    w.unregister();
+                i.remove();
+            }
+        }
+    }
 }
