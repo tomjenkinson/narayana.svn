@@ -34,53 +34,6 @@ public class ObjStoreBrowser implements ObjStoreBrowserMBean {
     private Map<String, String> beanTypes = null;  // defines which bean types are used to represent object store types
 	private Map<String, List<UidWrapper>> allUids;
 
-	public static void main(String[] args) throws Exception {
-		InputStreamReader isr = new InputStreamReader(System.in);
-		BufferedReader br = new BufferedReader(isr);
-		String logDir = System.getProperty("objectstore.dir");
-		ObjStoreBrowser browser = new ObjStoreBrowser(logDir);
-
-		browser.start();
-
-		do {
-			System.out.println("> "); System.out.flush();
-			String[] req = br.readLine().split("\\s+");
-
-			if (req.length == 0 || "quit".equals(req[0]))
-				break;
-
-			browser.probe();
-
-			if ("dump".equals(req[0])) {
-				if (req.length == 1) {
-					System.out.println("Uid not found");
-				} else {
-					UidWrapper w = browser.findUid(req[1]);
-
-					if (w != null)
-						System.out.println("Attributes: " + w.toString("", new StringBuilder()));
-					else
-						System.out.println("Uid not found: " + req[1]);
-				}
-			} else if ("list".equals(req[0])) {
-				System.out.println(browser.dump(new StringBuilder()));
-			} //else if ("query".equals(req[0])) {
-			  //  browser.queryTest();
-		} while (true);
-	}
-
-	public static Properties loadProperties(String fname) {
-		Properties properties = new Properties();
-		URL url = ClassLoader.getSystemResource(fname);
-		try {
-			if (url != null)
-				properties.load(url.openStream());
-		} catch (IOException e) {
-		}
-
-		return properties;
-	}
-
     /**
      * Initialise the MBean
      */
@@ -107,12 +60,40 @@ public class ObjStoreBrowser implements ObjStoreBrowserMBean {
 	}
 
     /**
+     * This method is deprecated in favour of @setType
+     * The issue with this method is there is no mechanism for determining which class
+     * is responsible for a given OS type.
+     *
      * Define which object store types will registered as MBeans
      * @param types the list of ObjectStore types that can be represented
      * as MBeans
      */
+    @Deprecated
 	public void setTypes(Map<String, String> types) {
 	}
+
+    /**
+     * Tell the browser which beans to use for particular Object Store Action type
+     * @param osTypeClassName
+     * @param beanTypeClassName
+     * @return
+     */
+    public boolean setType(String osTypeClassName, String beanTypeClassName) {
+        String typeName = getOSType(osTypeClassName);
+
+        if (typeName != null) {
+
+            if (typeName.startsWith("/"))
+                typeName = typeName.substring(1);
+
+            stateTypes.put(typeName, osTypeClassName);
+            beanTypes.put(typeName, beanTypeClassName);
+
+            return true;
+        }
+
+        return false;
+    }
 
     private void initTypeHandlers(String handlers) {
         for (String h : handlers.split(",")) {
@@ -120,6 +101,7 @@ public class ObjStoreBrowser implements ObjStoreBrowserMBean {
 
             if (handler.length == 2) {
                 String typeName = getOSType(handler[0]);
+
                 if (typeName != null) {
 
                     if (typeName.startsWith("/"))
@@ -215,13 +197,14 @@ public class ObjStoreBrowser implements ObjStoreBrowserMBean {
 
 						if (tname.length() != 0) {
 							List<UidWrapper> uids = allUids.get(tname);
+
 							if (uids == null) {
 								uids = new ArrayList<UidWrapper> ();
 								allUids.put(tname, uids);
 							}
 
                             if (beanTypes.containsKey(tname))
-								updateMBeans2(uids, System.currentTimeMillis(), true, tname);
+								updateMBeans(uids, System.currentTimeMillis(), true, tname);
 						}
 					} catch (IOException e1) {
 						tname = "";
@@ -248,12 +231,12 @@ public class ObjStoreBrowser implements ObjStoreBrowserMBean {
 
 		List<UidWrapper> uids = allUids.get(type);
 
-		updateMBeans2(uids, System.currentTimeMillis(), false, type);
+		updateMBeans(uids, System.currentTimeMillis(), false, type);
 
 		return uids;
 	}
 
-	private void updateMBeans2(List<UidWrapper> uids, long tstamp, boolean register, String type) {
+	private void updateMBeans(List<UidWrapper> uids, long tstamp, boolean register, String type) {
 		ObjectStoreIterator iter = new ObjectStoreIterator(StoreManager.getRecoveryStore(), type);
 
 		while (true) {

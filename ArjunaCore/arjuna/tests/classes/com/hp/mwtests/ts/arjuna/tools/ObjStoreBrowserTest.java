@@ -73,10 +73,12 @@ public class ObjStoreBrowserTest {
 	 * @return An object that maintains MBeans representing completing transactions
 	 */
 	private ObjStoreBrowser createObjStoreBrowser() {
-		// define which object store types we are prepared to represent by mbeans
-        System.setProperty("ObjStoreBrowserHandlers", "com.arjuna.ats.arjuna.AtomicAction=com.arjuna.ats.arjuna.tools.osb.mbean.ActionBean");
+        ObjStoreBrowser osb = new ObjStoreBrowser();
 
-		return new ObjStoreBrowser();
+		// define which object store types we are prepared to represent by mbeans
+        osb.setType("com.arjuna.ats.arjuna.AtomicAction", "com.arjuna.ats.arjuna.tools.osb.mbean.ActionBean");
+
+		return osb;
 	}
 
 	@Test
@@ -99,9 +101,6 @@ public class ObjStoreBrowserTest {
 	{
 		ObjStoreBrowser osb = new ObjStoreBrowser("os");
 
-		Properties p = ObjStoreBrowser.loadProperties("invalid property file");
-
-		assertTrue(p.size() == 0);
 		osb.start();
 		osb.probe();
 
