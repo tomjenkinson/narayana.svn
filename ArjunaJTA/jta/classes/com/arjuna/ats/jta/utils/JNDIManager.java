@@ -39,6 +39,9 @@ import javax.naming.Reference;
 import javax.naming.NamingException;
 import javax.naming.ConfigurationException;
 
+/**
+ * @deprecated Only used by tests
+ */
 public class JNDIManager
 {
 	/**
