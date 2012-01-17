@@ -118,7 +118,6 @@ public ServerTopLevelAction (ServerControl control)
 	    Coordinator realCoordinator = _theControl.originalCoordinator();
 
 	    if (!(_valid = registerResource(realCoordinator))) {
-            jtsLogger.i18NLogger.warn_orbspecific_interposition_resources_arjuna_ipfailed("ServerTopLevelAction");
 
             /*
             * Failed to register. Valid is set, and the interposition
@@ -610,8 +609,10 @@ protected boolean registerResource (Coordinator theCoordinator)
 
 			result = true;
 		    }
-		    else
+		    else {
 			result = false;
+            jtsLogger.i18NLogger.warn_orbspecific_interposition_resources_arjuna_ipfailed("ServerTopLevelAction");
+		    }
 		}
 		else
 		    result = true;
@@ -620,7 +621,9 @@ protected boolean registerResource (Coordinator theCoordinator)
             jtsLogger.i18NLogger.warn_orbspecific_interposition_resources_arjuna_generror("ServerTopLevelAction.registerResource", classCastException);
         }
 	    catch (Inactive ine) {
-            jtsLogger.i18NLogger.warn_orbspecific_interposition_resources_arjuna_generror("ServerTopLevelAction.registerResource", ine);
+            jtsLogger.i18NLogger.warn_server_top_level_action_inactive();
+            jtsLogger.i18NLogger.debug_orbspecific_interposition_resources_arjuna_generror("ServerTopLevelAction.registerResource", ine);
+            transactionInactive = true;
         }
 	    catch (TRANSACTION_ROLLEDBACK ex1) {
             jtsLogger.i18NLogger.warn_orbspecific_interposition_resources_arjuna_generror("ServerTopLevelAction.registerResource", ex1);
@@ -639,7 +642,12 @@ protected boolean registerResource (Coordinator theCoordinator)
 	return result;
     }
 
+public boolean isTransactionInactive() {
+    return transactionInactive;
+}
+
 protected org.omg.CosTransactions.ResourcePOATie _theResource;
 protected Resource                               _resourceRef;
+private boolean transactionInactive;
 
 }

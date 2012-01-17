@@ -34,6 +34,7 @@ package com.arjuna.ats.internal.jta.transaction.jts;
 import com.arjuna.ats.internal.jta.utils.jtaxLogger;
 import com.arjuna.ats.jta.common.jtaPropertyManager;
 
+import org.omg.CORBA.TRANSACTION_UNAVAILABLE;
 import org.omg.CosTransactions.*;
 
 import com.arjuna.ats.jts.OTSManager;
@@ -191,7 +192,15 @@ public class BaseTransaction
             jtaxLogger.logger.trace("BaseTransaction.getStatus");
         }
 
-		TransactionImple theTransaction = TransactionImple.getTransaction();
+		TransactionImple theTransaction = null;
+	
+		try {
+		theTransaction = TransactionImple.getTransaction();
+		} catch (TRANSACTION_UNAVAILABLE e) {
+		    if (e.minor == 1) {
+	            return javax.transaction.Status.STATUS_NO_TRANSACTION;
+		    }
+		}
 
 		try
 		{

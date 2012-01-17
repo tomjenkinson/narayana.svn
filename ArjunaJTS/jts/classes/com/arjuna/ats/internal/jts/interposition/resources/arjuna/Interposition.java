@@ -48,6 +48,7 @@ import org.omg.CORBA.CompletionStatus;
 import com.arjuna.ArjunaOTS.*;
 
 import org.omg.CORBA.SystemException;
+import org.omg.CORBA.TRANSACTION_UNAVAILABLE;
 import org.omg.CORBA.UNKNOWN;
 import org.omg.CORBA.TRANSACTION_ROLLEDBACK;
 
@@ -187,7 +188,11 @@ protected synchronized ControlImple createHierarchy (PropagationContext ctx, Uid
 	    {
 	    }
 
-	    throw new TRANSACTION_ROLLEDBACK();
+        if (((ServerTopLevelAction)action).isTransactionInactive()) {
+            throw new TRANSACTION_UNAVAILABLE(jtsLogger.i18NLogger.get_transaction_was_inactive(), 1, CompletionStatus.COMPLETED_NO);
+        } else {
+            throw new TRANSACTION_ROLLEDBACK();
+        }
 	}
 
 	ServerTopLevelAction newElement = (ServerTopLevelAction)action;
