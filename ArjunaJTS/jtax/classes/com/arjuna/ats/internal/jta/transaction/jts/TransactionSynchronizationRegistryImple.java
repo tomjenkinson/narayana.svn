@@ -30,6 +30,7 @@ import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.spi.ObjectFactory;
 import javax.transaction.*;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
@@ -223,9 +224,13 @@ public class TransactionSynchronizationRegistryImple implements TransactionSynch
             throw new RuntimeException(jtaxLogger.i18NLogger.get_jtax_transaction_jts_systemexception(), e);
         }
 
-        if(transactionImple == null)
-        {
-            throw new IllegalStateException();
+        try {
+            if (transactionImple == null
+                    || (transactionImple.getStatus() != Status.STATUS_ACTIVE && transactionImple.getStatus() != Status.STATUS_MARKED_ROLLBACK)) {
+                throw new IllegalStateException("No transaction is running");
+            }
+        } catch (SystemException e) {
+            throw new IllegalStateException("Could not get the status of a transaction");
         }
 
         return transactionImple;
