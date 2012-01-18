@@ -137,6 +137,8 @@ public class AtomicAction extends TwoPhaseCoordinator
 	 * via the return code is enabled.
 	 *
 	 * @return <code>ActionStatus</code> indicating outcome.
+	 * 
+	 * @deprecated Only used by tests
 	 */
 
 	public int commit ()
