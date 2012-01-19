@@ -52,6 +52,32 @@ public class BaseCrashTest
             file.delete();
         }
 
+        //Ensure ObjectStore is empty:
+        String jbossHome = System.getenv("JBOSS_HOME");
+        if (jbossHome == null)
+        {
+            Assert.fail("$JBOSS_HOME not set");
+        }
+        else
+        {
+            File objectStore = new File(jbossHome + File.separator + "standalone" + File.separator + "data" + File.separator + "tx-object-store");
+            System.out.println("Deleting: " + objectStore.getPath());
+
+            if (objectStore.exists())
+            {
+                boolean success = deleteDirectory(objectStore);
+                if (!success)
+                {
+                    System.err.println("Failed to remove tx-object-store");
+                    Assert.fail("Failed to remove tx-object-store: " + objectStore.getPath());
+                }
+                else
+                {
+                    System.out.println("remove tx-object-store: " + objectStore.getPath());
+                }
+            }
+
+        }
     }
 
     @After
@@ -103,5 +129,25 @@ public class BaseCrashTest
         //deployer.undeploy("xtstest");
         //controller.stop("jboss-as");
         controller.kill("jboss-as");
+    }
+
+    private boolean deleteDirectory(File path)
+    {
+        if (path.exists())
+        {
+            File[] files = path.listFiles();
+            for (int i = 0; i < files.length; i++)
+            {
+                if (files[i].isDirectory())
+                {
+                    deleteDirectory(files[i]);
+                }
+                else
+                {
+                    files[i].delete();
+                }
+            }
+        }
+        return (path.delete());
     }
 }
