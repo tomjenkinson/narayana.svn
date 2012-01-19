@@ -31,9 +31,17 @@
 
 package com.arjuna.ats.internal.jbossatx.jts;
 
-import org.omg.CosTransactions.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
 
-import java.io.*;
+import org.omg.CosTransactions.CoordinatorHelper;
+import org.omg.CosTransactions.PropagationContext;
+import org.omg.CosTransactions.TerminatorHelper;
+import org.omg.CosTransactions.TransIdentity;
+import org.omg.CosTransactions.otid_t;
 
 import com.arjuna.ats.internal.jts.ORBManager;
 import com.arjuna.ats.jts.utils.Utility;

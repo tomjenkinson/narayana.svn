@@ -21,9 +21,9 @@
 package com.arjuna.ats.jbossatx.jts;
 
 import com.arjuna.ats.internal.jts.ORBManager;
-import com.arjuna.orbportability.ORB;
-import com.arjuna.orbportability.OA;
 import com.arjuna.ats.jbossatx.logging.jbossatxLogger;
+import com.arjuna.orbportability.OA;
+import com.arjuna.orbportability.ORB;
 
 /**
  * JBoss Transaction Recovery Service.

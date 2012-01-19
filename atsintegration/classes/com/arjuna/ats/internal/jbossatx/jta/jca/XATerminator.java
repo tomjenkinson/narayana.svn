@@ -41,12 +41,14 @@ import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
-import com.arjuna.ats.jbossatx.logging.jbossatxLogger;
-import com.arjuna.ats.jta.TransactionManager;
-
 import org.jboss.tm.JBossXATerminator;
 
-import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.*;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinationManager;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.TxWorkManager;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.WorkSynchronization;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.XATerminatorImple;
+import com.arjuna.ats.jbossatx.logging.jbossatxLogger;
+import com.arjuna.ats.jta.TransactionManager;
 
 /**
  * The implementation of JBossXATerminator using the purely local (ArjunaCore)

@@ -20,12 +20,12 @@
  */
 package com.arjuna.ats.internal.jbossatx.jts;
 
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
+
 import org.jboss.iiop.tm.InboundTransactionCurrent;
 import org.jboss.tm.TransactionManagerLocator;
 import org.omg.CORBA.LocalObject;
-
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 
 import com.arjuna.ats.jbossatx.logging.jbossatxLogger;
 

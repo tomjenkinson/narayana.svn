@@ -31,22 +31,21 @@
 
 package com.arjuna.ats.internal.jbossatx.jta;
 
+import java.io.Serializable;
+import java.util.Hashtable;
+
+import javax.naming.Context;
+import javax.naming.Name;
+import javax.naming.spi.ObjectFactory;
+import javax.transaction.Transaction;
+
 import org.jboss.tm.TransactionPropagationContextFactory;
 import org.jboss.tm.TransactionPropagationContextImporter;
 
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.arjuna.coordinator.BasicAction;
-
-import javax.transaction.Transaction;
-import javax.naming.spi.ObjectFactory;
-import javax.naming.Name;
-import javax.naming.Context;
-
-import java.util.Hashtable;
-import java.io.Serializable;
-
-import com.arjuna.ats.jta.TransactionManager;
 import com.arjuna.ats.jbossatx.logging.jbossatxLogger;
+import com.arjuna.ats.jta.TransactionManager;
 
 
 

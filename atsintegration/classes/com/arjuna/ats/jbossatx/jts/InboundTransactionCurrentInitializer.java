@@ -20,11 +20,12 @@
  */
 package com.arjuna.ats.jbossatx.jts;
 
-import org.omg.CORBA.LocalObject;
-import org.omg.PortableInterceptor.ORBInitializer;
-import org.omg.PortableInterceptor.ORBInitInfo;
-import org.omg.PortableInterceptor.ORBInitInfoPackage.InvalidName;
 import org.jboss.iiop.tm.InboundTransactionCurrent;
+import org.omg.CORBA.LocalObject;
+import org.omg.PortableInterceptor.ORBInitInfo;
+import org.omg.PortableInterceptor.ORBInitializer;
+import org.omg.PortableInterceptor.ORBInitInfoPackage.InvalidName;
+
 import com.arjuna.ats.internal.jbossatx.jts.InboundTransactionCurrentImple;
 import com.arjuna.ats.jbossatx.logging.jbossatxLogger;
 

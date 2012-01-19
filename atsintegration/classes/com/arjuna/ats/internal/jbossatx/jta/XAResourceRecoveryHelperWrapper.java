@@ -20,10 +20,11 @@
  */
 package com.arjuna.ats.internal.jbossatx.jta;
 
-import com.arjuna.ats.jta.recovery.XAResourceRecoveryHelper;
+import javax.transaction.xa.XAResource;
+
 import org.jboss.tm.XAResourceRecovery;
 
-import javax.transaction.xa.XAResource;
+import com.arjuna.ats.jta.recovery.XAResourceRecoveryHelper;
 
 /**
  * Simple adaptor class that converts the JBossAS transaction integration SPI

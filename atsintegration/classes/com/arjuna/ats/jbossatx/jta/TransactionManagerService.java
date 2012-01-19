@@ -30,15 +30,16 @@
  */
 package com.arjuna.ats.jbossatx.jta;
 
-import org.jboss.tm.*;
+import javax.transaction.TransactionManager;
+import javax.transaction.TransactionSynchronizationRegistry;
+import javax.transaction.UserTransaction;
+
+import org.jboss.tm.JBossXATerminator;
+import org.jboss.tm.XAExceptionFormatter;
 
 import com.arjuna.ats.arjuna.coordinator.TransactionReaper;
 import com.arjuna.ats.jbossatx.logging.jbossatxLogger;
 import com.arjuna.common.util.ConfigurationInfo;
-
-import javax.transaction.TransactionManager;
-import javax.transaction.UserTransaction;
-import javax.transaction.TransactionSynchronizationRegistry;
 
 /**
  * JBoss Transaction Manager Service.

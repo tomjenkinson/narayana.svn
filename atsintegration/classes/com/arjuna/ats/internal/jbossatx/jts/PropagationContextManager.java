@@ -31,25 +31,24 @@
 
 package com.arjuna.ats.internal.jbossatx.jts;
 
+import java.io.Serializable;
+import java.util.Hashtable;
+
+import javax.naming.Context;
+import javax.naming.Name;
+import javax.naming.spi.ObjectFactory;
+import javax.transaction.Transaction;
+
 import org.jboss.tm.TransactionPropagationContextFactory;
 import org.jboss.tm.TransactionPropagationContextImporter;
-
-import org.omg.CosTransactions.*;
-
-import javax.transaction.Transaction;
-import javax.naming.spi.ObjectFactory;
-import javax.naming.Name;
-import javax.naming.Context;
-
-import java.util.Hashtable;
-import java.io.Serializable;
+import org.omg.CosTransactions.PropagationContext;
 
 import com.arjuna.ats.arjuna.utils.ThreadUtil;
 import com.arjuna.ats.internal.jts.ControlWrapper;
 import com.arjuna.ats.internal.jts.OTSImpleManager;
+import com.arjuna.ats.jbossatx.logging.jbossatxLogger;
 import com.arjuna.ats.jta.TransactionManager;
 import com.arjuna.ats.jts.ExplicitInterposition;
-import com.arjuna.ats.jbossatx.logging.jbossatxLogger;
 
 
 

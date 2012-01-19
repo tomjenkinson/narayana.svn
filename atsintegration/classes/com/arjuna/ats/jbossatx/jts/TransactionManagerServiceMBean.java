@@ -30,13 +30,12 @@
  */
 package com.arjuna.ats.jbossatx.jts;
 
+import javax.transaction.TransactionManager;
+import javax.transaction.TransactionSynchronizationRegistry;
+import javax.transaction.UserTransaction;
+
 import org.jboss.tm.JBossXATerminator;
 import org.jboss.tm.XAExceptionFormatter;
-
-import javax.transaction.TransactionManager;
-import javax.transaction.UserTransaction;
-import javax.transaction.TransactionSynchronizationRegistry;
-import java.net.InetAddress;
 
 /**
  * The MBean interface for the TransactionManager JBoss service.

@@ -37,14 +37,6 @@
 	<classpathentry kind="src" path="ArjunaJTS/orbportability/build/tests/generatedclasses"/>
 	<classpathentry kind="src" path="ArjunaJTS/orbportability/classes"/>
 	<classpathentry kind="src" path="ArjunaJTS/orbportability/tests/classes"/>
-	<classpathentry kind="src" path="qa/tests/build/idl"/>
-	<classpathentry excluding="com/arjuna/ats/internal/arjuna/objectstore/jdbc/|com/arjuna/ats/tools/perftest/product/AtomikosProduct.java|com/arjuna/ats/tools/perftest/product/BitronixProduct.java|com/arjuna/ats/tools/perftest/product/JBossTSProduct.java|com/arjuna/ats/tools/perftest/product/JOTMProduct.java|com/arjuna/ats/tools/perftest/product/SimpleJTAProduct.java" kind="src" path="qa/tests/product/src"/>
-	<classpathentry kind="src" path="qa/tests/src"/>
-	<classpathentry kind="src" path="XTS/WS-T/dev/src"/>
-	<classpathentry kind="src" path="XTS/recovery/src"/>
-	<classpathentry kind="src" path="XTS/WS-C/dev/src"/>
-	<classpathentry kind="src" path="XTS/WSCF/classes"/>
-	<classpathentry kind="src" path="XTS/WSAS/classes"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/jboss-transaction-spi/7.0.0-SNAPSHOT/jboss-transaction-spi-7.0.0-SNAPSHOT.jar" sourcepath="/M2_REPO/org/jboss/jboss-transaction-spi/7.0.0-SNAPSHOT/jboss-transaction-spi-7.0.0-SNAPSHOT-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/spec/javax/transaction/jboss-transaction-api_1.1_spec/1.0.0.Final/jboss-transaction-api_1.1_spec-1.0.0.Final.jar"/>

@@ -20,6 +20,9 @@
  */
 package com.arjuna.ats.jbossatx;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
@@ -32,9 +35,6 @@ import javax.transaction.TransactionManager;
 import org.jboss.tm.TransactionLocal;
 import org.jboss.tm.TransactionLocalDelegate;
 import org.jboss.tm.TransactionTimeoutConfiguration;
-
-import java.util.Map;
-import java.util.HashMap;
 
 /**
  * Delegate for JBoss TransactionManager/TransactionLocalDelegate.
