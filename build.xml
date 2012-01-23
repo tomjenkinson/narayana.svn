@@ -161,33 +161,26 @@
     <!-- copy the release artifacts to the maven repository -->
     <target name="mvn-local-repository" description="copy the release artifacts to the local maven repository">
 
-        <!-- jta -->
-
-        <mvn-artifact.macro artifact="jbossjta" dir="ArjunaJTA/build/lib/"/>
-        <mvn-artifact.macro artifact="jbossjta-integration" dir="ArjunaJTA/build/lib/"/>
-
         <!-- jts -->
 
-        <mvn-artifact.macro artifact="jbossjts" dir="ArjunaJTS/build/lib/"/>
-        <mvn-artifact.macro artifact="jbossjts-integration" dir="ArjunaJTS/build/lib/"/>
+        <mvn-artifact.macro artifact="jbossjts" dir="install/lib/"/>
+        <mvn-artifact.macro artifact="jbossjts-integration" dir="install/lib/"/>
 
         <!-- tools -->
 
-        <mvn-artifact.macro artifact="jbossts-tools" packaging="sar"
-                            dir="install/bin"/>
         <mvn-artifact.macro artifact="jbossts-jopr-plugin" packaging="jar"
                             dir="install/bin"/>
 
         <!-- xts -->
 
         <mvn-artifact.macro artifact="jbossxts" packaging="jar"
-                            dir="install/xts/lib"/>
+                            dir="XTS/xts-install/lib"/>
         <mvn-artifact.macro artifact="jbossxts-api" packaging="jar"
-                            dir="install/xts/lib"/>
+                            dir="XTS/xts-install/lib"/>
         <mvn-artifact.macro artifact="jbossxts-tests" packaging="zip"
-                            dir="install/xts/tests"/>
+                            dir="XTS/xts-install/tests"/>
         <mvn-artifact.macro artifact="jbossxts-interop-tests" packaging="zip"
-                            dir="install/xts/interop-tests"/>
+                            dir="XTS/xts-install/interop-tests"/>
 
 
         <!-- txbridge -->
