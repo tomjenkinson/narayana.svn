@@ -98,6 +98,8 @@
         <ant dir="docs" target="install.docs">
             <property name="dest.dir" value="../install/docs"/>
         </ant>
+
+	<antcall target="mvn-local-repository"/>
     </target>
 
     <target name="antbuildsystem" depends="clean">
@@ -153,6 +155,84 @@
     <target name="init_dependencies">
         <ant dir="maven"/>
     </target>
+
+
+
+    <!-- copy the release artifacts to the maven repository -->
+    <target name="mvn-local-repository" description="copy the release artifacts to the local maven repository">
+
+        <!-- jta -->
+
+        <mvn-artifact.macro artifact="jbossjta" dir="ArjunaJTA/build/lib/"/>
+        <mvn-artifact.macro artifact="jbossjta-integration" dir="ArjunaJTA/build/lib/"/>
+
+        <!-- jts -->
+
+        <mvn-artifact.macro artifact="jbossjts" dir="ArjunaJTS/build/lib/"/>
+        <mvn-artifact.macro artifact="jbossjts-integration" dir="ArjunaJTS/build/lib/"/>
+
+        <!-- tools -->
+
+        <mvn-artifact.macro artifact="jbossts-tools" packaging="sar"
+                            dir="install/bin"/>
+        <mvn-artifact.macro artifact="jbossts-jopr-plugin" packaging="jar"
+                            dir="install/bin"/>
+
+        <!-- xts -->
+
+        <mvn-artifact.macro artifact="jbossxts" packaging="jar"
+                            dir="install/xts/lib"/>
+        <mvn-artifact.macro artifact="jbossxts-api" packaging="jar"
+                            dir="install/xts/lib"/>
+        <mvn-artifact.macro artifact="jbossxts-tests" packaging="zip"
+                            dir="install/xts/tests"/>
+        <mvn-artifact.macro artifact="jbossxts-interop-tests" packaging="zip"
+                            dir="install/xts/interop-tests"/>
+
+
+        <!-- txbridge -->
+
+        <mvn-artifact.macro artifact="jbosstxbridge" packaging="jar"
+                            dir="install/txbridge"/>
+
+
+
+    </target>
+    <!-- macro to process a pom template into an actual pom and use it with mvn deploy-file to upload to the repo -->
+
+    <!-- http://community.jboss.org/wiki/MavenDeployingaRelease -->
+
+    <macrodef name="mvn-artifact.macro">
+
+        <attribute name="artifact"/>
+        <attribute name="dir"/>
+        <attribute name="packaging" default="jar"/>
+
+        <sequential>
+
+            <property name="groupid" value="org.jboss.jbossts"/>
+
+            <copy  file="maven/pom-template.xml"
+                   tofile="install/pom-@{artifact}.xml"
+                   filtering="true" overwrite="true">
+                <filterset>
+                    <filter token="groupid" value="${groupid}"/>
+                    <filter token="artifact" value="@{artifact}"/>
+                    <filter token="version" value="4.16.1-SNAPSHOT"/>
+                    <filter token="packaging" value="@{packaging}"/>
+                </filterset>
+            </copy>
+
+            <exec executable="mvn" dir=".">
+                <arg value="install:install-file"/>
+                <arg value="-Dfile=@{dir}/@{artifact}.@{packaging}"/>
+                <arg value="-DpomFile=install/pom-@{artifact}.xml"/>
+                <arg value="-DuniqueVersion=false"/>
+            </exec>
+
+        </sequential>
+
+   </macrodef>
 
 </project>
 
