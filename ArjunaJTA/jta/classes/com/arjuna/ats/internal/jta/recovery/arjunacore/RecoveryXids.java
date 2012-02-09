@@ -41,7 +41,8 @@ public class RecoveryXids
 
     public RecoveryXids (XAResource xares)
     {
-	_xares = xares;
+    	_xares = xares;
+        _lastValidated = System.currentTimeMillis();
     }
 
     public boolean equals (Object obj)
@@ -135,6 +136,14 @@ public class RecoveryXids
         return _whenFirstSeen.containsKey(xidImple);
     }
 
+    public boolean isStale() {
+        long now = System.currentTimeMillis();
+        long threshold = _lastValidated+(2*safetyIntervalMillis);
+        long diff = now - threshold;
+        boolean result = diff > 0;
+        return result;
+    }
+
     /**
      * If supplied xids contains any values seen on prev scans, replace the existing
      * XAResource with the supplied one and return true. Otherwise, return false.
@@ -149,6 +158,7 @@ public class RecoveryXids
             for(int i = 0; i < xids.length; i++) {
                 if(contains(xids[i])) {
                     _xares = xaResource;
+                    _lastValidated = System.currentTimeMillis();
                     return true;
                 }
             }
@@ -158,6 +168,7 @@ public class RecoveryXids
         // so fallback to isSameRM as we can't use Xid matching
         if(isSameRM(xaResource)) {
             _xares = xaResource;
+            _lastValidated = System.currentTimeMillis();
             return true;
         }
 
@@ -170,6 +181,7 @@ public class RecoveryXids
     private final Map<XidImple,Long> _whenLastSeen = new HashMap<XidImple, Long>();
 
     private XAResource _xares;
+    private long _lastValidated;
 
     private static final int safetyIntervalMillis = 10000; // may eventually want to make this configurable?
 }

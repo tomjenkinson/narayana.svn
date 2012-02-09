@@ -94,7 +94,6 @@ public class XARecoveryModule implements RecoveryModule
         }
     }
 
-
     /**
 	 * @message com.arjuna.ats.internal.jta.recovery.xafirstpass {0} - first
 	 *          pass
@@ -193,12 +192,7 @@ public class XARecoveryModule implements RecoveryModule
 								+ ".transactionInitiatedRecovery completed");
 			}
 
-			/*
-			 * See the comment about this routine!!
-			 */
-
-			resourceInitiatedRecovery();
-            resourceInitiatedRecoveryForRecoveryHelpers();
+            bottomUpRecovery();
 
             if (jtaLogger.logger.isDebugEnabled())
 			{
@@ -241,8 +235,7 @@ public class XARecoveryModule implements RecoveryModule
 	public XAResource getNewXAResource(Xid xid)
 	{
 		if (_xidScans == null) {
-			resourceInitiatedRecovery();
-            resourceInitiatedRecoveryForRecoveryHelpers();
+			bottomUpRecovery();
         }
 
         if (_xidScans != null)
@@ -486,6 +479,8 @@ public class XARecoveryModule implements RecoveryModule
 								{
 									if (recoveryStatus == XARecoveryResource.WAITING_FOR_RECOVERY)
 									{
+									    // resource initiated recovery not possible (no distribution).
+
 										problem = false;
 
 										if (jtaLogger.loggerI18N
@@ -612,6 +607,25 @@ public class XARecoveryModule implements RecoveryModule
 
 		return true;
 	}
+
+    private void bottomUpRecovery() {
+
+        // scan using statically configured plugins;
+        resourceInitiatedRecovery();
+        // scan using dynamically configured plugins:
+        resourceInitiatedRecoveryForRecoveryHelpers();
+
+        // garbage collection:
+        if (_xidScans != null) {
+            Set<XAResource> keys = new HashSet<XAResource>(_xidScans.keySet());
+            for(XAResource theKey : keys) {
+                RecoveryXids recoveryXids = _xidScans.get(theKey);
+                if(recoveryXids.isStale()) {
+                    _xidScans.remove(theKey);
+                }
+            }
+        }
+    }
 
 	/**
 	 * Now check for any outstanding transactions. If we didn't fail to recover
