@@ -97,21 +97,6 @@
             <version>${version.apache.httpcomponents}</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- this solves bad deps of Arq, 7.1.0.Final-SNAPSHOT needs these -->
-        <dependency>
-            <groupId>org.jboss.remoting3</groupId>
-            <artifactId>jboss-remoting</artifactId>
-            <version>3.2.0.CR9</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.logging</groupId>
-            <artifactId>jboss-logging</artifactId>
-            <version>3.1.0.CR2</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <repositories>

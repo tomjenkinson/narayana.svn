@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<project name="txbridge-tests" default="test" basedir=".">
+<project name="txbridge-tests" default="dist" basedir=".">
 
-	<import file="../../sharedbuild.xml"/>
+    <import file="../../sharedbuild.xml"/>
 
     <property name="jbossts.version" value="4.16.localbuild-SNAPSHOT"/>
     <property name="groupid" value="org.jboss.jbossts"/>
+    <property name="jboss.home" value="/tmp/jboss-as-7.1.0-SNAPSHOT"/>
+    <property name="standalone.xts.conf.path" value="${jboss.home}/docs/examples/configs/standalone-xts.xml"/>
 
-	<target name="clean">
+    <target name="clean">
         <mvn.macro>
             <mvn.args>
                 <arg value="clean"/>
             </mvn.args>
         </mvn.macro>
-	</target>
+    </target>
 
     <target name="dist" depends="clean, install-deps">
         <mvn.macro>
@@ -32,9 +34,19 @@
     </target>
 
     <target name="install-deps">
+        <!-- installs built jbossts bits to the local maven repository -->
         <mvn-install-artifact.macro artifact="jbosstxbridge" file="${basedir}/../build/txbridge.jar" version="${jbossts.version}" />
         <mvn-install-artifact.macro artifact="jbossjts" file="${basedir}/../../install/lib/jbossjts.jar" version="${jbossts.version}" />
         <mvn-install-artifact.macro artifact="jbossxts-api" file="${basedir}/../../XTS/xts-install/lib/jbossxts-api.jar" version="${jbossts.version}" />
+    </target>
+
+    <target name="enable-recovery-listener">
+        <!-- recovery listener is needed by crash rec tests -->
+        <echo message="enabling the recovery listener in ${standalone.xts.conf.path}"/>
+        <replaceregexp
+                file="${standalone.xts.conf.path}"
+                match="&lt;recovery-environment([^/]*)/&gt;"
+                replace="&lt;recovery-environment \1 recovery-listener=&quot;true&quot;/&gt;" />
     </target>
 
     <!-- ==================    macros    =================== -->
@@ -57,7 +69,7 @@
                 </mvn.args>
             </mvn.macro>
         </sequential>
-   </macrodef>
+    </macrodef>
 
     <macrodef name="mvn.macro">
         <element name="mvn.args"/>
@@ -82,6 +94,6 @@
                 </then>
             </if>
         </sequential>
-   </macrodef>
+    </macrodef>
 
 </project>
