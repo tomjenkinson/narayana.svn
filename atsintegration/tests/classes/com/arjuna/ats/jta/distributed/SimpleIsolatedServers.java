@@ -258,8 +258,13 @@ public class SimpleIsolatedServers {
 			thread.start();
 		}
 		synchronized (phase2CommitAborted) {
-			if (phase2CommitAborted.getCount() < 2) {
-				phase2CommitAborted.wait();
+		    int waitedCount = 0;
+			while (phase2CommitAborted.getCount() < 2) {
+				phase2CommitAborted.wait(10000);
+				waitedCount++;
+	            if (waitedCount > 2 && phase2CommitAborted.getCount() < 2) {
+	                fail("Servers were not aborted");
+	            }           
 			}
 		}
 
@@ -354,6 +359,9 @@ public class SimpleIsolatedServers {
 			if (phase2CommitAborted.getCount() < 1) {
 				phase2CommitAborted.wait();
 			}
+            if (phase2CommitAborted.getCount() < 1) {
+                fail("Servers were not aborted");
+            }
 		}
 
 		reboot("1000");
@@ -434,6 +442,9 @@ public class SimpleIsolatedServers {
 			if (phase2CommitAborted.getCount() < 1) {
 				phase2CommitAborted.wait();
 			}
+            if (phase2CommitAborted.getCount() < 1) {
+                fail("Servers were not aborted");
+            }
 		}
 
 		reboot("1000");
@@ -520,6 +531,9 @@ public class SimpleIsolatedServers {
 			if (phase2CommitAborted.getCount() < 1) {
 				phase2CommitAborted.wait();
 			}
+            if (phase2CommitAborted.getCount() < 1) {
+                fail("Servers were not aborted");
+            }
 		}
 		reboot("1000");
 		reboot("2000");
@@ -609,6 +623,9 @@ public class SimpleIsolatedServers {
 			if (phase2CommitAborted.getCount() < 1) {
 				phase2CommitAborted.wait();
 			}
+            if (phase2CommitAborted.getCount() < 1) {
+                fail("Servers were not aborted");
+            }
 		}
 		reboot("1000");
 		assertTrue("" + completionCounter.getCommitCount("2000"), completionCounter.getCommitCount("2000") == 0);
@@ -662,6 +679,9 @@ public class SimpleIsolatedServers {
 			if (phase2CommitAborted.getCount() < 1) {
 				phase2CommitAborted.wait();
 			}
+            if (phase2CommitAborted.getCount() < 1) {
+                fail("Servers were not aborted");
+            }
 		}
 
 		reboot("1000");
