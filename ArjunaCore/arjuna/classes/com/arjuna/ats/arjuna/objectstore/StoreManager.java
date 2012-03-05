@@ -108,6 +108,10 @@ public class StoreManager
         return actionStore;
     }
 
+    /**
+     * 
+     * @param rootName ignored
+     */
     public static ParticipantStore setupStore (String rootName, int sharedStatus)
     {
         if(stateStore != null) {
