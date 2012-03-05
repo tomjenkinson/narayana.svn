@@ -86,7 +86,7 @@
     <!-- The file name base for the user downloadable files. Derive it from the tag -->
     <property name="filename" value="4.16.2.Final"/>
     <!-- the location the JBossTS web site content is copied to -->
-    <property name="downloads.dir" value="/home/tom/IdeaProjects/jboss/filemgmt.jboss.org/downloads_htdocs/jbosstm/"/>
+    <property name="downloads.dir" value="/home/tom/filemgmt.jboss.org/downloads_htdocs/jbosstm/"/>
     <!-- the mvn repo to upload to -->
     <property name="mvn.repo.url" value="https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/"/>
 
@@ -130,6 +130,7 @@
         <unzip src="${workdir}/jbossts-jta-${filename}-src.zip" dest="${workdir}/build"/>
         <ant dir="${workdir}/build/${tag}" antfile="build.xml" target="jbossjta">
             <property name="com.hp.mw.sourceid" value="${tag}"/>
+            <property name="skipTests" value="true"/>
         </ant>
 
         <!-- package the JTA only binary release -->
@@ -146,6 +147,7 @@
         <unzip src="${workdir}/jbossts-full-${filename}-src.zip" dest="${workdir}/build"/>
         <ant dir="${workdir}/build/${tag}" antfile="build.xml" target="jbossjts">
             <property name="com.hp.mw.sourceid" value="${tag}"/>
+            <property name="skipTests" value="true"/>
         </ant>
 
         <ant dir="${workdir}/build/${tag}/XTS" antfile="build.xml" target="install">
@@ -203,6 +205,10 @@
         <!-- jta -->
 
         <mvn-artifact.macro artifact="jbossjta" dir="${workdir}/build/${tag}/lib"/>
+        <!-- Build a source jar: JBTM-1062 -->
+        <jar destfile="${workdir}/build/${tag}/lib/jbossjta-integration-sources.jar" update="false">
+             <fileset dir="atsintegration/classes"/>
+        </jar>
         <mvn-artifact.macro artifact="jbossjta-integration" dir="${workdir}/build/${tag}/lib"/>
 
 
@@ -213,12 +219,14 @@
         <!-- jts -->
 
         <mvn-artifact.macro artifact="jbossjts" dir="${workdir}/build/${tag}/lib"/>
+        <!-- Build a source jar: JBTM-1062 -->
+        <jar destfile="${workdir}/build/${tag}/lib/jbossjts-integration-sources.jar" update="false">
+             <fileset dir="atsintegration/classes"/>
+        </jar>
         <mvn-artifact.macro artifact="jbossjts-integration" dir="${workdir}/build/${tag}/lib"/>
 
         <!-- tools -->
 
-        <mvn-artifact.macro artifact="jbossts-tools" packaging="sar"
-                            dir="${workdir}/build/${tag}/bin"/>
         <mvn-artifact.macro artifact="jbossts-jopr-plugin" packaging="jar"
                             dir="${workdir}/build/${tag}/bin"/>
 
@@ -227,14 +235,55 @@
         <delete dir="${workdir}/build"/>
         <mkdir dir="${workdir}/build"/>
         <unzip src="${workdir}/jbossts-full-${filename}.zip" dest="${workdir}/build"/>
+        <!-- Build a source jar: JBTM-1062 -->
+        <jar destfile="${workdir}/build/${tag}/xts/lib/jbossxts-sources.jar" update="false">
+             <fileset dir="XTS/WSTX/classes11"/>
+             <fileset dir="XTS/WSTX/classes10"/>
+             <fileset dir="XTS/WSTX/tests/classes"/>
+             <fileset dir="XTS/WSTX/classes"/>
+             <fileset dir="XTS/WSCF/classes11"/>
+             <fileset dir="XTS/WSCF/classes10"/>
+             <fileset dir="XTS/WSCF/tests/classes"/>
+             <fileset dir="XTS/WSCF/classes"/>
+             <fileset dir="XTS/WSAS/tests/classes"/>
+             <fileset dir="XTS/WSAS/classes"/>
+             <fileset dir="XTS/recovery/src"/>
+             <fileset dir="XTS/WS-T/dev/src11"/>
+             <fileset dir="XTS/WS-T/dev/src"/>
+             <fileset dir="XTS/WS-T/dev/src10"/>
+             <fileset dir="XTS/bridge/src"/>
+             <fileset dir="XTS/sar/src"/>
+             <fileset dir="XTS/WS-C/dev/src11"/>
+             <fileset dir="XTS/WS-C/dev/src"/>
+             <fileset dir="XTS/WS-C/dev/src10"/>
+        </jar>
         <mvn-artifact.macro artifact="jbossxts" packaging="jar"
                             dir="${workdir}/build/${tag}/xts/lib"/>
+        <!-- Build a source jar: JBTM-1062 -->
+        <jar destfile="${workdir}/build/${tag}/xts/lib/jbossxts-api-sources.jar" update="false">
+             <fileset dir="XTS/WSTX/classes11"/>
+             <fileset dir="XTS/WSTX/classes10"/>
+             <fileset dir="XTS/WSTX/tests/classes"/>
+             <fileset dir="XTS/WSTX/classes"/>
+             <fileset dir="XTS/WSCF/classes11"/>
+             <fileset dir="XTS/WSCF/classes10"/>
+             <fileset dir="XTS/WSCF/tests/classes"/>
+             <fileset dir="XTS/WSCF/classes"/>
+             <fileset dir="XTS/WSAS/tests/classes"/>
+             <fileset dir="XTS/WSAS/classes"/>
+             <fileset dir="XTS/recovery/src"/>
+             <fileset dir="XTS/WS-T/dev/src11"/>
+             <fileset dir="XTS/WS-T/dev/src"/>
+             <fileset dir="XTS/WS-T/dev/src10"/>
+             <fileset dir="XTS/bridge/src"/>
+             <fileset dir="XTS/sar/src"/>
+             <fileset dir="XTS/WS-C/dev/src11"/>
+             <fileset dir="XTS/WS-C/dev/src"/>
+             <fileset dir="XTS/WS-C/dev/src10"/>
+        </jar>
         <mvn-artifact.macro artifact="jbossxts-api" packaging="jar"
                             dir="${workdir}/build/${tag}/xts/lib"/>
-        <mvn-artifact.macro artifact="jbossxts-tests" packaging="zip"
-                            dir="${workdir}/build/${tag}/xts/tests"/>
-        <mvn-artifact.macro artifact="jbossxts-interop-tests" packaging="zip"
-                            dir="${workdir}/build/${tag}/xts/interop-tests"/>
+
 
 
         <!-- txbridge -->
@@ -259,25 +308,7 @@
 
             <property name="groupid" value="org.jboss.jbossts"/>
 
-            <if>
-                <not>
-                    <available file="@{dir}/@{artifact}-sources.jar"/>
-                </not>
-                <then>
-                    <touch file="@{dir}/@{artifact}-sources.txt"/>
-                    <jar destfile="@{dir}/@{artifact}-sources.jar">
-                        <include name="@{dir}/@{artifact}-sources.txt"/>
-                    </jar>
-                </then>
-            </if>
-
-            <!-- where a -sources.jar exists, upload it first as we need the latter binary .jar to overwrite the
-                generated pom due to the requirement for working around http://jira.codehaus.org/browse/MDEPLOY-48
-                 which is also the same reason we need to mess around with uniqueVersion=false   /sigh. -->
-            <if>
-                <available file="@{dir}/@{artifact}-sources.jar"/>
-                <then>
-                    <exec executable="mvn" dir="${workdir}">
+            <exec executable="mvn" dir="${workdir}" failonerror="true">
                         <arg value="deploy:deploy-file"/>
                         <arg value="-Dfile=@{dir}/@{artifact}-sources.jar"/>
                         <arg value="-DrepositoryId=${mvn.repositoryId}"/>
@@ -290,9 +321,7 @@
                         <arg value="-Dpackaging=java-source"/>
                         <arg value="-Dversion=${filename}"/>
                         <arg value="-DuniqueVersion=false"/>
-                    </exec>
-                </then>
-            </if>
+            </exec>
 
             <copy  file="${workdir}/${tag}/maven/pom-template.xml"
                    tofile="${workdir}/build/${tag}/pom-@{artifact}.xml"
@@ -305,7 +334,7 @@
                 </filterset>
             </copy>
 
-            <exec executable="mvn" dir="${workdir}">
+            <exec executable="mvn" dir="${workdir}" failonerror="true">
                 <arg value="deploy:deploy-file"/>
                 <arg value="-Dfile=@{dir}/@{artifact}.@{packaging}"/>
                 <arg value="-DrepositoryId=${mvn.repositoryId}"/>
