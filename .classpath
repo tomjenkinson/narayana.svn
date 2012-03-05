@@ -37,8 +37,23 @@
 	<classpathentry kind="src" path="ArjunaJTS/orbportability/build/tests/generatedclasses"/>
 	<classpathentry kind="src" path="ArjunaJTS/orbportability/classes"/>
 	<classpathentry kind="src" path="ArjunaJTS/orbportability/tests/classes"/>
+	<classpathentry kind="src" path="txbridge/src"/>
+	<classpathentry kind="src" path="XTS/WS-T/dev/src"/>
+	<classpathentry kind="src" path="XTS/WS-T/dev/src10"/>
+	<classpathentry kind="src" path="XTS/WS-T/dev/src11"/>
+	<classpathentry kind="src" path="XTS/WS-C/dev/src"/>
+	<classpathentry kind="src" path="XTS/WS-C/dev/src10"/>
+	<classpathentry kind="src" path="XTS/WS-C/dev/src11"/>
+	<classpathentry kind="src" path="XTS/WSCF/classes"/>
+	<classpathentry kind="src" path="XTS/WSCF/classes10"/>
+	<classpathentry kind="src" path="XTS/WSCF/classes11"/>
+	<classpathentry kind="src" path="XTS/WSAS/classes"/>
+	<classpathentry kind="src" path="XTS/WSTX/classes"/>
+	<classpathentry kind="src" path="XTS/WSTX/classes10"/>
+	<classpathentry kind="src" path="XTS/WSTX/classes11"/>
+	<classpathentry kind="src" path="XTS/bridge/src"/>
+	<classpathentry kind="src" path="XTS/recovery/src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="var" path="M2_REPO/org/jboss/jboss-transaction-spi/7.0.0-SNAPSHOT/jboss-transaction-spi-7.0.0-SNAPSHOT.jar" sourcepath="/M2_REPO/org/jboss/jboss-transaction-spi/7.0.0-SNAPSHOT/jboss-transaction-spi-7.0.0-SNAPSHOT-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/spec/javax/transaction/jboss-transaction-api_1.1_spec/1.0.0.Final/jboss-transaction-api_1.1_spec-1.0.0.Final.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/spec/javax/resource/jboss-connector-api_1.6_spec/1.0.0.Final/jboss-connector-api_1.6_spec-1.0.0.Final.jar"/>
 	<classpathentry kind="var" path="M2_REPO/junit/junit/4.8.2/junit-4.8.2.jar"/>
@@ -63,5 +78,21 @@
 	<classpathentry kind="lib" path="ArjunaJTS/jacorb/lib/jacorb.jar"/>
 	<classpathentry kind="lib" path="ArjunaJTS/jacorb/lib/wrapper-3.1.0.jar"/>
 	<classpathentry kind="lib" path="qa/ext/jboss-profiler-jvmti.jar"/>
+	<classpathentry kind="lib" path="/home/tom/.m2/repository/javax/servlet/servlet-api/2.5/servlet-api-2.5.jar"/>
+	<classpathentry kind="lib" path="/home/tom/.m2/repository/org/jboss/ws/jbossws-api/1.0.0.GA/jbossws-api-1.0.0.GA.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/aa-jboss-transaction-spi"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-adapters"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-api"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-codegenerator"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-common"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-core"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-deployer"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-embedded"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-parent"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-rhq"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-samples"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-sjc"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-validator"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ironjacamar-web"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
