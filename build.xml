@@ -95,7 +95,7 @@
         <ant dir="rhq-plugin" target="dist"/>
         <ant dir="txbridge" target="clean"/>
         <ant dir="txbridge" target="dist"/>
-        <ant dir="docs" target="install.docs">
+        <ant dir="docs" target="install.common.docs">
             <property name="dest.dir" value="../install/docs"/>
         </ant>
 
