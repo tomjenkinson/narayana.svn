@@ -18,7 +18,7 @@
   (C) 2010,
   @author JBoss, a division of Red Hat.
 -->
-<project name="module-docs" default="install.docs" basedir=".">
+<project name="module-docs" default="install.common.docs" basedir=".">
 
     <property name="modulename" value="docs"/>
 
@@ -28,24 +28,6 @@
         <delete dir="${build.dir}"/>
         <delete dir="failure_recovery_guide/target"/>
         <delete dir="transactions_overview_guide/target"/>
-    </target>
-
-    <target name="install.docs">
-        <property name="dest.dir" value="${build.dir}/install/docs"/>
-
-        <if>
-            <istrue value="${publican}" />
-            <then>
-                <exec dir="release_notes" executable="publican" failonerror="true">
-                    <arg value="build"/>
-                    <arg value="--langs=en-US"/>
-                    <arg value="--formats=pdf,html"/>
-                </exec>
-                <copy todir="${dest.dir}/release_notes" overwrite="true" flatten="true">
-                    <fileset dir="${build.dir}" includes="*/en-US/pdf/*.pdf"/>
-                </copy>
-            </then>
-        </if>
     </target>
 
     <target name="install.common.docs">
