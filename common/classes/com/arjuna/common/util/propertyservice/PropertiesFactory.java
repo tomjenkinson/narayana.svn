@@ -142,11 +142,18 @@ public class PropertiesFactory
         }
 
         try {
-		loadFromXML(inputProperties,inputStream);
+            loadFromXML(inputProperties,inputStream);
         } finally {
             inputStream.close();
         }
 
+
+        Enumeration<Object> keys = inputProperties.keys();
+        while (keys.hasMoreElements()) {
+            Object nextElement = keys.nextElement();
+            System.out.println(nextElement);
+            System.out.println(inputProperties.get(nextElement));
+        }
         Enumeration namesEnumeration = inputProperties.propertyNames();
         while(namesEnumeration.hasMoreElements()) {
             String propertyName = (String)namesEnumeration.nextElement();
@@ -168,31 +175,37 @@ public class PropertiesFactory
             final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
             inputFactory.setXMLResolver(new XMLResolver() {
                 @Override
-                public Object resolveEntity(String publicID, String systemID, String baseURI, String namespace) throws XMLStreamException {
+                public Object resolveEntity(String publicID, String systemID, String baseURI, String namespace)
+                        throws XMLStreamException {
                     return new ByteArrayInputStream(new byte[0]);
                 }
             });
             XMLStreamReader parser = inputFactory.createXMLStreamReader(is);
             /*
-             * xml looks like this
-             * <entry key="CoreEnvironmentBean.nodeIdentifier">1</entry>
-           */
+             * xml looks like this <entry key="CoreEnvironmentBean.nodeIdentifier">1</entry>
+             */
+            int event = -1;
             while (true) {
-                int event = parser.next();
                 if (event == XMLStreamConstants.END_DOCUMENT) {
                     parser.close();
                     break;
                 }
                 if (event == XMLStreamConstants.START_ELEMENT) {
                     String key = parser.getAttributeValue(0);
-                    String value = null;
-                    if (parser.next() == XMLStreamConstants.CHARACTERS) {
-                        value = parser.getText();
+                    StringBuffer buffer = new StringBuffer();
+                    event = parser.next();
+                    for (; event == XMLStreamConstants.CHARACTERS || event == XMLStreamConstants.COMMENT; event = parser.next()) {
+                        if (event != XMLStreamConstants.COMMENT) {
+                            String nextText = parser.getText();
+                            buffer.append(nextText);
+                        }
                     }
-                    if (value == null) { value = ""; }
                     if (key != null) {
+                        String value = buffer.toString();
                         p.put(key, value);
                     }
+                } else {
+                    event = parser.next();
                 }
             }
         } catch (XMLStreamException e) {
@@ -200,6 +213,7 @@ public class PropertiesFactory
         }
         return null;
     }
+    
     private static synchronized void initDefaultProperties(String fileNamePropertyKey)
     {
         if(defaultProperties != null) {
