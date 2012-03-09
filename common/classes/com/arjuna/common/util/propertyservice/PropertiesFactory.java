@@ -148,12 +148,6 @@ public class PropertiesFactory
         }
 
 
-        Enumeration<Object> keys = inputProperties.keys();
-        while (keys.hasMoreElements()) {
-            Object nextElement = keys.nextElement();
-            System.out.println(nextElement);
-            System.out.println(inputProperties.get(nextElement));
-        }
         Enumeration namesEnumeration = inputProperties.propertyNames();
         while(namesEnumeration.hasMoreElements()) {
             String propertyName = (String)namesEnumeration.nextElement();
