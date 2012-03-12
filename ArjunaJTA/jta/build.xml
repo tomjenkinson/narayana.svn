@@ -80,6 +80,9 @@
                     <exclude name="**/TestSynchronization.java"/>
                     <exclude name="**/TestXAResource.java"/>
                     <exclude name="**/SimpleNestedDisabledTest.java"/>
+                    <exclude name="**/XARROne.java"/>
+                    <exclude name="**/XARRTwo.java"/>
+                    <exclude name="**/XARRTestResource.java"/>
                 </fileset>
             </tests>
         </run.tests.macro>
