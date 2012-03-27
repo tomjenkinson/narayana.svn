@@ -6,12 +6,12 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jboss.jbossts</groupId>
     <artifactId>txbridge-tests</artifactId>
-    <version>4.16-SNAPSHOT</version>
+    <version>4.16.3.Final</version>
     <packaging>jar</packaging>
 
     <properties>
         <version.jbossas>7.1.1.Final</version.jbossas>
-        <version.jbossts>4.16.localbuild-SNAPSHOT</version.jbossts>
+        <version.jbossts>4.16.3.Final</version.jbossts>
         <version.arquillian.junit>1.0.0.CR7</version.arquillian.junit>
         <version.junit>4.8.2</version.junit>
         <version.byteman>2.0.0</version.byteman>

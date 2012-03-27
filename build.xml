@@ -211,7 +211,7 @@
                 <filterset>
                     <filter token="groupid" value="${groupid}"/>
                     <filter token="artifact" value="@{artifact}"/>
-                    <filter token="version" value="4.16.1-SNAPSHOT"/>
+                    <filter token="version" value="4.16.3.Final"/>
                     <filter token="packaging" value="@{packaging}"/>
                 </filterset>
             </copy>
