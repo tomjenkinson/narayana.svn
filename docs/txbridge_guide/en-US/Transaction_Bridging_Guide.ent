@@ -1,6 +1,6 @@
 <!ENTITY PRODUCT "JBoss Transactions">
 <!ENTITY BOOKID "Transaction_Bridging_Guide">
-<!ENTITY VERSION "4.16">
+<!ENTITY VERSION "4.16.3.Final">
 <!ENTITY YEAR "2011">
 <!ENTITY HOLDER "JBoss.org">
 <!ENTITY APPSERVER "JBoss Application Server">
