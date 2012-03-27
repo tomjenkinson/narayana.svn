@@ -92,13 +92,13 @@
 				 <dependency>
 					 <groupId>org.jboss.as</groupId>
 					 <artifactId>jboss-as-arquillian-container-managed</artifactId>
-					 <version>7.1.0.Final</version>
+					 <version>7.1.1.Final</version>
 					 <scope>test</scope>
 				 </dependency>
 				  <dependency>
                     <groupId>org.jboss.as</groupId>
                     <artifactId>jboss-as-controller-client</artifactId>
-                    <version>7.1.0.Final</version>
+                    <version>7.1.1.Final</version>
                     <scope>test</scope>
                 </dependency>
 			 </dependencies>

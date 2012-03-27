@@ -88,15 +88,18 @@
   </target>
 
   <!-- build a war containing the  compiled XTSTestService and the jboss-beans.xml -->
-
   <target name="war" depends="compile,metainf">
       <mkdir dir="${build.classes.dir}/org/jboss/jbossts/xts/servicetests/generated/wsdl/"/>
       <copy toDir="${build.classes.dir}/org/jboss/jbossts/xts/servicetests/generated/wsdl/" file="${wsdl.dir}/xtsservicetests.wsdl"/>
+      <copy toDir="${build.classes.dir}/" file="${dd.dir}/context-handlers.xml"/>
       <copy toDir="${build.classes.dir}/org/jboss/jbossts/xts/servicetests/service/" file="${dd.dir}/handlers.xml"/>
       <copy toDir="${build.classes.dir}/org/jboss/jbossts/xts/servicetests/service/subordinate" file="${dd.dir}/subordinatehandlers.xml"/>
 	 <war warfile="${build.webapps.dir}/xtstest.war" webxml="${web.inf.dir}/web.xml" manifest="${build.meta.inf.dir}/manifest.mf"> 
          <classes dir="${build.classes.dir}" includes="**/*"/>
-         <webinf dir="${dd.dir}" includes="wsdl/**"/>
+         <webinf dir="${dd.dir}">
+		 	<include name="wsdl/**"/>
+			<include name="beans.xml"/>
+	 	 </webinf>
      </war>
   </target>
 
