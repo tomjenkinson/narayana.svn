@@ -184,7 +184,7 @@ public class PropertiesFactory
                     parser.close();
                     break;
                 }
-                if (event == XMLStreamConstants.START_ELEMENT) {
+                if (event == XMLStreamConstants.START_ELEMENT && parser.getAttributeCount() > 0) {
                     String key = parser.getAttributeValue(0);
                     StringBuffer buffer = new StringBuffer();
                     event = parser.next();
