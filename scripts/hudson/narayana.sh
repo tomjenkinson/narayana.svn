@@ -4,7 +4,7 @@ if [ -z "${WORKSPACE}" ]; then
 fi
 
 #BUILD JBOSSTS
-ant -Demma.enabled=true -Dpublican=false jbossall
+ant -Demma.enabled=false -Dpublican=false jbossall
 if [ "$?" != "0" ]; then
 	exit -1
 fi
