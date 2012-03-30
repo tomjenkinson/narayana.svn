@@ -25,7 +25,7 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
-ant -f run-tests.xml ci-tests emmareport
+ant -f run-tests.xml ci-tests
 if [ "$?" != "0" ]; then
 	exit -1
 fi
