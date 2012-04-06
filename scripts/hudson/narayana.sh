@@ -34,7 +34,7 @@ if [ "$?" != "0" ]; then
 fi
 
 #START JBOSS
-export JBOSS_HOME=${WORKSPACE}/jboss-as/build/target/jboss-as-7.1.2.Final.SNAPSHOT
+export JBOSS_HOME=${WORKSPACE}/jboss-as/build/target/jboss-as-7.1.2.Final-SNAPSHOT
 $JBOSS_HOME/bin/standalone.sh --server-config=../../docs/examples/configs/standalone-xts.xml&
 sleep 10 
 
