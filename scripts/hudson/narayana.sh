@@ -40,7 +40,7 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
-ant -Dtesttype=tests-11 -Dsartype=sar-11 install
+ant -Dpublican=false -Dtesttype=tests-11 -Dsartype=sar-11 install
 if [ "$?" != "0" ]; then
 	exit -1
 fi
