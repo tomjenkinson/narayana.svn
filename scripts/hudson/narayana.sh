@@ -73,6 +73,7 @@ fi
 sleep 10 
 
 cd xts-install/interop-tests
+mkdir reports
 ant -f run-interop-tests.xml -Dserver.hostname=localhost wstx11-interop-tests
 if [ "$?" != "0" ]; then
 	exit -1
@@ -85,6 +86,13 @@ if [ "$?" != "0" ]; then
 fi
 
 #RUN XTS CRASH RECOVERY TESTS
+cd ${WORKSPACE}
+cd XTS/sar/tests
+ant 
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+
 cd ${WORKSPACE}
 cd XTS/sar/crash-recovery-tests
 if [ "$?" != "0" ]; then
