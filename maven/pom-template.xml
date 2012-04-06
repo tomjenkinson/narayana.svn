@@ -191,11 +191,13 @@
 
         <!--  commons-logging, jcl-over-slf4j, slf4j-api,  slf4j-simple all just test time deps for localjunit? -->
 
+		<!--
         <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
             <version>1.1.1</version>
         </dependency>
+		-->
 
         <dependency>
             <groupId>org.slf4j</groupId>
