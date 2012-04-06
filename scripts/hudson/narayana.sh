@@ -23,13 +23,18 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
-./build.sh clean install
+git pull origin master
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+
+./build.sh clean install -DskipTests
 if [ "$?" != "0" ]; then
 	exit -1
 fi
 
 #START JBOSS
-export JBOSS_HOME=${WORKSPACE}/jboss-as/build/target/jboss-as-7.1.1.Final
+export JBOSS_HOME=${WORKSPACE}/jboss-as/build/target/jboss-as-7.1.2.Final.SNAPSHOT
 $JBOSS_HOME/bin/standalone.sh --server-config=../../docs/examples/configs/standalone-xts.xml&
 sleep 10 
 
@@ -49,22 +54,26 @@ cp xts-install/tests/*ear $JBOSS_HOME/standalone/deployments/
 if [ "$?" != "0" ]; then
 	exit -1
 fi
-sleep 5
+sleep 10 
 
 export MYTESTIP_1=localhost
-ant -f localjunit/run-tests.xml tests-11
+cd xts-install/tests
+ant -f run-tests.xml tests-11
 if [ "$?" != "0" ]; then
 	exit -1
 fi
 
 #RUN INTEROP11 TESTS
+cd ${WORKSPACE}
+cd XTS
 cp xts-install/interop-tests/interop11.war $JBOSS_HOME/standalone/deployments/
 if [ "$?" != "0" ]; then
 	exit -1
 fi
-sleep 5
+sleep 10 
 
-ant -f localjunit/run-interop-tests.xml -Dserver.hostname=localhost wstx11-interop-tests
+cd xts-install/interop-tests
+ant -f run-interop-tests.xml -Dserver.hostname=localhost wstx11-interop-tests
 if [ "$?" != "0" ]; then
 	exit -1
 fi
