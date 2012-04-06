@@ -158,6 +158,7 @@ public class MultiParticipantParticipantCompletionParticipantCloseAndExitTest ex
         }
 
         if (exception != null) {
+			exception.printStackTrace();
             error("commit failure " + exception);
         }
 

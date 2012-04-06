@@ -146,6 +146,7 @@ public class SingleParticipantCompletionParticipantCloseTest extends XTSServiceT
         }
 
         if (exception != null) {
+			exception.printStackTrace();
             error("close failure " + exception);
         }
 
