@@ -91,6 +91,16 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
+#REMOVE TEST WAR and EAR
+rm -f $JBOSS_HOME/standalone/deployments/*war*
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+rm -f $JBOSS_HOME/standalone/deployments/*ear*
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+
 #RUN XTS CRASH RECOVERY TESTS
 cd ${WORKSPACE}
 cd XTS/sar/tests
