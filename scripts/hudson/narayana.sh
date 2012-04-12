@@ -42,16 +42,19 @@ sleep 10
 cd ${WORKSPACE}
 cd XTS
 if [ "$?" != "0" ]; then
+	$JBOSS_HOME/bin/jboss-cli.sh --connect command=:shutdown
 	exit -1
 fi
 
 ant -Dpublican=false -Dtesttype=tests-11 -Dsartype=sar-11 install
 if [ "$?" != "0" ]; then
+	$JBOSS_HOME/bin/jboss-cli.sh --connect command=:shutdown
 	exit -1
 fi
 
 cp xts-install/tests/*ear $JBOSS_HOME/standalone/deployments/
 if [ "$?" != "0" ]; then
+	$JBOSS_HOME/bin/jboss-cli.sh --connect command=:shutdown
 	exit -1
 fi
 sleep 10 
@@ -60,6 +63,7 @@ export MYTESTIP_1=localhost
 cd xts-install/tests
 ant -f run-tests.xml tests-11
 if [ "$?" != "0" ]; then
+	$JBOSS_HOME/bin/jboss-cli.sh --connect command=:shutdown
 	exit -1
 fi
 
@@ -68,6 +72,7 @@ cd ${WORKSPACE}
 cd XTS
 cp xts-install/interop-tests/interop11.war $JBOSS_HOME/standalone/deployments/
 if [ "$?" != "0" ]; then
+	$JBOSS_HOME/bin/jboss-cli.sh --connect command=:shutdown
 	exit -1
 fi
 sleep 10 
@@ -76,6 +81,7 @@ cd xts-install/interop-tests
 mkdir reports
 ant -f run-interop-tests.xml -Dserver.hostname=localhost wstx11-interop-tests
 if [ "$?" != "0" ]; then
+	$JBOSS_HOME/bin/jboss-cli.sh --connect command=:shutdown
 	exit -1
 fi
 
