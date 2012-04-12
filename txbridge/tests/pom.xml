@@ -14,7 +14,7 @@
         <version.jbossts>4.16.4.Final-SNAPSHOT</version.jbossts>
         <version.arquillian.junit>1.0.0.CR7</version.arquillian.junit>
         <version.junit>4.8.2</version.junit>
-        <version.byteman>2.0.0</version.byteman>
+        <version.byteman>2.0.1</version.byteman>
         <version.apache.httpcomponents>4.1.2</version.apache.httpcomponents>
 
         <byteman.home>${project.build.directory}/byteman</byteman.home>
