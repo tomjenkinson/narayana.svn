@@ -23,7 +23,8 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
-git pull --rebase --ff-only origin master
+git remote add upstream git://github.com/jbossas/jboss-as.git
+git pull --rebase --ff-only upstream master
 if [ "$?" != "0" ]; then
 	exit -1
 fi
