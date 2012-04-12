@@ -23,7 +23,7 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
-git pull origin master
+git pull --rebase --ff-only origin master
 if [ "$?" != "0" ]; then
 	exit -1
 fi
