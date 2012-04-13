@@ -51,6 +51,7 @@ import javax.transaction.*;
 import javax.transaction.xa.*;
 import javax.sql.*;
 import java.util.*;
+import java.util.concurrent.Executor;
 import java.sql.*;
 import javax.transaction.RollbackException;
 import java.sql.SQLException;
@@ -568,6 +569,191 @@ public class ConnectionImple implements java.sql.Connection
 
 	/*
 	 * end of the JDBC 3.0 section
+	 * *******************************************************************
+	 */
+
+    /*
+     * ******************************************************************* *
+     * JDBC 4.0 method section.
+     */
+
+    public Clob createClob() throws SQLException
+    {
+        checkTransaction();
+
+        registerDatabase();
+
+        return getConnection().createClob();
+    }
+
+    public Blob createBlob() throws SQLException
+    {
+        checkTransaction();
+
+        registerDatabase();
+
+        return getConnection().createBlob();
+    }
+
+    public NClob createNClob() throws SQLException
+    {
+        checkTransaction();
+
+		registerDatabase();
+
+		return getConnection().createNClob();
+    }
+
+    public SQLXML createSQLXML() throws SQLException
+    {
+        checkTransaction();
+
+		registerDatabase();
+
+		return getConnection().createSQLXML();
+    }
+
+    public boolean isValid(int timeout) throws SQLException
+    {
+        checkTransaction();
+
+        registerDatabase();
+
+        return getConnection().isValid(timeout);
+    }
+
+    public String getClientInfo(String name) throws SQLException
+    {
+        return getConnection().getClientInfo(name);
+    }
+
+    public Properties getClientInfo() throws SQLException
+    {
+        return getConnection().getClientInfo();
+    }
+
+    public void setClientInfo(String name, String value) throws SQLClientInfoException
+    {
+        try
+        {
+    		getConnection().setClientInfo(name, value);
+        }
+        catch(SQLException e)
+        {
+            throw new SQLClientInfoException("setClientInfo : getConnection failed", null, e);
+        }
+    }
+
+    public void setClientInfo(Properties properties) throws SQLClientInfoException
+    {
+        try
+        {
+    		getConnection().setClientInfo(properties);
+        }
+        catch(SQLException e)
+        {
+            throw new SQLClientInfoException("setClientInfo : getConnection failed", null, e);
+        }
+    }
+
+    public Array createArrayOf(String typeName, Object[] elements) throws SQLException
+    {
+        checkTransaction();
+
+        registerDatabase();
+
+        return getConnection().createArrayOf(typeName, elements);
+    }
+
+    public Struct createStruct(String typeName, Object[] attributes) throws SQLException
+    {
+        checkTransaction();
+
+        registerDatabase();
+
+        return getConnection().createStruct(typeName, attributes);
+    }
+
+    public <T> T unwrap(Class<T> iface) throws SQLException
+    {
+        if (iface != null) {
+            if (iface.isInstance(this)) {
+                return (T) this;
+            } else {
+                Connection conn = getConnection();
+                if (conn != null) {
+                    if (iface.isInstance(conn)) {
+                        return (T) conn;
+                    } else if(conn.isWrapperFor(iface)) {
+                        return conn.unwrap(iface);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public boolean isWrapperFor(Class<?> iface) throws SQLException
+    {
+        if (iface != null) {
+            if (iface.isInstance(this)) {
+                return true;
+            } else {
+                Connection conn = getConnection();
+                if (conn != null) {
+                    if (iface.isInstance(conn)) {
+                        return true;
+                    } else {
+                        return conn.isWrapperFor(iface);
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /*
+	 * end of the JDBC 4.0 section
+	 * *******************************************************************
+	 */
+
+    /*
+     * ******************************************************************* *
+     * Java 7 method section.
+     */
+
+    //@Override
+    public void setSchema(String schema) throws SQLException
+    {
+        throw new SQLException();
+    }
+
+    //@Override
+    public String getSchema() throws SQLException
+    {
+        throw new SQLException();
+    }
+
+    //@Override
+    public void abort(Executor executor) throws SQLException
+    {
+        throw new SQLException();
+    }
+
+    //@Override
+    public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException
+    {
+        throw new SQLException();
+    }
+
+    //@Override
+    public int getNetworkTimeout() throws SQLException
+    {
+        throw new SQLException();
+    }
+
+    /*
+	 * end of the Java 7 section
 	 * *******************************************************************
 	 */
 

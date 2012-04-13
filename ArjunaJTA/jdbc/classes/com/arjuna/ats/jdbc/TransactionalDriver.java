@@ -40,9 +40,11 @@ import com.arjuna.ats.arjuna.common.*;
 import com.arjuna.common.util.logging.*;
 
 import java.util.*;
+import java.util.logging.Logger;
 import java.sql.*;
 
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.lang.ExceptionInInitializerError;
 
 /**
@@ -150,6 +152,12 @@ public static final String createDb = "CREATE_DB";
 	    else
 		return null;
 	}
+    }
+
+    // JBTM-1120 JDK7 NO-OPS
+    public Logger getParentLogger() throws SQLFeatureNotSupportedException
+    {
+        throw new SQLFeatureNotSupportedException ();
     }
 
     static
