@@ -30,7 +30,6 @@
  */
 package com.arjuna.ats.tools.toolsframework.dialogs;
 
-import com.sun.image.codec.jpeg.JPEGCodec;
 import com.arjuna.ats.tools.toolsframework.images.ImageCommon;
 
 import javax.swing.*;
