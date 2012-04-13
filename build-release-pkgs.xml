@@ -156,10 +156,6 @@
 
         <ant dir="${workdir}/build/${tag}/txbridge" antfile="build.xml" target="dist"/>
 
-        <ant dir="${workdir}/build/${tag}/rhq-plugin" antfile="build.xml" target="dist">
-            <property name="version" value="${filename}"/>
-        </ant>
-
         <!-- package the full release -->
         <copy todir="${workdir}/build/${tag}/${tag}">
             <fileset dir="${workdir}/build/${tag}/install"/>
