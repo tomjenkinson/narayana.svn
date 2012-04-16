@@ -190,7 +190,7 @@
         <antcall target="junit-tests"><param name="tests" value="jdbcresources01-pgsql_jndi"/></antcall>
         <antcall target="junit-tests"><param name="tests" value="jdbcresources02-pgsql_jndi"/></antcall>
 
-        <antcall target="install-dbdriver"><param name="files" value="mysql-connector-java-5.1.7-bin.jar"/></antcall>
+        <antcall target="install-dbdriver"><param name="files" value="mysql-connector-java-5.1.8-bin.jar"/></antcall>
         <antcall target="junit-tests"><param name="tests" value="jdbcresources01-mysql_jndi"/></antcall>
         <antcall target="junit-tests"><param name="tests" value="jdbcresources02-mysql_jndi"/></antcall>
 
