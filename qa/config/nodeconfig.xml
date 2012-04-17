@@ -72,6 +72,7 @@
         <!-- JBoss hudson server needs here /qa/tools/opt/jdk1.5.0_15 -->
         <jvm version="1.5.0" java-home="/qa/tools/opt/jdk1.5.0_15"/>
         <jvm version="1.6.0" java-home="/usr/local/jdk1.6.0_20"/>
+        <jvm version="1.7.0" java-home="/usr/local/jdk1.7.0_03"/>
 	</jvm-definitions>
 
 </test-node-configuration>
