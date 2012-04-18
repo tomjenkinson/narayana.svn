@@ -32,6 +32,7 @@
 package org.jboss.jbossts.qa.CrashRecovery13Impls;
 
 import javax.sql.ConnectionEventListener;
+import javax.sql.StatementEventListener;
 import javax.sql.XAConnection;
 import javax.transaction.xa.XAResource;
 import java.sql.Connection;
@@ -61,5 +62,12 @@ public class ExampleXAConnection implements XAConnection
 	{
 	}
 
+	public void addStatementEventListener(StatementEventListener l)
+	{
+	}
+
+    public void removeStatementEventListener(StatementEventListener l) 
+    {
+    }
 }
 
