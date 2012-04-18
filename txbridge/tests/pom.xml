@@ -18,6 +18,9 @@
         <version.apache.httpcomponents>4.1.2</version.apache.httpcomponents>
 
         <byteman.home>${project.build.directory}/byteman</byteman.home>
+        <general.server.jvm.args>
+            -Xms64m -Xmx512m -XX:MaxPermSize=256m
+        </general.server.jvm.args>
         <byteman.server.jvm.args>
             -Dorg.jboss.byteman.debug=true -Dorg.jboss.byteman.verbose=true -Dorg.jboss.byteman.contrib.dtest.rmiregistry.port=1199
             -Djboss.modules.system.pkgs=org.jboss.byteman
@@ -185,7 +188,7 @@
                     <!-- System properties passed to test cases -->
                     <systemPropertyVariables>
                         <!-- Used in arquillian.xml - arguments for all JBoss AS instances. -->
-                        <server.jvm.args>${byteman.server.jvm.args}</server.jvm.args>
+                        <server.jvm.args>${general.server.jvm.args} ${byteman.server.jvm.args} ${jpda.server.jvm.args}</server.jvm.args>
                         <java.rmi.server.codebase>file://target/test-classes/</java.rmi.server.codebase>
                     </systemPropertyVariables>
 
