@@ -3,6 +3,12 @@ if [ -z "${WORKSPACE}" ]; then
   exit -1;
 fi
 
+# FOR DEBUGGING SUBSEQUENT ISSUES
+free -m
+
+#Make sure no JBoss processes running
+for i in `ps -eaf | grep java | grep "standalone*.xml" | grep -v grep | cut -c10-15`; do echo $i; done
+
 #BUILD JBOSSTS
 ant -Demma.enabled=false -Dpublican=false jbossall
 if [ "$?" != "0" ]; then
