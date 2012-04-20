@@ -174,3 +174,29 @@ ant -f run-tests.xml ci-tests
 if [ "$?" != "0" ]; then
 	exit -1
 fi
+
+# Compile and run tx-bridge tests
+cd ${WORKSPACE}/txbridge
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+
+ant dist
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+
+cd tests
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+
+ant enable-recovery-listener -Djboss.home=$JBOSS_HOME
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+
+ant test
+if [ "$?" != "0" ]; then
+	exit -1
+if
