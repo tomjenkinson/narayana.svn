@@ -74,6 +74,17 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
+# Check output of Tests
+ERRORS=$(cat reports/TEST-* | grep "<testsuite" | grep -v errors=\"0\")
+FAILURES=$(cat reports/TEST-* | grep "<testsuite" | grep -v failures=\"0\")
+if [ "$ERRORS" != "" -o "$FAILURES" != "" ]; then
+	echo $FAILURES
+	echo $ERRORS
+	echo "Failure(s) and/or error(s) found in XTS unit and/or interop tests. See previous line"
+	$JBOSS_HOME/bin/jboss-cli.sh --connect command=:shutdown
+	exit -1
+fi
+
 #RUN INTEROP11 TESTS
 cd ${WORKSPACE}
 cd XTS
@@ -88,6 +99,16 @@ cd xts-install/interop-tests
 mkdir reports
 ant -f run-interop-tests.xml -Dserver.hostname=localhost wstx11-interop-tests
 if [ "$?" != "0" ]; then
+	$JBOSS_HOME/bin/jboss-cli.sh --connect command=:shutdown
+	exit -1
+fi
+
+ERRORS=$(cat reports/Test-* | grep "<testsuite" | grep -v errors=\"0\")
+FAILURES=$(cat reports/Test-* | grep "<testsuite" | grep -v failures=\"0\")
+if [ "$ERRORS" != "" -o "$FAILURES" != "" ]; then
+	echo $ERRORS
+	echo $FAILURES
+	echo "Failure(s) and/or error(s) found in XTS unit and/or interop tests. See previous line"
 	$JBOSS_HOME/bin/jboss-cli.sh --connect command=:shutdown
 	exit -1
 fi
