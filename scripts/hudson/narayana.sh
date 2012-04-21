@@ -199,4 +199,4 @@ fi
 ant test
 if [ "$?" != "0" ]; then
 	exit -1
-if
+fi
