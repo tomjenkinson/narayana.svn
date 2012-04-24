@@ -54,7 +54,7 @@ public class TestGroup_crashrecovery12 extends TestGroupBase
 	@Test public void CrashRecovery12_Test01()
 	{
 		setTestName("Test01");
-		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		client0.start("nocrash", "CR12_01.log");
 		client0.waitFor();
 	}
@@ -62,43 +62,43 @@ public class TestGroup_crashrecovery12 extends TestGroupBase
 	@Test public void CrashRecovery12_Test02()
 	{
 		setTestName("Test02");
-		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		client0.start("prepare", "CR12_02.log");
-		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+		client0.waitFor();
+		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		outcome0.start("CR12_02.log", "no");
 		outcome0.waitFor();
-		client0.waitFor();
 	}
 
 	@Test public void CrashRecovery12_Test03()
 	{
 		setTestName("Test03");
-		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		client0.start("commit", "CR12_03.log");
-		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+        client0.waitFor();
+		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		outcome0.start("CR12_03.log", "yes");
 		outcome0.waitFor();
-        client0.waitFor();
 	}
 
 	@Test public void CrashRecovery12_Test04()
 	{
 		setTestName("Test04");
-		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		client0.start("rollback", "CR12_04.log");
-		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+        client0.waitFor();
+		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		outcome0.start("CR12_04.log", "no");
 		outcome0.waitFor();
-        client0.waitFor();
 	}
 
 	@Test public void CrashRecovery12_Test05()
 	{
 		setTestName("Test05");
-		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		client0.start("prepare", "CR12_05.log");
 		client0.waitFor();
-		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		outcome0.start("CR12_05.log", "no");
 		outcome0.waitFor();
 	}
@@ -106,10 +106,10 @@ public class TestGroup_crashrecovery12 extends TestGroupBase
 	@Test public void CrashRecovery12_Test06()
 	{
 		setTestName("Test06");
-		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		client0.start("commit", "CR12_06.log");
 		client0.waitFor();
-		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		outcome0.start("CR12_06.log", "yes");
 		outcome0.waitFor();
 	}
@@ -117,10 +117,10 @@ public class TestGroup_crashrecovery12 extends TestGroupBase
 	@Test public void CrashRecovery12_Test07()
 	{
 		setTestName("Test07");
-		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+		Task client0 = createTask("client0", org.jboss.jbossts.qa.CrashRecovery12Clients.Client01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		client0.start("rollback", "CR12_07.log");
 		client0.waitFor();
-		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240);
+		Task outcome0 = createTask("outcome0", org.jboss.jbossts.qa.CrashRecovery12Outcomes.Outcome01.class, Task.TaskType.EXPECT_PASS_FAIL, 240, "client");
 		outcome0.start("CR12_07.log", "no");
 		outcome0.waitFor();
 	}
