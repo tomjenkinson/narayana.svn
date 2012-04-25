@@ -153,28 +153,6 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
-#RUN QA TESTS
-cd ${WORKSPACE}
-cd qa
-if [ "$?" != "0" ]; then
-	exit -1
-fi
-
-sed -i TaskImpl.properties -e "s#^COMMAND_LINE_0=.*#COMMAND_LINE_0=${JAVA_HOME}/bin/java#"
-if [ "$?" != "0" ]; then
-	exit -1
-fi
-
-ant -Ddriver.url=file:///home/hudson/dbdrivers get.drivers
-if [ "$?" != "0" ]; then
-	exit -1
-fi
-
-ant -f run-tests.xml ci-tests
-if [ "$?" != "0" ]; then
-	exit -1
-fi
-
 # Compile and run tx-bridge tests
 cd ${WORKSPACE}/txbridge
 if [ "$?" != "0" ]; then
@@ -197,6 +175,27 @@ if [ "$?" != "0" ]; then
 fi
 
 ant test
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+
+#RUN QA TESTS
+cd ${WORKSPACE}/qa
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+
+sed -i TaskImpl.properties -e "s#^COMMAND_LINE_0=.*#COMMAND_LINE_0=${JAVA_HOME}/bin/java#"
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+
+ant -Ddriver.url=file:///home/hudson/dbdrivers get.drivers
+if [ "$?" != "0" ]; then
+	exit -1
+fi
+
+ant -f run-tests.xml ci-tests
 if [ "$?" != "0" ]; then
 	exit -1
 fi
