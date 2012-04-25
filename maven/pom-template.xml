@@ -151,28 +151,7 @@
         </plugins>
     </build>
 
-    <dependencyManagement>
-        <dependencies>
-
-            <dependency>
-                <!-- https://repository.jboss.org/nexus/service/local/repositories/releases/content/org/jboss/as/jboss-as-parent/7.1.0.Beta1b/jboss-as-parent-7.1.0.Beta1b.pom -->
-                <groupId>org.jboss.as</groupId>
-                <artifactId>jboss-as-parent</artifactId>
-                <version>7.1.1.Final</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
-
-        <!--
-            We mostly get our dependency *versions* transitively though the AS pom above.
-            Thus dependencies here should not specify a version unless they are not used
-            in the AS or we explicitly need a different version.
-        -->
 
         <!-- combined deps for the entire JBossTS. At some point we need to modularize this for different builds -->
 
@@ -181,12 +160,14 @@
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>1.4</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>commons-httpclient</groupId>
             <artifactId>commons-httpclient</artifactId>
             <version>3.1-jbossorg-1</version>
+            <scope>provided</scope>
         </dependency>
 
         <!--  commons-logging, jcl-over-slf4j, slf4j-api,  slf4j-simple all just test time deps for localjunit? -->
@@ -203,18 +184,21 @@
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
             <version>1.6.1</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.6.1</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>1.6.1</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- JTA (local: ArjunaJTA/jta and remote: ArjunaJTS/jtax) need JTA and JCA (for tx inflow) apis. -->
@@ -223,12 +207,15 @@
             <!-- JTA API -->
             <groupId>org.jboss.spec.javax.transaction</groupId>
             <artifactId>jboss-transaction-api_1.1_spec</artifactId>
+            <version>1.0.1.Final</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <!-- JCA API -->
             <groupId>org.jboss.ironjacamar</groupId>
             <artifactId>ironjacamar-spec-api</artifactId>
+            <version>1.0.9.Final</version>
             <scope>provided</scope>
         </dependency>
 
@@ -236,7 +223,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <!--<version>4.8.1</version>-->
+            <version>4.10</version>
             <scope>test</scope>
         </dependency>
 
@@ -277,12 +264,14 @@
             <groupId>emma</groupId>
             <artifactId>emma</artifactId>
             <version>2.0.5312</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>emma</groupId>
             <artifactId>emma_ant</artifactId>
             <version>2.0.5312</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- HornetQ Journal based object store requires HornetQ core,
@@ -290,12 +279,15 @@
         <dependency>
             <groupId>org.hornetq</groupId>
             <artifactId>hornetq-core</artifactId>
+            <version>2.2.13.Final</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.jboss.netty</groupId>
             <artifactId>netty</artifactId>
-            <!--<version>3.2.0.Final</version>-->
+            <version>3.2.6.Final</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- installation as a service requires the wrapper, but is an optional deployment model -->
@@ -303,18 +295,22 @@
             <groupId>tanukisoft</groupId>
             <artifactId>wrapper</artifactId>
             <version>3.2.3</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- JTS requires jacorb -->
         <dependency>
             <groupId>org.jacorb</groupId>
             <artifactId>jacorb</artifactId>
+            <version>2.3.1.jbossorg-1</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>jacorb</groupId>
             <artifactId>idl</artifactId>
             <version>2.3.1jboss.patch01-brew</version><!-- TODO AS7 -->
+            <scope>provided</scope>
         </dependency>
 
         <!-- atsintegration (i.e. the JBossAS glue code) requires some app server bits. -->
@@ -322,17 +318,22 @@
         <dependency>
             <groupId>org.jboss.logmanager</groupId>
             <artifactId>jboss-logmanager</artifactId>
+            <version>1.2.2.GA</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.jboss</groupId>
             <artifactId>jboss-transaction-spi</artifactId>
+            <version>7.0.0.Final</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.jboss.integration</groupId>
             <artifactId>jboss-corba-ots-spi</artifactId>
             <version>6.0.0.CR1</version><!-- TODO AS7 src includes newer version of this, so its pom does not. -->
+            <scope>provided</scope>
         </dependency>
 
         <!-- qa test suite - JBossAS integration code. (no longer used)
@@ -341,11 +342,14 @@
             <groupId>org.jboss.jbossas</groupId>
             <artifactId>jboss-server-manager</artifactId>
             <version>1.0.4.Final</version><!-- TODO AS7 -->
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.jboss.spec.javax.ejb</groupId>
             <artifactId>jboss-ejb-api_3.1_spec</artifactId>
+            <version>1.0.2.Final</version>
+            <scope>provided</scope>
         </dependency>
 
          <!--remoting not actually used except by obsolete qa/as tests? -->
@@ -353,6 +357,7 @@
             <groupId>org.jboss.remoting</groupId>
             <artifactId>jboss-remoting</artifactId>
             <version>2.5.3</version><!-- TODO AS7 -->
+            <scope>provided</scope>
         </dependency>
 
         <!-- naming not actually used? -->
@@ -367,6 +372,8 @@
         <dependency>
             <groupId>org.jboss.spec.javax.servlet</groupId>
             <artifactId>jboss-servlet-api_3.0_spec</artifactId>
+            <version>1.0.1.Final</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- test time dep only - XTS TestRunnerXMLServlet -->
@@ -374,6 +381,7 @@
             <groupId>dom4j</groupId>
             <artifactId>dom4j</artifactId>
             <version>1.6.1</version>
+            <scope>provided</scope>
         </dependency>
 
 
@@ -393,6 +401,8 @@
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging</artifactId>
+            <version>3.1.0.GA</version>
+            <scope>provided</scope>
         </dependency>
 
 
@@ -401,6 +411,8 @@
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging-processor</artifactId>
+            <version>1.0.0.Final</version>
+            <scope>provided</scope>
         </dependency>
 
         <!--<dependency>-->
@@ -416,6 +428,8 @@
         <dependency>
             <groupId>org.jboss.ws</groupId>
             <artifactId>jbossws-api</artifactId>
+            <version>1.0.0.GA</version>
+            <scope>provided</scope>
         </dependency>
 
     <!--
@@ -428,6 +442,8 @@
         <dependency>
             <groupId>org.hibernate.javax.persistence</groupId>
             <artifactId>hibernate-jpa-2.0-api</artifactId>
+            <version>1.0.1.Final</version>
+            <scope>provided</scope>
         </dependency>
 
 
