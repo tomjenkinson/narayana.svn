@@ -494,7 +494,7 @@
             <istrue value="${skipTests}"/>
           </not>
           <then>
-            <junit printsummary="yes" fork="yes" dir="${build.dir}" showoutput="@{showoutput}" includeantruntime="true" maxmemory="700m">
+            <junit printsummary="yes" fork="yes" dir="${build.dir}" showoutput="@{showoutput}" includeantruntime="true" maxmemory="800m">
               <formatter type="plain"/>
               <classpath>
                   <pathelement location="etc"/>
