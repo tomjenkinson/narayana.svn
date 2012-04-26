@@ -221,10 +221,6 @@
         </jar>
         <mvn-artifact.macro artifact="jbossjts-integration" dir="${workdir}/build/${tag}/lib"/>
 
-        <!-- tools -->
-
-        <mvn-artifact.macro artifact="jbossts-jopr-plugin" packaging="jar"
-                            dir="${workdir}/build/${tag}/bin"/>
 
         <!-- xts -->
 
