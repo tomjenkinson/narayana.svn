@@ -43,14 +43,14 @@
 		<dependency>
 			<groupId>org.jboss.jbossts</groupId>
 			<artifactId>jbossxts-api</artifactId>
-			<version>4.16.4.Final-SNAPSHOT</version>
+			<version>4.16.4.Final</version>
 			<scope>system</scope>
 			<systemPath>${project.basedir}/../build/jbossxts-api.jar</systemPath>
 		</dependency>
                 <dependency>
                         <groupId>org.jboss.jbossts</groupId>
                         <artifactId>jbossjta</artifactId>
-                        <version>4.16.4.Final-SNAPSHOT</version>
+                        <version>4.16.4.Final</version>
                         <scope>system</scope>
 			<systemPath>${project.basedir}/../../../ArjunaJTS/build/install/lib/jbossjts.jar</systemPath>
                 </dependency>
