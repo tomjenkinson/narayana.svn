@@ -50,6 +50,7 @@ set EXT_CLASSPATH=%EXT_CLASSPATH%;%@HOME_DIRECTORY@%\lib\ext\jta-1_1-classes.zip
 set EXT_CLASSPATH=%EXT_CLASSPATH%;%@HOME_DIRECTORY@%\lib\ext\log4j-1.2.14.jar
 set EXT_CLASSPATH=%EXT_CLASSPATH%;%@HOME_DIRECTORY@%\lib\ext\xercesImpl.jar
 set EXT_CLASSPATH=%EXT_CLASSPATH%;%@HOME_DIRECTORY@%\lib\ext\xmlParserAPIs.jar
+set EXT_CLASSPATH=%EXT_CLASSPATH%;%JBOSSTS_HOME%\lib\ext\jboss-logging.jar
 
 rem
 rem Caution: JBossTS needs a specially patched version of JacORB.
