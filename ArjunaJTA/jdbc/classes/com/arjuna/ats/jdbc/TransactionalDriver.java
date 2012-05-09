@@ -44,7 +44,6 @@ import java.util.logging.Logger;
 import java.sql.*;
 
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.lang.ExceptionInInitializerError;
 
 /**
@@ -154,10 +153,10 @@ public static final String createDb = "CREATE_DB";
 	}
     }
 
-    // JBTM-1120 JDK7 NO-OPS
-    public Logger getParentLogger() throws SQLFeatureNotSupportedException
+    // JBTM-1120
+    public Logger getParentLogger()
     {
-        throw new SQLFeatureNotSupportedException ();
+        return Logger.getLogger("");
     }
 
     static
