@@ -477,7 +477,7 @@
                 </fileset>
             </batchtest>
 
-            <jvmarg value="-javaagent:../../ext/byteman.jar=script:tests/byteman-scripts/reaper.txt"/>
+            <jvmarg value="-javaagent:../../ext/byteman-122.jar=script:tests/byteman-scripts/reaper.txt"/>
             <jvmarg value="-Dorg.jboss.byteman.debug"/>
         </junit>
     </target>
