@@ -83,13 +83,11 @@ public class CrashRecoveryCommitReturnsXA_RETRY extends TestCase {
 		xaRecoveryModule
 				.addXAResourceRecoveryHelper(new XAResourceRecoveryHelper() {
 
-					@Override
 					public boolean initialise(String p) throws Exception {
 						// TODO Auto-generated method stub
 						return true;
 					}
 
-					@Override
 					public XAResource[] getXAResources() throws Exception {
 						// TODO Auto-generated method stub
 						return new XAResource[] { secondResource };
