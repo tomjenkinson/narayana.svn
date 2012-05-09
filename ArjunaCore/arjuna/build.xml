@@ -459,7 +459,7 @@
         	</batchtest>
         </junit>
 
-        <condition property="bytemanversion" value="201" else="201">
+        <condition property="bytemanversion" value="201" else="103CP02">
             <not>
                  <contains string="${java.version}" substring="1.5" casesensitive="false" />
             </not>
