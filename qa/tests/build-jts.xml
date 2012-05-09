@@ -285,6 +285,7 @@
             <include name="**/EnlistDelistEnlist01*/**"/>
             <include name="**/Issues0001*/**"/>
             <include name="**/report.java"/>
+            <exclude name="**/CrashRecovery13Impls/ExampleXAConnection.java"/>
 
 			<classpath>
 				<path refid="jts.classpath"/>

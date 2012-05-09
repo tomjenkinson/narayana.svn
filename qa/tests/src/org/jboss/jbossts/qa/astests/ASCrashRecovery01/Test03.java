@@ -26,7 +26,7 @@ import org.jboss.jbossts.qa.astests.taskdefs.ASTestConfig;
 import org.jboss.jbossts.qa.astests.taskdefs.TransactionLog;
 import org.jboss.jbossts.qa.astests.crash.CrashRem;
 import org.jboss.jbossts.qa.astests.crash.CrashRemHome;
-import org.jboss.remoting.CannotConnectException;
+//import org.jboss.remoting.CannotConnectException;
 import org.apache.tools.ant.BuildException;
 
 import java.util.Map;
@@ -231,7 +231,7 @@ public class Test03 implements ClientAction
 
             return "Passed".equalsIgnoreCase(res);
         }
-        catch (CannotConnectException e)
+        catch (Exception e) // Was CannotConnectException
         {
             if (expectFailure)
             {
@@ -246,11 +246,11 @@ public class Test03 implements ClientAction
                 e.printStackTrace();
             }
         }
-        catch (Throwable t)
-        {
-            t.printStackTrace();
-            System.err.println("XACrashTest:crashTest: Caught " + t);
-        }
+        //catch (Throwable t)
+        //{
+        //    t.printStackTrace();
+        //    System.err.println("XACrashTest:crashTest: Caught " + t);
+        //}
         finally {
             if (clientTx)
                 try

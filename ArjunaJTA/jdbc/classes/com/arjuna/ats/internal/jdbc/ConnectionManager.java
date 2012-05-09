@@ -31,15 +31,19 @@
 
 package com.arjuna.ats.internal.jdbc;
 
-import com.arjuna.ats.jdbc.TransactionalDriver;
-import com.arjuna.ats.jdbc.logging.jdbcLogger;
-
-import java.util.*;
-
+import java.lang.reflect.Proxy;
+import java.sql.Connection;
 import java.sql.SQLException;
-import java.lang.reflect.Constructor;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+
+import com.arjuna.ats.jdbc.TransactionalDriver;
 
 /*
  * Only ever create a single instance of a given connection, based upon the
@@ -57,22 +61,21 @@ public class ConnectionManager
 	/**
 	 * @message com.arjuna.ats.internal.jdbc.nojdbc3 Can't load JDBC 3.0 wrapper, falling back to JDBC 2.0
 	 */
-	public static synchronized ConnectionImple create (String dbUrl, Properties info) throws SQLException
+	public static synchronized Connection create (String dbUrl, Properties info) throws SQLException
     {
 	String user = info.getProperty(TransactionalDriver.userName);
 	String passwd = info.getProperty(TransactionalDriver.password);
 	String dynamic = info.getProperty(TransactionalDriver.dynamicClass);
-	Enumeration e = _connections.elements();
-	ConnectionImple conn = null;
-
+	Iterator<ConnectionImple> e = _connections.keySet().iterator();
+	
 	if (dynamic == null)
 	    dynamic = "";
 
-	while (e.hasMoreElements())
+	while (e.hasNext())
 	{
-	    conn = (ConnectionImple) e.nextElement();
+		ConnectionImple connectionImple = e.next();
 
-	    ConnectionControl connControl = conn.connectionControl();
+	    ConnectionControl connControl = connectionImple.connectionControl();
 	    TransactionManager tm = com.arjuna.ats.jta.TransactionManager.transactionManager();
 	    Transaction tx1, tx2 = null;
 
@@ -99,9 +102,11 @@ public class ConnectionManager
 		     * Should not overload the meaning of closed. Change!
 		     */
 
-		    if (!conn.isClosed())
+		    if (!connectionImple.isClosed())
 		    {
-			return conn;
+		    	return _connections.get(connectionImple);
+		    } else {
+		    	_connections.remove(connectionImple);
 		    }
 		}
 		catch (Exception ex)
@@ -111,43 +116,16 @@ public class ConnectionManager
 		}
 	    }
 	}
-
-	conn = null;
-	if(System.getProperty("java.specification.version").equals("1.5"))
-	{
-		// the 1.5 (JDBC3) wrapper version is loaded dynamically because classloading
-		// it on earlier versions of the platform is not possible.
-		try
-		{
-			Class clazz = Class.forName("com.arjuna.ats.internal.jdbc.ConnectionImpleJDBC3");
-			Constructor ctor = clazz.getConstructor(new Class[] { String.class, Properties.class} );
-			conn =  (ConnectionImple)ctor.newInstance(new Object[] { dbUrl, info });
-		}
-		catch(Exception exception)
-		{
-			// not necessarily an errror - maybe we are running the 1.4 build on 1.5 vm.
-			if (jdbcLogger.logger.isDebugEnabled())
-			{
-				jdbcLogger.logger.warn(jdbcLogger.logMesg.getString("com.arjuna.ats.internal.jdbc.nojdbc3")+": "+e.toString());
-			}
-		}
-	}
-
-	if(conn == null)
-	{
-		// we are probably either on Java < 1.5 or running a build that was
-		// done on Java 1.5 and thus does not have the JDBC3 wrapper.
-		// Either way we use the default JDBC 2.0 implementation
-		conn = new ConnectionImple(dbUrl, info);
-	}
-
+	ConnectionImple connectionImple = new ConnectionImple(dbUrl, info);
+	Connection conn = (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(), new Class[] {Connection.class}, connectionImple);
+	
 
 	/*
 	 * Will replace any old (closed) connection which had the
 	 * same connection information.
 	 */
 
-	_connections.put(conn, conn);
+	_connections.put(connectionImple, conn);
 
 	return conn;
     }
@@ -157,6 +135,6 @@ public class ConnectionManager
 	_connections.remove(conn);
     }
 
-    private static Hashtable _connections = new Hashtable();
+    private static Map<ConnectionImple, Connection> _connections = new HashMap<ConnectionImple, Connection>();
 
 }

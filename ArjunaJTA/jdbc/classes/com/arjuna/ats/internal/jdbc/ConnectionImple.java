@@ -31,33 +31,31 @@
 
 package com.arjuna.ats.internal.jdbc;
 
-import com.arjuna.ats.internal.jdbc.drivers.modifiers.ModifierFactory;
-import com.arjuna.ats.internal.jdbc.drivers.modifiers.ConnectionModifier;
-
-import com.arjuna.ats.jdbc.TransactionalDriver;
-import com.arjuna.ats.jdbc.logging.*;
-import com.arjuna.ats.jdbc.common.jdbcPropertyManager;
-
-import com.arjuna.ats.jta.*;
-import com.arjuna.ats.jta.recovery.*;
-import com.arjuna.ats.jta.xa.XAModifier;
-import com.arjuna.ats.jta.xa.RecoverableXAConnection;
-
-import com.arjuna.ats.arjuna.common.*;
-
-import com.arjuna.common.util.logging.*;
-
-import javax.transaction.*;
-import javax.transaction.xa.*;
-import javax.sql.*;
-import java.util.*;
-import java.util.concurrent.Executor;
-import java.sql.*;
-import javax.transaction.RollbackException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.util.Properties;
+
+import javax.sql.XAConnection;
+import javax.transaction.RollbackException;
+import javax.transaction.Status;
+import javax.transaction.SystemException;
+import javax.transaction.xa.XAResource;
+
+import com.arjuna.ats.internal.jdbc.drivers.modifiers.ConnectionModifier;
+import com.arjuna.ats.internal.jdbc.drivers.modifiers.ModifierFactory;
+import com.arjuna.ats.jdbc.TransactionalDriver;
+import com.arjuna.ats.jdbc.common.jdbcPropertyManager;
+import com.arjuna.ats.jdbc.logging.jdbcLogger;
+import com.arjuna.ats.jta.xa.RecoverableXAConnection;
+import com.arjuna.ats.jta.xa.XAModifier;
+import com.arjuna.common.util.logging.DebugLevel;
+import com.arjuna.common.util.logging.VisibilityLevel;
 
 /**
- * A transactional JDBC 2.0 connection. This wraps the real connection and
+ * A transactional JDBC connection using InvocationHandling. This wraps the real connection and
  * registers it with the transaction at appropriate times to ensure that all
  * worked performed by it may be committed or rolled back.
  * 
@@ -74,7 +72,7 @@ import java.sql.SQLException;
  * @since JTS 2.0.
  */
 
-public class ConnectionImple implements java.sql.Connection
+public class ConnectionImple implements InvocationHandler
 {
 
 	public ConnectionImple(String dbName, Properties info) throws SQLException
@@ -154,80 +152,7 @@ public class ConnectionImple implements java.sql.Connection
 		_theConnection = null;
 	}
 
-	public Statement createStatement() throws SQLException
-	{
-		checkTransaction();
 
-		registerDatabase();
-
-		return getConnection().createStatement();
-	}
-
-	public Statement createStatement(int rs, int rc) throws SQLException
-	{
-		checkTransaction();
-
-		registerDatabase();
-
-		return getConnection().createStatement(rs, rc);
-	}
-
-	public PreparedStatement prepareStatement(String sql) throws SQLException
-	{
-		checkTransaction();
-
-		registerDatabase();
-
-		return getConnection().prepareStatement(sql);
-	}
-
-	public PreparedStatement prepareStatement(String sql, int rs, int rc)
-			throws SQLException
-	{
-		checkTransaction();
-
-		registerDatabase();
-
-		return getConnection().prepareStatement(sql, rs, rc);
-	}
-
-	public CallableStatement prepareCall(String sql) throws SQLException
-	{
-		checkTransaction();
-
-		registerDatabase();
-
-		return getConnection().prepareCall(sql);
-	}
-
-	public CallableStatement prepareCall(String sql, int rs, int rc)
-			throws SQLException
-	{
-		checkTransaction();
-
-		registerDatabase();
-
-		return getConnection().prepareCall(sql, rs, rc);
-	}
-
-	public String nativeSQL(String sql) throws SQLException
-	{
-		checkTransaction();
-
-		registerDatabase();
-
-		return getConnection().nativeSQL(sql);
-	}
-
-	public Map getTypeMap() throws SQLException
-	{
-		return getConnection().getTypeMap();
-	}
-
-	public void setTypeMap(Map map) throws SQLException
-	{
-		getConnection().setTypeMap(map);
-	}
 
 	/**
 	 * Not allowed if within a transaction.
@@ -248,11 +173,6 @@ public class ConnectionImple implements java.sql.Connection
 		{
 			getConnection().setAutoCommit(autoCommit);
 		}
-	}
-
-	public boolean getAutoCommit() throws SQLException
-	{
-		return getConnection().getAutoCommit();
 	}
 
 	/**
@@ -404,11 +324,6 @@ public class ConnectionImple implements java.sql.Connection
 			return _theConnection.isClosed();
 	}
 
-	public DatabaseMetaData getMetaData() throws SQLException
-	{
-		return getConnection().getMetaData();
-	}
-
 	/**
 	 * Can only set readonly before we use the connection in a given
 	 * transaction!
@@ -428,60 +343,6 @@ public class ConnectionImple implements java.sql.Connection
 					.getString("com.arjuna.ats.internal.jdbc.setreadonly"));
 	}
 
-	public boolean isReadOnly() throws SQLException
-	{
-		return getConnection().isReadOnly();
-	}
-
-	public void setCatalog(String cat) throws SQLException
-	{
-		checkTransaction();
-
-		registerDatabase();
-
-		getConnection().setCatalog(cat);
-	}
-
-	public String getCatalog() throws SQLException
-	{
-		checkTransaction();
-
-		registerDatabase();
-
-		return getConnection().getCatalog();
-	}
-
-	/**
-	 * @message com.arjuna.ats.internal.jdbc.stateerror State must be:
-	 */
-
-	public void setTransactionIsolation(int iso) throws SQLException
-	{
-		checkTransaction();
-
-		/*
-		 * if (iso != Connection.TRANSACTION_SERIALIZABLE) throw new
-		 * SQLException(jdbcLogger.logMesg.getString("com.arjuna.ats.internal.jdbc.stateerror")+"Connection.TRANSACTION_SERIALIZABLE");
-		 */
-
-		getConnection().setTransactionIsolation(iso);
-	}
-
-	public int getTransactionIsolation() throws SQLException
-	{
-		return getConnection().getTransactionIsolation();
-	}
-
-	public SQLWarning getWarnings() throws SQLException
-	{
-		return getConnection().getWarnings();
-	}
-
-	public void clearWarnings() throws SQLException
-	{
-		getConnection().clearWarnings();
-	}
-
 	/**
 	 * @return the Arjuna specific recovery connection information. This should
 	 *         not be used by anything other than Arjuna.
@@ -491,271 +352,6 @@ public class ConnectionImple implements java.sql.Connection
 	{
 		return _recoveryConnection;
 	}
-
-	/*
-	 * ******************************************************************* *
-	 * JDBC 3.0 section, needed to compile under jdk1.4 * We don't support this
-	 * stuff yet, so we just throw exceptions.
-	 */
-
-	public void setHoldability(int holdability) throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	public int getHoldability() throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	public Savepoint setSavepoint() throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	public Savepoint setSavepoint(String name) throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	public void rollback(Savepoint savepoint) throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	public void releaseSavepoint(Savepoint savepoint) throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	public Statement createStatement(int resultSetType,
-			int resultSetConcurrency, int resultSetHoldability)
-			throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	public PreparedStatement prepareStatement(String sql, int resultSetType,
-			int resultSetConcurrency, int resultSetHoldability)
-			throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	public CallableStatement prepareCall(String sql, int resultSetType,
-			int resultSetConcurrency, int resultSetHoldability)
-			throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys)
-			throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	public PreparedStatement prepareStatement(String sql, int columnIndexes[])
-			throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	public PreparedStatement prepareStatement(String sql, String columnNames[])
-			throws SQLException
-	{
-		throw new SQLException("feature not supported");
-	}
-
-	/*
-	 * end of the JDBC 3.0 section
-	 * *******************************************************************
-	 */
-
-    /*
-     * ******************************************************************* *
-     * JDBC 4.0 method section.
-     */
-
-    public Clob createClob() throws SQLException
-    {
-        checkTransaction();
-
-        registerDatabase();
-
-        return getConnection().createClob();
-    }
-
-    public Blob createBlob() throws SQLException
-    {
-        checkTransaction();
-
-        registerDatabase();
-
-        return getConnection().createBlob();
-    }
-
-    public NClob createNClob() throws SQLException
-    {
-        checkTransaction();
-
-		registerDatabase();
-
-		return getConnection().createNClob();
-    }
-
-    public SQLXML createSQLXML() throws SQLException
-    {
-        checkTransaction();
-
-		registerDatabase();
-
-		return getConnection().createSQLXML();
-    }
-
-    public boolean isValid(int timeout) throws SQLException
-    {
-        checkTransaction();
-
-        registerDatabase();
-
-        return getConnection().isValid(timeout);
-    }
-
-    public String getClientInfo(String name) throws SQLException
-    {
-        return getConnection().getClientInfo(name);
-    }
-
-    public Properties getClientInfo() throws SQLException
-    {
-        return getConnection().getClientInfo();
-    }
-
-    public void setClientInfo(String name, String value) throws SQLClientInfoException
-    {
-        try
-        {
-    		getConnection().setClientInfo(name, value);
-        }
-        catch(SQLException e)
-        {
-            throw new SQLClientInfoException("setClientInfo : getConnection failed", null, e);
-        }
-    }
-
-    public void setClientInfo(Properties properties) throws SQLClientInfoException
-    {
-        try
-        {
-    		getConnection().setClientInfo(properties);
-        }
-        catch(SQLException e)
-        {
-            throw new SQLClientInfoException("setClientInfo : getConnection failed", null, e);
-        }
-    }
-
-    public Array createArrayOf(String typeName, Object[] elements) throws SQLException
-    {
-        checkTransaction();
-
-        registerDatabase();
-
-        return getConnection().createArrayOf(typeName, elements);
-    }
-
-    public Struct createStruct(String typeName, Object[] attributes) throws SQLException
-    {
-        checkTransaction();
-
-        registerDatabase();
-
-        return getConnection().createStruct(typeName, attributes);
-    }
-
-    public <T> T unwrap(Class<T> iface) throws SQLException
-    {
-        if (iface != null) {
-            if (iface.isInstance(this)) {
-                return (T) this;
-            } else {
-                Connection conn = getConnection();
-                if (conn != null) {
-                    if (iface.isInstance(conn)) {
-                        return (T) conn;
-                    } else if(conn.isWrapperFor(iface)) {
-                        return conn.unwrap(iface);
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    public boolean isWrapperFor(Class<?> iface) throws SQLException
-    {
-        if (iface != null) {
-            if (iface.isInstance(this)) {
-                return true;
-            } else {
-                Connection conn = getConnection();
-                if (conn != null) {
-                    if (iface.isInstance(conn)) {
-                        return true;
-                    } else {
-                        return conn.isWrapperFor(iface);
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    /*
-	 * end of the JDBC 4.0 section
-	 * *******************************************************************
-	 */
-
-    /*
-     * ******************************************************************* *
-     * Java 7 method section.
-     */
-
-    //@Override
-    public void setSchema(String schema) throws SQLException
-    {
-        throw new SQLException();
-    }
-
-    //@Override
-    public String getSchema() throws SQLException
-    {
-        throw new SQLException();
-    }
-
-    //@Override
-    public void abort(Executor executor) throws SQLException
-    {
-        throw new SQLException();
-    }
-
-    //@Override
-    public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException
-    {
-        throw new SQLException();
-    }
-
-    //@Override
-    public int getNetworkTimeout() throws SQLException
-    {
-        throw new SQLException();
-    }
-
-    /*
-	 * end of the Java 7 section
-	 * *******************************************************************
-	 */
 
 	/**
 	 * @return the XAResource associated with the current XAConnection.
@@ -1134,6 +730,88 @@ public class ConnectionImple implements java.sql.Connection
 				}
 
 				_currentIsolationLevel = Connection.TRANSACTION_SERIALIZABLE;
+			}
+		}
+	}
+
+	public Object invoke(Object proxy, Method method, Object[] args)
+			throws Throwable {
+
+		if (method.getName().equals("setAutoCommit")) {
+			setAutoCommit((Boolean) args[0]);
+			return null;
+		} else if (method.getName().equals("commit")) {
+			commit();
+			return null;
+		} else if (method.getName().equals("rollback")) {
+			rollback();
+			return null;
+		} else if (method.getName().equals("close")) {
+			close();
+			return null;
+		} else if (method.getName().equals("isClosed")) {
+			return isClosed();
+		} else if (method.getName().equals("setReadOnly")) {
+			setReadOnly((Boolean) args[0]);
+			return null;
+		} else {
+			if ((method.getName().equals("setSavepoint")
+					|| method.getName().equals("rollback") || method.getName()
+					.equals("releaseSavepoint"))) {
+				if (transactionRunning())
+					throw new SQLException(
+							jdbcLogger.logMesg
+									.getString("com.arjuna.ats.internal.jdbc.releasesavepointerror"));
+				// Don't do checkTransaction or registerDatabase
+			} else if (method.getName().equals("setSchema")
+					|| method.getName().equals("getSchema")
+					|| method.getName().equals("abort")
+					|| method.getName().equals("setNetworkTimeout")
+					|| method.getName().equals("getNetworkTimeout")) {
+				throw new SQLException("Method " + method.getName()
+						+ " not supported");
+			} else if (method.getName().equals("getTypeMap")
+					|| method.getName().equals("setTypeMap")
+					|| method.getName().equals("getAutoCommit")
+					|| method.getName().equals("getMetaData")
+					|| method.getName().equals("isReadOnly")
+					|| method.getName().equals("getTransactionIsolation")
+					|| method.getName().equals("getWarnings")
+					|| method.getName().equals("clearWarnings")
+					|| method.getName().equals("getClientInfo")
+					|| method.getName().equals("setClientInfo")
+					|| method.getName().equals("isWrapperFor")
+					|| method.getName().equals("unwrap")) {
+				// Don't do checkTransaction or registerDatabase
+			} else if (method.getName().equals("setTransactionIsolation")
+					|| method.getName().equals("setTypeMap")
+					|| method.getName().equals("getAutoCommit")
+					|| method.getName().equals("getMetaData")
+					|| method.getName().equals("isReadOnly")
+					|| method.getName().equals("getTransactionIsolation")
+					|| method.getName().equals("getWarnings")
+					|| method.getName().equals("clearWarnings")
+					|| method.getName().equals("getClientInfo")
+					|| method.getName().equals("setClientInfo")) {
+				// Don't do registerDatabase
+				checkTransaction();
+			} else {
+				checkTransaction();
+
+				registerDatabase();
+			}
+
+			try {
+				return (Boolean) method.invoke(getConnection(), args);
+			} catch (Throwable e) {
+				SQLException e2 = new SQLException("Could not call isValid:"
+						+ e.getMessage());
+				if (e.getCause() instanceof SQLException) {
+					e2.setNextException((SQLException) e.getCause());
+				} else {
+					e.printStackTrace();
+				}
+				throw e2;
 			}
 		}
 	}

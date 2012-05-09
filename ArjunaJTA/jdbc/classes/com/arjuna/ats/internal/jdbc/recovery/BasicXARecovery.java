@@ -31,20 +31,19 @@
 
 package com.arjuna.ats.internal.jdbc.recovery;
 
+import java.sql.SQLException;
+import java.util.Properties;
+
+import javax.transaction.xa.XAResource;
+
+import com.arjuna.ats.internal.jdbc.ConnectionImple;
 import com.arjuna.ats.jdbc.TransactionalDriver;
 import com.arjuna.ats.jdbc.common.jdbcPropertyManager;
 import com.arjuna.ats.jdbc.logging.jdbcLogger;
-
 import com.arjuna.ats.jta.recovery.XAResourceRecovery;
-
-import com.arjuna.common.util.logging.*;
-
-import java.sql.*;
-import javax.transaction.xa.*;
-import java.util.*;
-
-import java.lang.NumberFormatException;
 import com.arjuna.common.internal.util.propertyservice.plugins.io.XMLFilePlugin;
+import com.arjuna.common.util.logging.DebugLevel;
+import com.arjuna.common.util.logging.VisibilityLevel;
 
 /**
  * This class implements the XAResourceRecovery interface for XAResources. The
@@ -190,7 +189,7 @@ public class BasicXARecovery implements XAResourceRecovery
 
 	public synchronized XAResource getXAResource () throws SQLException
 	{
-		JDBC2RecoveryConnection conn = null;
+		ConnectionImple conn = null;
 
 		if (hasMoreResources())
 		{
@@ -222,7 +221,7 @@ public class BasicXARecovery implements XAResourceRecovery
 			return true;
 	}
 
-	private final JDBC2RecoveryConnection getStandardConnection ()
+	private final ConnectionImple getStandardConnection ()
 			throws SQLException
 	{
 		String number = new String("" + connectionIndex);
@@ -246,13 +245,13 @@ public class BasicXARecovery implements XAResourceRecovery
 			if (dc != null)
 				dbProperties.put(TransactionalDriver.dynamicClass, dc);
 
-			return new JDBC2RecoveryConnection(url, dbProperties);
+			return new ConnectionImple(url, dbProperties);
 		}
 		else
 			return null;
 	}
 
-	private final JDBC2RecoveryConnection getJNDIConnection ()
+	private final ConnectionImple getJNDIConnection ()
 			throws SQLException
 	{
 		String number = new String("" + connectionIndex);
@@ -270,7 +269,7 @@ public class BasicXARecovery implements XAResourceRecovery
 			dbProperties.put(TransactionalDriver.userName, theUser);
 			dbProperties.put(TransactionalDriver.password, thePassword);
 
-			return new JDBC2RecoveryConnection(url, dbProperties);
+			return new ConnectionImple(url, dbProperties);
 		}
 		else
 			return null;
