@@ -459,6 +459,12 @@
         	</batchtest>
         </junit>
 
+        <condition property="bytemanversion" value="201" else="201">
+            <not>
+                 <contains string="${java.version}" substring="1.5" casesensitive="false" />
+            </not>
+        </condition>
+
         <junit printsummary="yes" fork="true" dir="${basedir}" showoutput="false">
             <formatter type="plain"/>
             <classpath>
@@ -477,7 +483,7 @@
                 </fileset>
             </batchtest>
 
-            <jvmarg value="-javaagent:../../ext/byteman-122.jar=script:tests/byteman-scripts/reaper.txt"/>
+            <jvmarg value="-javaagent:../../ext/byteman/byteman-${bytemanversion}.jar=script:tests/byteman-scripts/reaper.txt"/>
             <jvmarg value="-Dorg.jboss.byteman.debug"/>
         </junit>
     </target>
