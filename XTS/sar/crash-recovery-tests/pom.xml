@@ -11,7 +11,7 @@
 	<packaging>jar</packaging>
 	<name>xts crash recovery tests</name>
 	<description>xts crash recovery tests</description>
-	<version>5.0.0.M2-SNAPSHOT</version>
+	<version>4.16.5.Final-SNAPSHOT</version>
 	<!--
 	<repositories>
 		<repository>
@@ -93,13 +93,13 @@
 				 <dependency>
 					 <groupId>org.jboss.as</groupId>
 					 <artifactId>jboss-as-arquillian-container-managed</artifactId>
-					 <version>7.1.2.Final-SNAPSHOT</version>
+					 <version>7.1.1.Final</version>
 					 <scope>test</scope>
 				 </dependency>
 				  <dependency>
                     <groupId>org.jboss.as</groupId>
                     <artifactId>jboss-as-controller-client</artifactId>
-                    <version>7.1.2.Final-SNAPSHOT</version>
+                    <version>7.1.1.Final</version>
                     <scope>test</scope>
                 </dependency>
 			 </dependencies>
