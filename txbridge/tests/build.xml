@@ -86,7 +86,7 @@
             <if>
                 <os family="windows" />
                 <then>
-                    <exec executable="mvn" dir="${basedir}" failonerror="true">
+                    <exec executable="cmd" dir="${basedir}" failonerror="true">
                         <arg value="/c" />
                         <arg value="mvn.bat" />
                         <mvn.args />
