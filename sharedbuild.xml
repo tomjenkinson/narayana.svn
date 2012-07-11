@@ -81,17 +81,47 @@
 
     <property name="byteman.dir" value="${global.ext.lib.dir}" />
 
-    <path id="byteman.lib" >
-        <pathelement location="${byteman.dir}/byteman.jar" />
-        <pathelement location="${byteman.dir}/byteman-bmunit.jar" />
-        <pathelement location="${byteman.dir}/byteman-install.jar" />
-        <pathelement location="${byteman.dir}/byteman-submit.jar" />
-        <pathelement location="${byteman.dir}/byteman-dtest.jar" />
-        <pathelement location="${java.home}/../lib/tools.jar" />
-    </path>
-
     <taskdef resource="emma_ant.properties" classpathref="emma.lib" />
 
+    <condition property="isMacOS">
+        <os family="mac"/>
+    </condition>
+    
+    <target name="path-init-mac" if="${isMacOS}">
+        <path id="byteman.lib" >
+            <pathelement location="${byteman.dir}/byteman.jar" />
+            <pathelement location="${byteman.dir}/byteman-bmunit.jar" />
+            <pathelement location="${byteman.dir}/byteman-install.jar" />
+            <pathelement location="${byteman.dir}/byteman-submit.jar" />
+            <pathelement location="${byteman.dir}/byteman-dtest.jar" />
+        </path>
+        <path id="perf.support.lib" >
+            <!-- jconsole performance graphing support
+                 -->
+            <pathelement location="${sharedbuild.base.dir}/ext/orson-0.5.0.jar"/>
+            <pathelement location="${sharedbuild.base.dir}/ext/jcommon-1.0.10.jar"/>
+            <pathelement location="${sharedbuild.base.dir}/ext/jfreechart-1.0.6.jar"/>
+        </path>
+    </target>
+    
+    <target name="path-init" unless="${isMacOS}">
+        <path id="byteman.lib" >
+            <pathelement location="${byteman.dir}/byteman.jar" />
+            <pathelement location="${byteman.dir}/byteman-bmunit.jar" />
+            <pathelement location="${byteman.dir}/byteman-install.jar" />
+            <pathelement location="${byteman.dir}/byteman-submit.jar" />
+            <pathelement location="${byteman.dir}/byteman-dtest.jar" />
+            <pathelement location="${java.home}/../lib/tools.jar" />
+        </path>
+        <path id="perf.support.lib" >
+            <!-- jconsole performance graphing support
+                 -->
+            <pathelement location="${sharedbuild.base.dir}/ext/orson-0.5.0.jar"/>
+            <pathelement location="${sharedbuild.base.dir}/ext/jcommon-1.0.10.jar"/>
+            <pathelement location="${sharedbuild.base.dir}/ext/jfreechart-1.0.6.jar"/>
+            <pathelement location="${java.home}/../lib/jconsole.jar"/>
+        </path>
+    </target>
 
     <target name="clean">
         <delete dir="${build.dir}"/>
@@ -104,7 +134,7 @@
         </for>
     </target>
 
-    <target name="init">
+    <target name="init" depends="path-init-mac,path-init">
 
         <mkdir dir="${build.dir}"/>
         <mkdir dir="${build.dir}/lib"/>
