@@ -101,6 +101,7 @@
             <pathelement location="${sharedbuild.base.dir}/ext/orson-0.5.0.jar"/>
             <pathelement location="${sharedbuild.base.dir}/ext/jcommon-1.0.10.jar"/>
             <pathelement location="${sharedbuild.base.dir}/ext/jfreechart-1.0.6.jar"/>
+            <pathelement location="${java.home}/../Classes/jconsole.jar"/>
         </path>
     </target>
     
