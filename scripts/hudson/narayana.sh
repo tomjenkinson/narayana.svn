@@ -44,7 +44,8 @@ fi
 JBOSS_VERSION=`ls -1 ${WORKSPACE}/jboss-as/build/target | grep jboss-as`
 export JBOSS_HOME=${WORKSPACE}/jboss-as/build/target/${JBOSS_VERSION}
 
-$JBOSS_HOME/bin/standalone.sh --server-config=../../docs/examples/configs/standalone-xts.xml&
+cp ${JBOSS_HOME}/docs/examples/configs/standalone-xts.xml ${JBOSS_HOME}/standalone/configuration
+$JBOSS_HOME/bin/standalone.sh --server-config=standalone-xts.xml&
 sleep 10 
 
 #RUN XTS UNIT TESTS
