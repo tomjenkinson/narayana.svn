@@ -1,6 +1,13 @@
 package com.arjuna.qa.junit;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.List;
+
 import org.jboss.arquillian.container.test.api.Config;
 import org.jboss.arquillian.container.test.api.ContainerController;
 import org.jboss.arquillian.container.test.api.Deployer;
@@ -91,7 +98,12 @@ public class BaseCrashTest
         }
         String dir = jbossHome + "/standalone/data/tx-object-store/ShadowNoFileLockStore/defaultStore/XTS/";
         File objectStore = new File(dir);
-        Assert.assertTrue(checkTxObjectStore(objectStore));
+		boolean ischeck = checkTxObjectStore(objectStore);
+		if (!ischeck) {
+			StringBuffer buffer = exploreDirectory(objectStore, 0);
+			System.out.println(buffer);
+		}
+		Assert.assertTrue(ischeck); 
 
         if (testName != null && scriptName != null)
         {
@@ -117,7 +129,6 @@ public class BaseCrashTest
         config.add("javaVmArguments", javaVmArguments + XTSServiceTest.replace("@TestName@", testClass));
 
         controller.start("jboss-as", config.map());
-        //deployer.undeploy("xtstest");
         deployer.deploy("xtstest");
 
         //Waiting for crashing
@@ -127,15 +138,7 @@ public class BaseCrashTest
         config.add("javaVmArguments", javaVmArguments);
         controller.start("jboss-as", config.map());
 
-        //redeploy xtstest
-        //deployer.undeploy("xtstest");
-        //deployer.deploy("xtstest");
-
-        //Waiting for recovery
-        //Thread.sleep(waitForRecovery * 60 * 1000);
-
-        //deployer.undeploy("xtstest");
-        //controller.stop("jboss-as");
+        //Waiting for recovery happening
         controller.kill("jboss-as");
     }
 
@@ -177,5 +180,54 @@ public class BaseCrashTest
             }
         }
         return true;
+    }
+
+	private StringBuffer exploreDirectory(File directory, int level) {
+        List<File> files = Arrays.asList(directory.listFiles());
+        StringBuffer result = new StringBuffer();
+        String NEWLINE = "\n";
+        String FILE_GRAPHIC = "- ";
+        String DIRECTORY_GRAPHIC = "+- ";
+
+        StringBuffer spaces = new StringBuffer();
+        for (int i = 0; i < level; i++) {
+            spaces.append(" ");
+        }
+
+        for (File cur : files) {
+            if (cur.isDirectory()) {
+                result.append(spaces + DIRECTORY_GRAPHIC + "["+ cur.getName() +"]"
+                        + NEWLINE);
+
+                List<File> afiles = Arrays.asList(cur.listFiles());
+                for (File acur : afiles) {
+                    if (acur.isFile()) {
+                        result.append(" " + spaces + FILE_GRAPHIC + acur.getName() + NEWLINE);
+                        try {
+                            FileInputStream fis = new FileInputStream(acur);
+                            InputStreamReader bis = new InputStreamReader(fis);
+                            BufferedReader dis  = new BufferedReader(bis);
+
+                            String s;
+                            do {
+                                s = dis.readLine();
+                                result.append(" " + spaces + s + NEWLINE);
+                            }while(s != null);
+
+                            fis.close();
+                            bis.close();
+                            dis.close();
+                        } catch (IOException e) {
+                            //ignore
+                        }
+
+                    }
+                }
+                result.append(exploreDirectory(cur, level + 1));
+            } else if(level == 0) {
+                result.append(spaces + FILE_GRAPHIC + cur.getName() + NEWLINE);
+            }
+        }
+        return result;
     }
 }
