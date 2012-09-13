@@ -33,6 +33,7 @@ package org.jboss.jbossts.qa.CrashRecovery11Utils;
 
 import com.arjuna.ats.arjuna.common.Environment;
 import com.arjuna.ats.arjuna.common.arjPropertyManager;
+import org.jboss.jbossts.qa.ArjunaCore.Utils.qautil;
 
 public class Delays
 {
@@ -52,11 +53,12 @@ public class Delays
 			Integer backoffPeriodInteger = new Integer(backoffPeriodString);
 			int _backoffPeriod = backoffPeriodInteger.intValue();
 
-			return (_backoffPeriod + _recoveryPeriod + (5 * 1000) /*5 secs for processing*/);
+			/*add 5 secs for processing*/
+			return qautil.getDelay((_backoffPeriod + _recoveryPeriod + (5 * 1000));
 		}
 		catch (NumberFormatException e)
 		{
-			return 30 * 1000;
+			return qautil.getDelay(30 * 1000);
 		}
 	}
 }

@@ -56,6 +56,7 @@
 
         <node-configuration os="local">
 			<properties>
+				<property name="ts.timeout.factor" value="1"/>
 				<property name="Context.INITIAL_CONTEXT_FACTORY" value="com.sun.jndi.fscontext.RefFSContextFactory"/>
 				<property name="jdbcprofilestore.dir" value="$(PRODUCT.DIR)/qa/jdbc_profiles"/>
                 <property name="Context.PROVIDER_URL" value="file:$(PRODUCT.DIR)"/>
@@ -89,6 +90,7 @@
 
         <node-configuration os="Linux">
 			<properties>
+				<property name="ts.timeout.factor" value="1"/>
 				<property name="Context.INITIAL_CONTEXT_FACTORY" value="com.sun.jndi.fscontext.RefFSContextFactory"/>
 				<property name="jdbcprofilestore.dir" value="$(PRODUCT.DIR)/qa/jdbc_profiles"/>
 				<property name="Context.PROVIDER_URL" value="file://$(PRODUCT.DIR)"/>
@@ -121,6 +123,7 @@
 
         <node-configuration os="Linux_jdk15">
 			<properties>
+				<property name="ts.timeout.factor" value="1"/>
 				<property name="Context.INITIAL_CONTEXT_FACTORY" value="com.sun.jndi.fscontext.RefFSContextFactory"/>
 				<property name="jdbcprofilestore.dir" value="$(PRODUCT.DIR)/qa/jdbc_profiles"/>
 				<property name="Context.PROVIDER_URL" value="file://$(PRODUCT.DIR)"/>
@@ -157,6 +160,7 @@
 
 		<node-configuration os="RHEL4-32"><!-- RHEL4, x86: dtf1 -->
 			<properties>
+				<property name="ts.timeout.factor" value="1"/>
 
 				<property name="Context.INITIAL_CONTEXT_FACTORY" value="com.sun.jndi.fscontext.RefFSContextFactory"/>
 				<property name="jdbcprofilestore.dir" value="$(PRODUCT.DIR)/qa/jdbc_profiles/"/>
@@ -188,6 +192,7 @@
 
 		<node-configuration os="RHEL4-64"><!-- RHEL4, x86_64: dtf3 -->
             <properties>
+		<property name="ts.timeout.factor" value="1"/>
                 <property name="Context.INITIAL_CONTEXT_FACTORY" value="com.sun.jndi.fscontext.RefFSContextFactory"/>
 
                 <property name="jdbcprofilestore.dir" value="$(PRODUCT.DIR)/qa/jdbc_profiles/"/>
@@ -218,6 +223,7 @@
 		</node-configuration>
 		<node-configuration os="RHEL5-32"><!-- RHEL5, x86: dtf2 -->
             <properties>
+		<property name="ts.timeout.factor" value="1"/>
                 <property name="Context.INITIAL_CONTEXT_FACTORY" value="com.sun.jndi.fscontext.RefFSContextFactory"/>
                 <property name="jdbcprofilestore.dir" value="$(PRODUCT.DIR)/qa/jdbc_profiles/"/>
                 <property name="Context.PROVIDER_URL" value="file://$(PRODUCT.DIR)"/>
@@ -248,6 +254,7 @@
 		</node-configuration>
 		<node-configuration os="RHEL5-64"><!-- RHEL5, x86_64: dtf4 -->
 			<properties>
+				<property name="ts.timeout.factor" value="1"/>
 				<property name="Context.INITIAL_CONTEXT_FACTORY" value="com.sun.jndi.fscontext.RefFSContextFactory"/>
 				<property name="jdbcprofilestore.dir" value="$(PRODUCT.DIR)/qa/jdbc_profiles/"/>
 				<property name="Context.PROVIDER_URL" value="file://$(PRODUCT.DIR)"/>
@@ -278,6 +285,7 @@
 
         <node-configuration os="SOL10-SPARC"><!-- Solaris 10 on SPARC: dtf7, dtf8 -->
             <properties>
+		<property name="ts.timeout.factor" value="1"/>
                 <property name="Context.INITIAL_CONTEXT_FACTORY" value="com.sun.jndi.fscontext.RefFSContextFactory"/>
                 <property name="jdbcprofilestore.dir" value="$(PRODUCT.DIR)/qa/jdbc_profiles/"/>
                 <property name="Context.PROVIDER_URL" value="file://$(PRODUCT.DIR)"/>
@@ -308,6 +316,7 @@
 
         <node-configuration os="HPUX11-IA64"><!-- HP-UX 11i on Itanium: dtf9, dtf10 -->
             <properties>
+		<property name="ts.timeout.factor" value="1"/>
                 <property name="Context.INITIAL_CONTEXT_FACTORY" value="com.sun.jndi.fscontext.RefFSContextFactory"/>
                 <property name="jdbcprofilestore.dir" value="$(PRODUCT.DIR)/qa/jdbc_profiles/"/>
                 <property name="Context.PROVIDER_URL" value="file://$(PRODUCT.DIR)"/>
@@ -339,6 +348,7 @@
 		<node-configuration os="WIN2003-64"><!-- Windows 2003 Server on x86_64 -->
 
 			<properties>
+				<property name="ts.timeout.factor" value="1"/>
 				<property name="Context.INITIAL_CONTEXT_FACTORY" value="com.sun.jndi.fscontext.RefFSContextFactory"/>
 				<property name="jdbcprofilestore.dir" value="$(PRODUCT.DIR)/qa/jdbc_profiles/"/>
 				<property name="Context.PROVIDER_URL" value="file://$(PRODUCT.DIR)"/>

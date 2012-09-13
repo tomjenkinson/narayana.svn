@@ -63,6 +63,7 @@ import org.jboss.jbossts.qa.Utils.ORBInterface;
 import org.jboss.jbossts.qa.Utils.OTS;
 import org.jboss.jbossts.qa.Utils.ServerIORStore;
 import org.omg.CORBA.TRANSACTION_ROLLEDBACK;
+import org.jboss.jbossts.qa.ArjunaCore.Utils.qautil;
 
 public class Client05
 {
@@ -105,7 +106,7 @@ public class Client05
 			correct = correct && service.check_oper();
 
 // now sleep to let reply completion do its job 1 second should be more than enough
-			Thread.sleep(10 * 1000);
+			Thread.sleep(qautil.getDelay(10 * 1000));
 
 			correct = correct && service.is_correct();
 //  after reply_completion is called the resource will have rollback called on

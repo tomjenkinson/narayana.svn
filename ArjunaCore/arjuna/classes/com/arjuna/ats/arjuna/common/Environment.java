@@ -164,5 +164,10 @@ public class Environment
       *
       */
     public static final String SERVER_BIND_ADDRESS = "jbossts.bind.address";
+
+    /**
+      * Multiplication factor by whick QA test suite crash rec test timeouts will be changed by
+      */
+    public static final String FACTOR_SYS_PROP = "ts.timeout.factor";
 }
 

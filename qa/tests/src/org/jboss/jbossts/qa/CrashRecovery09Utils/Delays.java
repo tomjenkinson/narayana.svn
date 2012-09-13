@@ -31,10 +31,12 @@
 
 package org.jboss.jbossts.qa.CrashRecovery09Utils;
 
+import org.jboss.jbossts.qa.ArjunaCore.Utils.qautil;
+
 public class Delays
 {
 	public static int recoveryDelay()
 	{
-		return 60 * 1000;
+		return qautil.getDelay(60 * 1000);
 	}
 }

@@ -22,13 +22,39 @@ package org.jboss.jbossts.qa.ArjunaCore.Utils;
 
 import com.arjuna.ats.arjuna.common.Uid;
 import org.jboss.jbossts.qa.Utils.ServerIORStore;
+import com.arjuna.ats.arjuna.common.arjPropertyManager;
 
 import java.io.File;
 
 public class qautil
 {
+    private static double delayFactor = 0;
+
+    public static int getDelay(int milli) {
+        if (delayFactor <= 0) {
+            delayFactor = 1;
+
+            String delay = arjPropertyManager.propertyManager.getProperty(com.arjuna.ats.arjuna.common.Environment.FACTOR_SYS_PROP);
+
+            if (delay != null) {
+                try {
+                    delayFactor = Double.parseDouble(delay);
+
+                    if (delayFactor <= 0)
+                        delayFactor = 1;
+                } catch (NumberFormatException e) {
+                }
+            }
+
+            System.out.println("Delay Factor is " + delayFactor);
+        }
+
+        return (int) (milli * delayFactor);
+    }
+
 	/**
 	 * Default sleep behavior is to perform gc then sleep for 1 min (1000 milli seconds)
+     * This is a heavily used call but the sleep period is quite long so do not apply any delay factor
 	 */
 	public static void sleep()
 	{
