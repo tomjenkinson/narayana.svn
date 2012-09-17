@@ -54,7 +54,7 @@ public class Delays
 			int _backoffPeriod = backoffPeriodInteger.intValue();
 
 			/*add 5 secs for processing*/
-			return qautil.getDelay((_backoffPeriod + _recoveryPeriod + (5 * 1000));
+			return qautil.getDelay(_backoffPeriod + _recoveryPeriod + (5 * 1000));
 		}
 		catch (NumberFormatException e)
 		{
