@@ -10,7 +10,7 @@ free -m
 for i in `ps -eaf | grep java | grep "standalone*.xml" | grep -v grep | cut -c10-15`; do kill $i; done
 
 #BUILD JBOSSTS
-ant -Demma.enabled=false -Dpublican=false jbossall
+ant -Demma.enabled=false -Dpublican=false $@ jbossall
 if [ "$?" != "0" ]; then
 	exit -1
 fi
