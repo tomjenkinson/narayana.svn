@@ -24,13 +24,13 @@ if [ "$?" != "0" ]; then
 fi
 
 cd jboss-as
-git checkout -t origin/4_16_BRANCH
+git checkout -t origin/JBTM_EAP60x_MP
 if [ "$?" != "0" ]; then
 	exit -1
 fi
 
 git remote add upstream git://github.com/jbossas/jboss-as.git
-git pull --rebase --ff-only upstream master
+git pull --rebase --ff-only upstream 7.1-next
 if [ "$?" != "0" ]; then
 	exit -1
 fi
