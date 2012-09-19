@@ -58,6 +58,8 @@ public class CoreEnvironmentBean implements CoreEnvironmentBeanMBean
     private volatile boolean allowMultipleLastResources = false;
     private volatile boolean disableMultipleLastResourcesWarning = false;
 
+    @FullPropertyName(name = "timeout.factor")
+    private volatile int timeoutFactor = 1;
 
     /**
      * Returns the 'var' directory path.
@@ -303,6 +305,24 @@ public class CoreEnvironmentBean implements CoreEnvironmentBeanMBean
     public void setDisableMultipleLastResourcesWarning(boolean disableMultipleLastResourcesWarning)
     {
         this.disableMultipleLastResourcesWarning = disableMultipleLastResourcesWarning;
+    }
+
+    /**
+     * Get a factor by which all crashrec delays in the QA test suited will be multiplied
+     * @return the multiplier
+     */
+    public int getTimeoutFactor()
+    {
+        return timeoutFactor;
+    }
+
+    /**
+     * Set a factor by which all crashrec delays in the QA test suited will be multiplied
+     * @param timeoutFactor the factor
+     */
+    public void setTimeoutFactor(int timeoutFactor)
+    {
+        this.timeoutFactor = timeoutFactor;
     }
 
     /**

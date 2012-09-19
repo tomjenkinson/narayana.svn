@@ -188,6 +188,8 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
+[ -z "${MFACTOR+x}" ] || sed -i TaskImpl.properties -e "s/COMMAND_LINE_12=-DCoreEnvironmentBean.timeoutFactor=[0-9]*/COMMAND_LINE_12=-DCoreEnvironmentBean.timeoutFactor=${MFACTOR}/"
+
 sed -i TaskImpl.properties -e "s#^COMMAND_LINE_0=.*#COMMAND_LINE_0=${JAVA_HOME}/bin/java#"
 if [ "$?" != "0" ]; then
 	exit -1
