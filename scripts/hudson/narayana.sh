@@ -146,7 +146,7 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
-mvn clean test
+mvn clean test -Parq
 if [ "$?" != "0" ]; then
 	exit -1
 fi

@@ -120,7 +120,6 @@ public class SingleCoordinatorCompletionParticipantCloseTest extends XTSServiceT
         }
 
         if (exception != null) {
-			exception.printStackTrace();
             error("commit failure " + exception);
         }
 

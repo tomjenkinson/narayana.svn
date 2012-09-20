@@ -172,7 +172,6 @@ public class MultiServiceParticipantCompletionParticipantCloseTest extends XTSSe
         }
 
         if (exception != null) {
-			exception.printStackTrace();
             error("commit failure " + exception);
         }
 

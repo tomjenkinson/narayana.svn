@@ -156,7 +156,6 @@ public class MultiServiceCoordinatorCompletionParticipantCloseAndExitTest extend
         }
 
         if (exception != null) {
-			exception.printStackTrace();
             error("commit failure " + exception);
         }
 

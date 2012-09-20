@@ -4,105 +4,122 @@
 	General Public License, v. 2.1. This program is distributed in the hope that it will be useful, but WITHOUT A WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
 	PURPOSE. See the GNU Lesser General Public License for more details. You should have received a copy of the GNU Lesser General Public License, v.2.1 along with this distribution; if not, write to the Free 
 	Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA. -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	<groupId>org.jboss.narayana.xts</groupId>
-	<modelVersion>4.0.0</modelVersion>
-	<artifactId>localjunit-crash-recovery-tests</artifactId>
-	<packaging>jar</packaging>
-	<name>xts crash recovery tests</name>
-	<description>xts crash recovery tests</description>
-	<version>4.16.5.Final-SNAPSHOT</version>
-	<!--
-	<repositories>
-		<repository>
-			<id>jboss-public-repository</id>
-			<name>JBoss Repository</name>
-			<url>https://repository.jboss.org/nexus/content/groups/public</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
-	-->
-	<build>
-		<plugins>
-			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.1</version>
-				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-	<dependencies>
-		<dependency>
-			<groupId>org.jboss.jbossts</groupId>
-			<artifactId>jbossxts-api</artifactId>
-			<version>4.16.5.Final-SNAPSHOT</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/../build/jbossxts-api.jar</systemPath>
-		</dependency>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    
+        <groupId>org.jboss.narayana.xts</groupId>
+        <modelVersion>4.0.0</modelVersion>
+        <artifactId>localjunit-crash-recovery-tests</artifactId>
+        <packaging>jar</packaging>
+        <name>xts crash recovery tests</name>
+        <description>xts crash recovery tests</description>
+        <version>4.16.5.Final-SNAPSHOT</version>
+
+    <properties>
+        <general.server.jvm.args>-Xms64m -Xmx1024m -XX:MaxPermSize=512m</general.server.jvm.args>
+        <ipv4.server.jvm.args></ipv4.server.jvm.args>
+        <ipv6.server.jvm.args>-Djboss.bind.address=[::1] -Djboss.bind.address.management=[::1] -Djboss.bind.address.unsecure=[::1] -Djava.net.preferIPv4Stack=false -Djava.net.preferIPv6Addresses=true</ipv6.server.jvm.args>
+        <server.debug.args>Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5006</server.debug.args>
+    </properties>
+
+        <dependencies>
+                <dependency>
+                        <groupId>org.jboss.jbossts</groupId>
+                        <artifactId>jbossxts-api</artifactId>
+                        <version>4.16.5.Final-SNAPSHOT</version>
+                        <scope>system</scope>
+                        <systemPath>${project.basedir}/../build/jbossxts-api.jar</systemPath>
+                </dependency>
                 <dependency>
                         <groupId>org.jboss.jbossts</groupId>
                         <artifactId>jbossjta</artifactId>
                         <version>4.16.5.Final-SNAPSHOT</version>
                         <scope>system</scope>
-			<systemPath>${project.basedir}/../../../ArjunaJTS/build/install/lib/jbossjts.jar</systemPath>
+                        <systemPath>${project.basedir}/../../../ArjunaJTS/build/install/lib/jbossjts.jar</systemPath>
                 </dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.8.1</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.arquillian.junit</groupId>
-			<artifactId>arquillian-junit-container</artifactId>
-			<version>1.0.0.Final</version>
-			<scope>compile</scope>
-		</dependency>
-	</dependencies>
-	<profiles>
-		<profile>
-			<!-- The default profile skips all tests, though you can tune it 
-			to run just unit tests based on a custom pattern -->
-			<!-- Seperate profiles are provided for running all tests, including 
-			Arquillian tests that execute in the specified container -->
-		 <id>default</id>
-		 <activation>
-			 <activeByDefault>true</activeByDefault>
-		 </activation>
-		 <build>
-			 <plugins>
-				 <plugin>
-					 <artifactId>maven-surefire-plugin</artifactId>
-					 <version>2.7.2</version>
-					 <configuration>
-						 <redirectTestOutputToFile>true</redirectTestOutputToFile>
-						 <skip>false</skip>
-					 </configuration>
-				 </plugin>
-			 </plugins>		 
-		 </build>
-		 <dependencies>
-				 <dependency>
-					 <groupId>org.jboss.as</groupId>
-					 <artifactId>jboss-as-arquillian-container-managed</artifactId>
-					 <version>7.1.1.Final</version>
-					 <scope>test</scope>
-				 </dependency>
-				  <dependency>
-                    <groupId>org.jboss.as</groupId>
-                    <artifactId>jboss-as-controller-client</artifactId>
-                    <version>7.1.1.Final</version>
-                    <scope>test</scope>
+                <dependency>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                        <version>4.8.1</version>
+                        <scope>compile</scope>
                 </dependency>
-			 </dependencies>
-	 </profile>
- </profiles>
+                <dependency>
+                        <groupId>org.jboss.arquillian.junit</groupId>
+                        <artifactId>arquillian-junit-container</artifactId>
+                        <version>1.0.0.Final</version>
+                        <scope>compile</scope>
+                </dependency>
+        </dependencies>
+  <build>
+    <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.9</version>
+            <configuration>
+              <forkMode>once</forkMode>
+              <workingDirectory>.</workingDirectory>
+              <runOrder>alphabetical</runOrder>
+              <redirectTestOutputToFile>true</redirectTestOutputToFile>
+              <inherited>true</inherited>
+              <includes>
+                <include>**/*.java</include>
+              </includes>
+            </configuration>
+        </plugin>
+    </plugins>
+  </build>
+
+    <profiles>
+        <profile>
+            <id>arq</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables combine.children="append">
+                                <server.jvm.args>${general.server.jvm.args} ${ipv4.server.jvm.args}</server.jvm.args>
+                                <node.address>127.0.0.1</node.address>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+                        <dependencies>
+                                <dependency>
+                                        <groupId>org.jboss.as</groupId>
+                                        <artifactId>jboss-as-arquillian-container-managed</artifactId>
+                                        <version>7.2.0.Alpha1-SNAPSHOT</version>
+                                        <scope>test</scope>
+                                </dependency>
+                        </dependencies>
+        </profile>
+        <profile>
+            <id>arqIPv6</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>${ipv6.server.jvm.args}</argLine>
+                            <environmentVariables>
+                            <CLI_IPV6_OPTS>-Djava.net.preferIPv4Stack=false -Djava.net.preferIPv6Addresses=true</CLI_IPV6_OPTS>
+                            </environmentVariables>
+                            <systemPropertyVariables combine.children="append">
+                                <server.jvm.args>${general.server.jvm.args} ${ipv6.server.jvm.args}</server.jvm.args>
+                                <node.address>[::1]</node.address>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
