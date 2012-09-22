@@ -1,7 +1,6 @@
 package org.jboss.jbossts.txbridge.tests.extension;
 
-import org.jboss.arquillian.container.spi.Container;
-import org.jboss.arquillian.container.spi.ServerKillProcessor;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,10 +8,14 @@ import java.io.InputStreamReader;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.jboss.arquillian.container.spi.Container;
+import org.jboss.arquillian.container.spi.ServerKillProcessor;
+
 public class JBossTSAS7ServerKillProcessor implements ServerKillProcessor {
 
     private static final Logger logger = Logger.getLogger(JBossTSAS7ServerKillProcessor.class.getName());
     private static final String CHECK_JBOSS_ALIVE_CMD = "if [ \"$(jps | grep jboss-modules.jar)\" == \"\" ]; then exit 1; fi";
+    private static final String CHECK_FOR_DEFUNCT_JAVA_CMD = "if [ \"$(ps aux | grep '\\[java\\] <defunct>')\" == \"\" ]; then exit 1; fi";
     private static final String SHUTDOWN_JBOSS_CMD = "jps | grep jboss-modules.jar | awk '{ print $1 }' | xargs kill";
 
     private int checkPeriodMillis = 10 * 1000;
@@ -29,6 +32,9 @@ public class JBossTSAS7ServerKillProcessor implements ServerKillProcessor {
             if (jbossIsAlive()) {
                 Thread.sleep(checkPeriodMillis);
                 logger.info("jboss-as is still alive, sleeping for a further " + checkPeriodMillis + "ms");
+            } else if (isDefunctJavaProcess()) {
+                logger.info("Found a defunct java process, sleeping for a further " + checkPeriodMillis + "ms");
+                dumpProcesses(container);
             } else {
                 logger.info("jboss-as killed by byteman scirpt");
                 dumpProcesses(container);
@@ -45,9 +51,17 @@ public class JBossTSAS7ServerKillProcessor implements ServerKillProcessor {
     private boolean jbossIsAlive() throws Exception {
         int exitCode = runShellCommand(CHECK_JBOSS_ALIVE_CMD);
 
-        //Command will 'exit 1' if jboss is not running adn 'exit 0' if it is
+        //Command will 'exit 1' if jboss is not running and 'exit 0' if it is
         return exitCode == 0;
     }
+
+    private boolean isDefunctJavaProcess() throws Exception {
+        int exitCode = runShellCommand(CHECK_FOR_DEFUNCT_JAVA_CMD);
+
+        //Command will 'exit 1' if a defunct java process is not running and 'exit 0' if there is
+        return exitCode == 0;
+    }
+
 
     private void shutdownJBoss() throws Exception {
         runShellCommand(SHUTDOWN_JBOSS_CMD);
