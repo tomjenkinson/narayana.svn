@@ -146,7 +146,7 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
-mvn clean test -Parq
+mvn clean test -Parq -Dorg.jboss.remoting-jmx.timeout=300 
 if [ "$?" != "0" ]; then
 	exit -1
 fi
