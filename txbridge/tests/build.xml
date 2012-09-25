@@ -4,7 +4,7 @@
 
     <import file="../../sharedbuild.xml"/>
 
-    <property name="jbossts.version" value="4.16.5.Final"/>
+    <property name="jbossts.version" value="4.16.6.Final-SNAPSHOT"/>
     <property name="groupid" value="org.jboss.jbossts"/>
     <property name="jboss.home" value="/tmp/jboss-as-7.1.0-SNAPSHOT"/>
 	<property name="standalone.xts.conf.path" value="${jboss.home}/standalone/configuration/standalone-xts.xml"/>
