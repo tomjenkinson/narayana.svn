@@ -3,7 +3,7 @@
 <!ENTITY % BOOK_ENTITIES SYSTEM "Development_Guide.ent">
 <!ENTITY PRODUCT "JBoss Transactions">
 <!ENTITY BOOKID "Development_Guide">
-<!ENTITY VERSION "4.16.5.Final-SNAPSHOT">
+<!ENTITY VERSION "4.16.5.Final">
 <!ENTITY YEAR "2011">
 <!ENTITY HOLDER "JBoss.org">
 <!ENTITY APPSERVER "JBoss Application Server">
