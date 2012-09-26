@@ -34,21 +34,24 @@
             <groupId>org.jboss.jbossts</groupId>
             <artifactId>jbossxts-api</artifactId>
             <version>${version.jbossts}</version>
-            <scope>test</scope>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../../XTS/sar/build/jbossxts-api.jar</systemPath>
        </dependency>
 
        <dependency>
             <groupId>org.jboss.jbossts</groupId>
             <artifactId>jbossjts</artifactId>
             <version>${version.jbossts}</version>
-            <scope>test</scope>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../../ArjunaJTS/build/lib/jbossjts.jar</systemPath>
        </dependency>
 
        <dependency>
             <groupId>org.jboss.jbossts</groupId>
             <artifactId>jbosstxbridge</artifactId>
             <version>${version.jbossts}</version>
-            <scope>test</scope>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../build/txbridge.jar</systemPath>
        </dependency>
 
        <dependency>

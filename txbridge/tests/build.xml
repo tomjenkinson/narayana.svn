@@ -17,7 +17,7 @@
         </mvn.macro>
     </target>
 
-    <target name="dist" depends="clean, install-deps">
+    <target name="dist" depends="clean">
         <mvn.macro>
             <mvn.args>
                 <arg value="compile"/>
@@ -33,13 +33,6 @@
         </mvn.macro>
     </target>
 
-    <target name="install-deps">
-        <!-- installs built jbossts bits to the local maven repository -->
-        <mvn-install-artifact.macro artifact="jbosstxbridge" file="${basedir}/../build/txbridge.jar" version="${jbossts.version}" />
-        <mvn-install-artifact.macro artifact="jbossjts" file="${basedir}/../../install/lib/jbossjts.jar" version="${jbossts.version}" />
-        <mvn-install-artifact.macro artifact="jbossxts-api" file="${basedir}/../../XTS/xts-install/lib/jbossxts-api.jar" version="${jbossts.version}" />
-    </target>
-
     <target name="enable-recovery-listener">
         <!-- recovery listener is needed by crash rec tests -->
         <echo message="enabling the recovery listener in ${standalone.xts.conf.path}"/>
@@ -50,27 +43,6 @@
     </target>
 
     <!-- ==================    macros    =================== -->
-    <macrodef name="mvn-install-artifact.macro">
-        <attribute name="artifact"/>
-        <attribute name="file"/>
-        <attribute name="packaging" default="jar"/>
-        <attribute name="version"/>
-
-        <sequential>
-            <mvn.macro>
-                <mvn.args>
-                    <arg value="install:install-file"/>
-                    <arg value="-Dfile=@{file}"/>
-                    <arg value="-DgroupId=${groupid}"/>
-                    <arg value="-DartifactId=@{artifact}"/>
-                    <arg value="-Dversion=@{version}"/>
-                    <arg value="-Dpackaging=@{packaging}"/>
-                    <arg value="-DgeneratePom=true"/>
-                </mvn.args>
-            </mvn.macro>
-        </sequential>
-    </macrodef>
-
     <macrodef name="mvn.macro">
         <element name="mvn.args"/>
 
