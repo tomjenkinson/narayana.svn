@@ -190,9 +190,10 @@
 	<target name="com.hp.mwlabs.ts.jtax.tests.run" depends="com.hp.mwlabs.ts.jtax.tests.compile" if="com.hp.mwlabs.ts.jtax.tests.compile">
 	    <mkdir dir="${com.hp.mwlabs.ts.jtax.reports.dest}"/>
         
-	    <junit printsummary="yes">
+	    <junit printsummary="yes" showoutput="yes">
 	        <formatter type="plain"/>
 	        <classpath>
+                <pathelement location="tests/config/"/>
 	            <pathelement location="${com.hp.mwlabs.ts.jtax.tests.dest}"/>
 	            <path location="${com.hp.mwlabs.ts.jtax.dest}"/>
 	            <path refid="com.hp.mwlabs.ts.jacorb.classpath"/>
