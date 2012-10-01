@@ -155,14 +155,6 @@
 
         <!-- combined deps for the entire JBossTS. At some point we need to modularize this for different builds -->
 
-   
-        <dependency>
-            <groupId>org.apache.cxf</groupId>
-            <artifactId>cxf-api</artifactId>
-            <version>2.4.9</version>
-	    <scope>provided</scope>
-        </dependency>
-
         <!-- XTS also requires commons-codec (transitive via httpclient?) and commons-httpclient to compile the localjunit module. needed for test only, not XTS runtime dep. -->
         <dependency>
             <groupId>commons-codec</groupId>

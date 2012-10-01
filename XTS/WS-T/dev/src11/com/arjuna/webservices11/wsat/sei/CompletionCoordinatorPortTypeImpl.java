@@ -32,7 +32,6 @@ import com.arjuna.services.framework.task.Task;
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
 @HandlerChain(file="/ws-t_handlers.xml")
 @Addressing(required=true)
-@org.apache.cxf.annotations.EndpointProperty(key = "soap.no.validate.parts", value = "true")
 public class CompletionCoordinatorPortTypeImpl // implements CompletionCoordinatorPortType
 {
     @Resource

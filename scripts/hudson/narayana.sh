@@ -48,6 +48,13 @@ cp ${JBOSS_HOME}/docs/examples/configs/standalone-xts.xml ${JBOSS_HOME}/standalo
 $JBOSS_HOME/bin/standalone.sh --server-config=standalone-xts.xml&
 sleep 10 
 
+#RUN XTS AS INTEGRATION TESTS
+cd ${WORKSPACE}/jboss-as/testsuite/integration/xts
+mvn test -Pxts.integration.tests.profile
+if [ "$?" != "0" ]; 
+        exit -1                  
+fi
+
 #RUN XTS UNIT TESTS
 cd ${WORKSPACE}
 cd XTS

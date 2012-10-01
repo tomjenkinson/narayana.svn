@@ -71,7 +71,7 @@
 
         <!-- external jars used by XTS for all builds -->
     <property name="xts.build.extlib.jars" value="jbossws-api.jar jboss-logging.jar jboss-logging-generator.jar jboss-logging-processor.jar
-            jboss-transaction-api_1.1_spec.jar jboss-servlet-api_3.0_spec.jar dom4j.jar cxf-api.jar"/>
+            jboss-transaction-api_1.1_spec.jar jboss-servlet-api_3.0_spec.jar dom4j.jar"/>
 
         <!-- paths internal to build -->
 

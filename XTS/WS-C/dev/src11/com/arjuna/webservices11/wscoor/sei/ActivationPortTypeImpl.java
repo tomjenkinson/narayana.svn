@@ -33,7 +33,6 @@ import javax.servlet.http.HttpServletRequest;
 // @EndpointConfig(configName = "Standard WSAddressing Endpoint")
 @HandlerChain(file="/ws-c_handlers.xml")
 @Addressing(required=true)
-@org.apache.cxf.annotations.EndpointProperty(key = "soap.no.validate.parts", value = "true")
 public class ActivationPortTypeImpl // implements ActivationPortType
 {
     @Resource private WebServiceContext webServiceCtx;

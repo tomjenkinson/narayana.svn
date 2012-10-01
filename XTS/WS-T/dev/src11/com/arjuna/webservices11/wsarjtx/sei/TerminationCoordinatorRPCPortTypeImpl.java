@@ -22,7 +22,6 @@ import javax.xml.ws.handler.MessageContext;
 @WebService(targetNamespace = "http://schemas.arjuna.com/ws/2005/10/wsarjtx", name = "TerminationCoordinatorRPCPortType")
 @HandlerChain(file="/ws-t-rpc_handlers.xml")
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
-@org.apache.cxf.annotations.EndpointProperty(key = "soap.no.validate.parts", value = "true")
 public class TerminationCoordinatorRPCPortTypeImpl {
 
     @Resource

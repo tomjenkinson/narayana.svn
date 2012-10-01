@@ -35,7 +35,6 @@ import javax.xml.ws.soap.Addressing;
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
 @HandlerChain(file="/ws-t_handlers.xml")
 @Addressing(required=true)
-@org.apache.cxf.annotations.EndpointProperty(key = "soap.no.validate.parts", value = "true")
 public class TerminationParticipantPortTypeImpl implements TerminationParticipantPortType
 {
 
@@ -138,7 +137,7 @@ public class TerminationParticipantPortTypeImpl implements TerminationParticipan
     @WebMethod(operationName = "FaultOperation", action = "http://schemas.arjuna.com/ws/2005/10/wsarjtx/Fault")
     @Oneway
     public void faultOperation(
-        @WebParam(name = "Fault", targetNamespace = "http://schemas.arjuna.com/ws/2005/10/wsarjtx", partName = "parameters")
+        @WebParam(name = "Fault", targetNamespace = "http://schemas.xmlsoap.org/soap/envelope/", partName = "parameters")
         Fault parameters)
     {
         MessageContext ctx = webServiceCtx.getMessageContext();
