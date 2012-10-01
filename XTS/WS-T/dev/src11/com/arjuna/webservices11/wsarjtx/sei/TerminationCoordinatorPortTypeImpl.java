@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
 @HandlerChain(file="/ws-t_handlers.xml")
 @Addressing(required=true)
+@org.apache.cxf.annotations.EndpointProperty(key = "soap.no.validate.parts", value = "true")
 public class TerminationCoordinatorPortTypeImpl implements TerminationCoordinatorPortType
 {
 

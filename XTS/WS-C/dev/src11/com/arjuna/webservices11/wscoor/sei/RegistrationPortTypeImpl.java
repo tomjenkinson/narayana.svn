@@ -36,6 +36,7 @@ import com.arjuna.webservices11.wsaddr.AddressingHelper;
 // @EndpointConfig(configName = "Standard WSAddressing Endpoint")
 @HandlerChain(file="/ws-c_handlers.xml")
 @Addressing(required=true)
+@org.apache.cxf.annotations.EndpointProperty(key = "soap.no.validate.parts", value = "true")
 public class RegistrationPortTypeImpl // implements RegistrationPortType
 {
     @Resource private WebServiceContext webServiceCtx;

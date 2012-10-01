@@ -34,6 +34,7 @@ import org.xmlsoap.schemas.soap.envelope.Fault;
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
 @HandlerChain(file="/ws-t_handlers.xml")
 @Addressing(required=true)
+@org.apache.cxf.annotations.EndpointProperty(key = "soap.no.validate.parts", value = "true")
 public class CompletionInitiatorPortTypeImpl // implements CompletionInitiatorPortType
 {
 
