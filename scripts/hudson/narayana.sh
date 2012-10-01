@@ -51,7 +51,7 @@ sleep 10
 #RUN XTS AS INTEGRATION TESTS
 cd ${WORKSPACE}/jboss-as/testsuite/integration/xts
 mvn test -Pxts.integration.tests.profile
-if [ "$?" != "0" ]; 
+if [ "$?" != "0" ]; then
         exit -1                  
 fi
 
