@@ -309,7 +309,7 @@
         <dependency>
             <groupId>jacorb</groupId>
             <artifactId>idl</artifactId>
-            <version>${version.jacorb}</version><!-- TODO AS7 -->
+            <version>2.3.1jboss.patch01-brew</version><!-- TODO AS7 -->
             <scope>provided</scope>
         </dependency>
 
@@ -380,7 +380,7 @@
         <dependency>
             <groupId>dom4j</groupId>
             <artifactId>dom4j</artifactId>
-            <!--version>1.6.1</version-->
+            <version>1.6.1</version>
             <scope>provided</scope>
         </dependency>
 
