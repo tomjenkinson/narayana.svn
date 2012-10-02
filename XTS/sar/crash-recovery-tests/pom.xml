@@ -13,7 +13,7 @@
         <packaging>jar</packaging>
         <name>xts crash recovery tests</name>
         <description>xts crash recovery tests</description>
-        <version>4.16.6.Final</version>
+        <version>4.16.7.Final-SNAPSHOT</version>
 
     <properties>
         <general.server.jvm.args>-Xms64m -Xmx1024m -XX:MaxPermSize=512m</general.server.jvm.args>
@@ -26,14 +26,14 @@
                 <dependency>
                         <groupId>org.jboss.jbossts</groupId>
                         <artifactId>jbossxts-api</artifactId>
-                        <version>4.16.6.Final</version>
+                        <version>4.16.7.Final-SNAPSHOT</version>
                         <scope>system</scope>
                         <systemPath>${project.basedir}/../build/jbossxts-api.jar</systemPath>
                 </dependency>
                 <dependency>
                         <groupId>org.jboss.jbossts</groupId>
                         <artifactId>jbossjta</artifactId>
-                        <version>4.16.6.Final</version>
+                        <version>4.16.7.Final-SNAPSHOT</version>
                         <scope>system</scope>
                         <systemPath>${project.basedir}/../../../ArjunaJTS/build/install/lib/jbossjts.jar</systemPath>
                 </dependency>

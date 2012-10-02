@@ -1,5 +1,5 @@
 
-JBossTS 4.16.6.Final is designed for use standalone.
+JBossTS 4.16.7.Final-SNAPSHOT is designed for use standalone.
 It may also be used by JBossAS 7.1 releases, but manual upgrading of the component inside JBossAS is not recommended.
 Integration with JBossAS 6 or earlier is no longer supported.
 
