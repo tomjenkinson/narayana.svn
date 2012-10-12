@@ -8,7 +8,7 @@ import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import javax.xml.ws.WebEndpoint;
 import javax.xml.ws.WebServiceClient;
-import javax.xml.ws.Service21;
+import javax.xml.ws.Service;
 
 
 /**
@@ -19,7 +19,7 @@ import javax.xml.ws.Service21;
  */
 @WebServiceClient(name = "SoapFaultService", targetNamespace = "http://jbossts.jboss.org/xts/soapfault", wsdlLocation = "wsdl/soapfault.wsdl")
 public class SoapFaultService
-    extends Service21
+    extends Service
 {
 
     private final static URL SOAPFAULTSERVICE_WSDL_LOCATION;

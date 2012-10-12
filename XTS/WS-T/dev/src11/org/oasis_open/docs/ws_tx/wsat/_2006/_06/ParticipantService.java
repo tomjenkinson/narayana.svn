@@ -8,7 +8,7 @@ import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import javax.xml.ws.WebEndpoint;
 import javax.xml.ws.WebServiceClient;
-import javax.xml.ws.Service21;
+import javax.xml.ws.Service;
 
 
 /**
@@ -19,7 +19,7 @@ import javax.xml.ws.Service21;
  */
 @WebServiceClient(name = "ParticipantService", targetNamespace = "http://docs.oasis-open.org/ws-tx/wsat/2006/06", wsdlLocation = "wsdl/wsat-participant-binding.wsdl")
 public class ParticipantService
-    extends Service21
+    extends Service
 {
 
     private final static URL PARTICIPANTSERVICE_WSDL_LOCATION;

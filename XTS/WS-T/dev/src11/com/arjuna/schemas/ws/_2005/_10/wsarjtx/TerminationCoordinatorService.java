@@ -8,7 +8,7 @@ import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import javax.xml.ws.WebEndpoint;
 import javax.xml.ws.WebServiceClient;
-import javax.xml.ws.Service21;
+import javax.xml.ws.Service;
 
 
 /**
@@ -19,7 +19,7 @@ import javax.xml.ws.Service21;
  */
 @WebServiceClient(name = "TerminationCoordinatorService", targetNamespace = "http://schemas.arjuna.com/ws/2005/10/wsarjtx", wsdlLocation = "wsdl/wsarjtx-termination-coordinator-binding.wsdl")
 public class TerminationCoordinatorService
-    extends Service21
+    extends Service
 {
 
     private final static URL TERMINATIONCOORDINATORSERVICE_WSDL_LOCATION;

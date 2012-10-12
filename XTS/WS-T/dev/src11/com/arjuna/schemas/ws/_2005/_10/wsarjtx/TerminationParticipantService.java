@@ -8,7 +8,7 @@ import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import javax.xml.ws.WebEndpoint;
 import javax.xml.ws.WebServiceClient;
-import javax.xml.ws.Service21;
+import javax.xml.ws.Service;
 
 
 /**
@@ -19,7 +19,7 @@ import javax.xml.ws.Service21;
  */
 @WebServiceClient(name = "TerminationParticipantService", targetNamespace = "http://schemas.arjuna.com/ws/2005/10/wsarjtx", wsdlLocation = "wsdl/wsarjtx-termination-participant-binding.wsdl")
 public class TerminationParticipantService
-    extends Service21
+    extends Service
 {
 
     private final static URL TERMINATIONPARTICIPANTSERVICE_WSDL_LOCATION;
