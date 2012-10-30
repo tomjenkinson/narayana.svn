@@ -42,6 +42,8 @@ public class CoordinatorEnvironmentBean implements CoordinatorEnvironmentBeanMBe
     private volatile boolean maintainHeuristics = true;
     private volatile boolean transactionLog = false; // rename to useTransactionLog ?
 
+    private volatile int maxTwoPhaseCommitThreads = 100;
+
     // public static final String TRANSACTION_LOG_REMOVAL_MARKER = "com.arjuna.ats.arjuna.coordinator.transactionLog.removalMarker";
     //private String removalMarker;
 
@@ -144,6 +146,14 @@ public class CoordinatorEnvironmentBean implements CoordinatorEnvironmentBeanMBe
     public void setAsyncRollback(boolean asyncRollback)
     {
         this.asyncRollback = asyncRollback;
+    }
+
+    public int getMaxTwoPhaseCommitThreads() {
+        return maxTwoPhaseCommitThreads;
+    }
+
+    public void setMaxTwoPhaseCommitThreads(int maxTwoPhaseCommitThreads) {
+        this.maxTwoPhaseCommitThreads = maxTwoPhaseCommitThreads;
     }
 
     /**
