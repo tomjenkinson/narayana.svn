@@ -44,16 +44,16 @@ fi
 JBOSS_VERSION=`ls -1 ${WORKSPACE}/jboss-as/build/target | grep jboss-as`
 export JBOSS_HOME=${WORKSPACE}/jboss-as/build/target/${JBOSS_VERSION}
 
-cp ${JBOSS_HOME}/docs/examples/configs/standalone-xts.xml ${JBOSS_HOME}/standalone/configuration
-$JBOSS_HOME/bin/standalone.sh --server-config=standalone-xts.xml&
-sleep 10 
-
 #RUN XTS AS INTEGRATION TESTS
 cd ${WORKSPACE}/jboss-as/testsuite/integration/xts
 mvn test -Pxts.integration.tests.profile
 if [ "$?" != "0" ]; then
-        exit -1                  
+    exit -1                  
 fi
+
+cp ${JBOSS_HOME}/docs/examples/configs/standalone-xts.xml ${JBOSS_HOME}/standalone/configuration
+$JBOSS_HOME/bin/standalone.sh --server-config=standalone-xts.xml&
+sleep 10 
 
 #RUN XTS UNIT TESTS
 cd ${WORKSPACE}
