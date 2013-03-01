@@ -19,6 +19,7 @@
  * @author JBoss Inc.
  */
 
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -31,14 +32,16 @@ import javax.transaction.xa.Xid;
 import org.omg.CORBA.SystemException;
 import org.omg.CORBA.ORBPackage.InvalidName;
 
+import junit.framework.TestCase;
+
 import com.arjuna.ats.arjuna.recovery.RecoveryManager;
 import com.arjuna.orbportability.OA;
 import com.arjuna.orbportability.ORB;
 import com.arjuna.orbportability.RootOA;
 
-public class WedgedResourceDemonstrator {
+public class WedgedResourceDemonstrator extends TestCase {
 
-	public static void main(String[] args) throws InvalidName, SystemException,
+	public void testWedge() throws InvalidName, SystemException,
 			NotSupportedException, javax.transaction.SystemException,
 			IllegalStateException, RollbackException, SecurityException,
 			HeuristicMixedException, HeuristicRollbackException,
@@ -49,7 +52,7 @@ public class WedgedResourceDemonstrator {
 			ORB myORB = ORB.getInstance("test");
 			RootOA myOA = OA.getRootOA(myORB);
 
-			myORB.initORB(args, null);
+			myORB.initORB(new String[0], null);
 			myOA.initOA();
 
 			com.arjuna.ats.internal.jts.ORBManager.setORB(myORB);
@@ -70,7 +73,7 @@ public class WedgedResourceDemonstrator {
 
 		try {
 			transactionManager.commit();
-			throw new RuntimeException("Should not have been able to commit");
+			fail("Should not have been able to commit");
 		} catch (RollbackException e) {
 			// This is fine
 		} finally {
@@ -95,7 +98,8 @@ public class WedgedResourceDemonstrator {
 					// just so the app will be able to clean up
 					this.wait(7000);
 				} catch (InterruptedException e) {
-					throw new NullPointerException("Interrupted, simulating jacorb");
+					throw new NullPointerException(
+							"Interrupted, simulating jacorb");
 				}
 			}
 		}
