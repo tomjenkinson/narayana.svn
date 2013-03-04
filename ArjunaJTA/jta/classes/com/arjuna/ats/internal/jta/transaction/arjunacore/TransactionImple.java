@@ -514,8 +514,9 @@ public class TransactionImple implements javax.transaction.Transaction,
 	 * @message com.arjuna.ats.internal.jta.transaction.arjunacore.enlisterror
 	 *          [com.arjuna.ats.internal.jta.transaction.arjunacore.enlisterror]
 	 *          {0} - caught: {1}
-	 * @message com.arjuna.ats.internal.jta.transaction.arjunacore.timeouterror[com.arjuna.ats.internal.jta.transaction.arjunacore.timeouterror]
-	 *          {0} setTransactionTimeout on XAResource threw: {1}
+	 * @message com.arjuna.ats.internal.jta.transaction.arjunacore.timeouterror
+                    [com.arjuna.ats.internal.jta.transaction.arjunacore.timeouterror]
+	 *          {0} setTransactionTimeout for Xid i{2} on XAResource threw: {1}
 	 * @message com.arjuna.ats.internal.jta.transaction.arjunacore.enliststarterror
 	 *          [com.arjuna.ats.internal.jta.transaction.arjunacore.enliststarterror]
 	 *          {0} - XAResource.start returned: {1} for {2}
@@ -774,7 +775,7 @@ public class TransactionImple implements javax.transaction.Transaction,
 																"TransactionImple.enlistResource",
 																XAHelper
 																		.printXAErrorCode(te),
-																xid });
+																xid },te);
 									}
 								}
 							}
