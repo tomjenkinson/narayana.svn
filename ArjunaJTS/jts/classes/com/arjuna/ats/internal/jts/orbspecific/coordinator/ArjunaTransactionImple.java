@@ -388,6 +388,11 @@ public class ArjunaTransactionImple extends
 
 			destroyAction();
 		}
+                else if (outcome == ActionStatus.ABORTED || outcome == ActionStatus.H_ROLLBACK){
+
+			throw new TRANSACTION_ROLLEDBACK(ExceptionCodes.FAILED_TO_COMMIT,CompletionStatus.COMPLETED_NO);
+
+		}
 		else
 		{
 			/*
