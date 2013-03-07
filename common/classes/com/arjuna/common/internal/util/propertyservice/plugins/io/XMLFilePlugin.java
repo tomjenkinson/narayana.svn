@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.FileOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.URI;
 import java.util.Hashtable;
 import java.util.Enumeration;
 import java.util.StringTokenizer;
@@ -131,7 +132,7 @@ public class XMLFilePlugin implements PropertyManagerIOPlugin
 
 				if ( filename != null && new File(filename).exists() )
 				{
-					Document doc = _documentBuilder.parse(filename);
+					Document doc = _documentBuilder.parse(new URI(filename).toASCIIString());
 					Element rootElement = doc.getDocumentElement();
 
 					setURILoaded(pcm, uri);
