@@ -198,7 +198,9 @@
 	            <path location="${com.hp.mwlabs.ts.jtax.dest}"/>
 	            <path refid="com.hp.mwlabs.ts.jacorb.classpath"/>
 	            <pathelement path="${build.classpath}"/>
-                <pathelement location="../../ArjunaJTA/jta/build/tests"/>
+                    <pathelement location="../../ArjunaJTA/jta/build/tests"/>
+                    <pathelement location="../../install/etc"/>
+                    <pathelement location="../../ArjunaJTS/jacorb/etc"/>
 	        </classpath>
 	        <batchtest haltonerror="yes" haltonfailure="yes" fork="yes"
                     todir="${com.hp.mwlabs.ts.jtax.reports.dest}">
