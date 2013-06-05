@@ -16,6 +16,7 @@
         <version>4.16.7.Final-SNAPSHOT</version>
 
     <properties>
+        <version.jbossas>7.1.1.Final</version.jbossas>
         <general.server.jvm.args>-Xms64m -Xmx1024m -XX:MaxPermSize=512m</general.server.jvm.args>
         <ipv4.server.jvm.args></ipv4.server.jvm.args>
         <ipv6.server.jvm.args>-Djboss.bind.address=[::1] -Djboss.bind.address.management=[::1] -Djboss.bind.address.unsecure=[::1] -Djava.net.preferIPv4Stack=false -Djava.net.preferIPv6Addresses=true</ipv6.server.jvm.args>
@@ -93,7 +94,7 @@
                                 <dependency>
                                         <groupId>org.jboss.as</groupId>
                                         <artifactId>jboss-as-arquillian-container-managed</artifactId>
-                                        <version>7.2.0.Alpha1-SNAPSHOT</version>
+                                        <version>${version.jbossas}</version>
                                         <scope>test</scope>
                                 </dependency>
                         </dependencies>
