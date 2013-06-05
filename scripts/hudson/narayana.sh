@@ -29,12 +29,6 @@ if [ "$?" != "0" ]; then
 	exit -1
 fi
 
-git remote add upstream git://github.com/jbossas/jboss-as.git
-git pull --rebase --ff-only upstream 7.1
-if [ "$?" != "0" ]; then
-	exit -1
-fi
-
 MAVEN_OPTS=-XX:MaxPermSize=256m ./build.sh clean install -DskipTests
 if [ "$?" != "0" ]; then
 	exit -1
