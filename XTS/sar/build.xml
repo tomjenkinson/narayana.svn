@@ -203,8 +203,16 @@ The JBoss installation directory must be specified with the JBOSS_HOME environme
         <delete dir="${build.dir}/tmp/api"/>
     </target>
 
+    <target name="service-jar">
+        <jar jarfile="${build.dir}/service.jar">
+            <fileset dir="${build.classes.dir}">
+                <exclude name="${bridge.api.class.files}"/>
+            </fileset>
+        </jar>
+    </target>
+
     <!-- build XTS service archive supporting both 1.0 and 1.1 WS-C/T protocols -->
-    <target name="sar-both" depends="init, compile11, compile, dev-resourcebundle, api-both-jar">
+    <target name="sar-both" depends="init, compile11, compile, dev-resourcebundle, api-both-jar, service-jar">
         <!-- create config jar containing conf files for 1.0 and 1.1 -->
         <filter token="coordinator.hostname" value="${coordinator.hostname}"/>
         <filter token="coordinator.port" value="${coordinator.port}"/>
@@ -234,19 +242,19 @@ The JBoss installation directory must be specified with the JBOSS_HOME environme
             <!-- include config jar -->
             <fileset dir="${build.dir}" includes="config.jar"/>
 
+            <!-- include sar boot and shutdown code and 1.1 bridge code *but* exclude the bridge API class -->
+            <fileset dir="${build.dir}" includes="service.jar"/>
+
             <!-- include service def (e.g. dependencies) -->
             <fileset dir="." includes="META-INF/jboss-beans.xml"/>
 
             <!-- include web service config -->
             <fileset dir="${build.dir}" includes="META-INF/application.xml"/>
-
-            <!-- include sar boot and shutdown code and 1.1 bridge code *but* exclude the bridge API class -->
-	        <fileset dir="${build.classes.dir}" includes="**/*" excludes="${bridge.api.class.files}"/>
         </jar>
     </target>
 
     <!-- build XTS service archive supporting 1.1 WS-C/T protocols -->
-    <target name="sar-11" depends="init, compile11, compile, dev-resourcebundle, api11-jar">
+    <target name="sar-11" depends="init, compile11, compile, dev-resourcebundle, api11-jar, service-jar">
         <!-- create config jar containing conf files for 1.1 -->
         <filter token="coordinator.hostname" value="${coordinator.hostname}"/>
         <filter token="coordinator.port" value="${coordinator.port}"/>
@@ -273,19 +281,19 @@ The JBoss installation directory must be specified with the JBOSS_HOME environme
             <!-- include config jar -->
             <fileset dir="${build.dir}" includes="config.jar"/>
 
+            <!-- include sar boot and shutdown code and 1.1 bridge code *but* exclude the bridge API class -->
+            <fileset dir="${build.dir}" includes="service.jar"/>
+
             <!-- include service def (e.g. dependencies) -->
             <fileset dir="." includes="META-INF/jboss-beans.xml"/>
 
             <!-- include web service config -->
             <fileset dir="${build.dir}" includes="META-INF/application.xml"/>
-
-            <!-- include sar boot and shutdown code and 1.1 bridge code *but* exclude the bridge API class -->
-	        <fileset dir="${build.classes.dir}" includes="**/*" excludes="${bridge.api.class.files}"/>
         </jar>
     </target>
 
     <!-- build XTS service archive supporting 1.0 WS-C/T protocols -->
-    <target name="sar-10" depends="init, compile, dev-resourcebundle, api10-jar">
+    <target name="sar-10" depends="init, compile, dev-resourcebundle, api10-jar, service-jar">
         <!-- create config jar containing conf files for 1.0 -->
         <filter token="coordinator.hostname" value="${coordinator.hostname}"/>
         <filter token="coordinator.port" value="${coordinator.port}"/>
@@ -319,7 +327,7 @@ The JBoss installation directory must be specified with the JBOSS_HOME environme
             <fileset dir="${build.dir}" includes="META-INF/application.xml"/>
 
             <!-- include sar boot and shutdown code -->
-            <fileset dir="${build.classes.dir}" includes="**/*"/>
+            <fileset dir="${build.dir}" includes="service.jar"/>
         </jar>
     </target>
 
