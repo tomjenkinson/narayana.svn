@@ -247,17 +247,25 @@
             </fileset>
         </jar>
     </target>
+	
+    <target name="sei-jar" depends="dev-compile, dev-resourcebundle">
+        <copy file="${dev.dd.dir}/ws-c_handlers.xml" tofile="${build.dev.classes11.dir}/handlers.xml"/>
+        <jar jarfile="${build.dev.webapps.dir}/ws-c11-sei.jar">
+            <fileset dir="${build.dev.classes11.dir}" includes="com/arjuna/webservices11/wscoor/sei/*, handlers.xml"/>
+        </jar>
+    </target>
 
-    <target name="dev-webapps" depends="dev-jars" >
+    <target name="dev-webapps" depends="dev-jars, sei-jar" >
         <copy file="${dev.dd.dir}/ws-c_web-app.xml" tofile="${build.dev.dd.dir}/web-app.xml">
         </copy>
         <copy file="${dev.dd.dir}/ws-c11_web-app.xml" tofile="${build.dev.dd.dir}/web-app11.xml">
         </copy>
-        <copy file="${dev.dd.dir}/ws-c_handlers.xml" tofile="${build.dev.classes11.dir}/handlers.xml"/>
         <war warfile="${build.dev.webapps.dir}/ws-c10.war" webxml="${build.dev.dd.dir}/web-app.xml"/>
         <war warfile="${build.dev.webapps.dir}/ws-c11.war" webxml="${build.dev.dd.dir}/web-app11.xml">
-            <webinf dir="${build.dir}/dev/classes11" includes="classes/com/arjuna/webservices11/wscoor/sei/* classes/handlers.xml"/>
             <webinf dir="${build.dev.dd.dir}" includes="wsdl/**"/>
+            <lib dir="${build.dev.webapps.dir}">
+                <include name="ws-c11-sei.jar"/>
+            </lib>
         </war>
     </target>
 
