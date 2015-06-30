@@ -593,6 +593,7 @@ public class XAResourceRecord extends com.arjuna.ArjunaOTS.OTSAbstractRecordPOA
 
 						case XAException.XA_RETRY:
 						case XAException.XAER_RMFAIL:
+							_committed = true;
 							throw new UNKNOWN();
 						case XAException.XAER_INVAL:
 							throw new org.omg.CosTransactions.HeuristicHazard();
